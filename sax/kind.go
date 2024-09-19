@@ -1,4 +1,4 @@
-package jsonkit
+package sax
 
 import (
 	"github.com/vela-public/onekit/cast"

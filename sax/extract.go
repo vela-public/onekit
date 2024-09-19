@@ -1,4 +1,4 @@
-package jsonkit
+package sax
 
 import (
 	"fmt"
