@@ -1,4 +1,4 @@
-package ternary
+package tern
 
 func T[T any](condition bool, a, b T) T {
 	if condition {
