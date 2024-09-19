@@ -1,4 +1,4 @@
-print("hello")
+local luakit = require("luakit")
 
 local tab = luakit.map{
 	name = "vela",

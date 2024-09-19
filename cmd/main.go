@@ -30,10 +30,10 @@ func main() {
 
 	file := "cmd/vela.lua"
 
-	co := lua.NewState()
+	co := luakit.NewLuaState()
 	defer co.Close()
+
 	co.SetGlobal("decode", co.NewFunction(Decoder))
-	luakit.PreloadModule(co)
 
 	if err := co.DoFile(file); err != nil {
 		panic(err)

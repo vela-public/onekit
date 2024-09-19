@@ -7,7 +7,13 @@ import (
 
 type Map[K comparable, V any] map[K]V
 
-func (m Map[K, V]) set(key K, val V) {
+func (m Map[K, V]) Type() lua.LValueType                   { return lua.LTMap }
+func (m Map[K, V]) AssertFloat64() (float64, bool)         { return float64(len(m)), true }
+func (m Map[K, V]) AssertString() (string, bool)           { return "", false }
+func (m Map[K, V]) AssertFunction() (*lua.LFunction, bool) { return nil, false }
+func (m Map[K, V]) Hijack(fsm *lua.CallFrameFSM) bool      { return false }
+
+func (m Map[K, V]) Set(key K, val V) {
 	m[key] = val
 }
 
@@ -71,7 +77,7 @@ func NewMapL(L *lua.LState) int {
 	tab := L.CheckTable(1)
 	m := Map[lua.LValue, lua.LValue]{}
 	tab.ForEach(func(key lua.LValue, value lua.LValue) {
-		m.set(key, value)
+		m.Set(key, value)
 	})
 	L.Push(lua.NewGeneric[Map[lua.LValue, lua.LValue]](m))
 	return 1
