@@ -7,10 +7,16 @@ import (
 	"path/filepath"
 )
 
+type C2 struct {
+	Key string `lua:"key"`
+	Pem string `lua:"pem"`
+}
+
 type Config struct {
 	ID   int      `lua:"id"`
 	Name string   `lua:"name"`
 	Addr []string `lua:"addr"`
+	C2   *C2      `lua:"c2"`
 }
 
 func Decoder(L *lua.LState) int {

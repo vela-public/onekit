@@ -31,6 +31,10 @@ func StringOr(tab *lua.LTable, key string, d string) string {
 func Copier(L *lua.LState, field reflect.Value, val lua.LValue) error {
 	typ := field.Type()
 
+	tname := typ.Name()
+	fname := field.Type().Name()
+	ltype := val.Type().String()
+
 	kind := field.Type().Kind()
 	switch kind {
 	case reflect.String:
@@ -49,7 +53,7 @@ func Copier(L *lua.LState, field reflect.Value, val lua.LValue) error {
 		case lua.LTUint64:
 			field.SetInt(int64(val.(lua.LUint64)))
 		default:
-			return fmt.Errorf("type mismatch for fied:%s must %s got:%s", typ.Name, field.Type().Name(), val.Type().String())
+			return fmt.Errorf("type mismatch for fied:%s must %s got:%s", tname, fname, ltype)
 		}
 		return nil
 
@@ -60,13 +64,18 @@ func Copier(L *lua.LState, field reflect.Value, val lua.LValue) error {
 		case lua.LTNumber:
 			field.SetBool(int64(val.(lua.LNumber)) != 0)
 		default:
-			return fmt.Errorf("type mismatch for fied:%s must %s got:%s", typ.Name, field.Type().Name(), val.Type().String())
+			return fmt.Errorf("type mismatch for fied:%s must %s got:%s", tname, fname, ltype)
 		}
 		return nil
+	case reflect.Pointer:
+		if field.IsNil() {
+			field.Set(reflect.New(typ.Elem()))
+		}
+		return TableTo(L, val.(*lua.LTable), field.Interface())
 
 	case reflect.Struct:
 		if val.Type() != lua.LTTable {
-			return fmt.Errorf("type mismatch for fied:%s must %s got:%s", typ.Name, field.Type().Name(), val.Type().String())
+			return fmt.Errorf("type mismatch for fied:%s must %s got:%s", tname, fname, ltype)
 		}
 		return TableTo(L, val.(*lua.LTable), field.Interface())
 
@@ -94,11 +103,10 @@ func Copier(L *lua.LState, field reflect.Value, val lua.LValue) error {
 			return nil
 
 		default:
-			return fmt.Errorf("type mismatch for fied:%s must %s got:%s", typ.Name, field.Type().Name(), val.Type().String())
-
+			return fmt.Errorf("type mismatch for fied:%s must %s got:%s", tname, fname, ltype)
 		}
 	default:
-		return fmt.Errorf("type mismatch for fied:%s must %s got:%s", typ.Name, field.Type().Name(), val.Type().String())
+		return fmt.Errorf("type mismatch for fied:%s must %s got:%s", tname, fname, ltype)
 	}
 }
 
