@@ -46,5 +46,4 @@ func main() {
 	}
 
 	fmt.Println(filepath.Dir("/root/index/a.lua"))
-
 }

@@ -26,3 +26,22 @@ decode{
 		pem = "777"
 	}
 }
+
+
+local pipe = luakit.pipe(
+	function(x)
+
+	end,
+
+	function(x)
+	end
+)
+
+local duo = luakit.switch()
+duo.case("name = 123").pipe(function(x) end)
+duo.case("name = 123").pipe(function(x) end)
+duo.case("name = 123").pipe(function(x) end)
+duo.case("name = 123").pipe(function(x) end)
+
+
+duo.push({name = "123"})
