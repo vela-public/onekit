@@ -22,112 +22,100 @@ func (px *Chains) LValue(lv lua.LValue) {
 
 	case lua.LTUserData:
 		px.Prepare(lv.(*lua.LUserData).Value)
-
 	case lua.LTVelaData:
 		px.Prepare(lv.(*lua.VelaData).Data)
-
 	case lua.LTObject:
 		px.Prepare(lv)
-
 	case lua.LTGoFuncErr:
-		fn := px.LFuncErr(lv.(lua.GoFuncErr))
-		px.append(fn)
-
+		px.LFuncErr(lv.(lua.GoFuncErr))
 	case lua.LTGoFuncStr:
-		fn := px.LFuncStr(lv.(lua.GoFuncStr))
-		px.append(fn)
-
+		px.LFuncStr(lv.(lua.GoFuncStr))
 	case lua.LTGoFuncInt:
-		fn := px.LFuncInt(lv.(lua.GoFuncInt))
-		px.append(fn)
-
+		px.LFuncInt(lv.(lua.GoFuncInt))
 	case lua.LTGoFunction:
-		fn := px.GoFunc(lv.(lua.GoFunction))
-		px.append(fn)
-
+		px.GoFunc(lv.(lua.GoFunction))
 	case lua.LTFunction:
-		px.append(px.LFunc(lv.(*lua.LFunction)))
+		px.LFunc(lv.(*lua.LFunction))
+
 	default:
 		px.invalid("invalid pipe lua type , got %s", lv.Type().String())
 	}
 }
 
 func (px *Chains) Prepare(v interface{}) {
-	var handle Handler
-	switch item := v.(type) {
+	switch value := v.(type) {
+	case lua.LValue:
+		px.LValue(value)
 
 	case io.Writer:
-		handle = px.Writer(item)
+		px.Writer(value)
 
-	case *lua.LFunction:
-		handle = px.LFunc(item)
 	case lua.Console:
-		handle = px.Console(item)
+		px.append(px.Console(value))
+
 	case PCall:
-		handle = item.PCall
+		px.append(value.PCall)
 
 	case func():
-		handle = func(...interface{}) error {
-			item()
+		px.append(func(...interface{}) error {
+			value()
 			return nil
-		}
+		})
 
 	case func(interface{}):
-		handle = func(...interface{}) error {
-			item(v)
+		px.append(func(...interface{}) error {
+			value(v)
 			return nil
-		}
+		})
 
 	case func() error:
-		handle = func(...interface{}) error {
-			item()
+		px.append(func(...interface{}) error {
+			_ = value()
 			return nil
-		}
+		})
 
 	case func(interface{}) error:
-		handle = func(v ...interface{}) error {
+		px.append(func(v ...interface{}) error {
 			if len(v) == 0 {
 				return nil
 			}
-			return item(v[0])
-		}
+			return value(v[0])
+		})
 
 	default:
 		px.invalid("invalid pipe object")
 		return
 	}
-
-	px.append(handle)
 }
 
-func (px *Chains) GoFunc(fn lua.GoFunction) Handler {
-	return func(v ...interface{}) error {
+func (px *Chains) GoFunc(fn lua.GoFunction) {
+	px.append(func(v ...interface{}) error {
 		return fn()
-	}
+	})
 }
 
-func (px *Chains) LFuncErr(fn lua.GoFuncErr) Handler {
-	return func(v ...interface{}) error {
+func (px *Chains) LFuncErr(fn lua.GoFuncErr) {
+	px.append(func(v ...interface{}) error {
 		return fn(v...)
-	}
+	})
 }
 
-func (px *Chains) LFuncStr(fn lua.GoFuncStr) Handler {
-	return func(v ...interface{}) error {
+func (px *Chains) LFuncStr(fn lua.GoFuncStr) {
+	px.append(func(v ...interface{}) error {
 		fn(v...)
 		return nil
-	}
+	})
 }
 
-func (px *Chains) LFuncInt(fn lua.GoFuncInt) Handler {
-	return func(v ...interface{}) error {
+func (px *Chains) LFuncInt(fn lua.GoFuncInt) {
+	px.append(func(v ...interface{}) error {
 		fn(v...)
 		return nil
-	}
+	})
 }
 
-func (px *Chains) LFunc(fn *lua.LFunction) Handler {
-	return func(v ...interface{}) error {
+func (px *Chains) LFunc(fn *lua.LFunction) {
+	px.append(func(v ...interface{}) error {
 		size := len(v)
 		if size == 0 {
 			return nil
@@ -156,7 +144,7 @@ func (px *Chains) LFunc(fn *lua.LFunction) Handler {
 		}
 
 		return co.CallByParam(cp, args...)
-	}
+	})
 }
 
 func (px *Chains) write(w io.Writer, v ...interface{}) error {
@@ -173,14 +161,14 @@ func (px *Chains) write(w io.Writer, v ...interface{}) error {
 	return err
 }
 
-func (px *Chains) Writer(w io.Writer) Handler {
-	return func(v ...interface{}) error {
+func (px *Chains) Writer(w io.Writer) {
+	px.append(func(v ...interface{}) error {
 		if w == nil {
 			return fmt.Errorf("invalid io writer %p", w)
 		}
 
 		return px.write(w, v...)
-	}
+	})
 }
 
 func (px *Chains) SetEnv(env Environment) *Chains {
