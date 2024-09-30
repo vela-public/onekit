@@ -40,6 +40,33 @@ func Copier(L *lua.LState, field reflect.Value, val lua.LValue) error {
 	case reflect.String:
 		field.SetString(val.String())
 		return nil
+	case reflect.Uint8:
+		switch val.Type() {
+		case lua.LTNumber:
+			field.Set(reflect.ValueOf(uint8(val.(lua.LNumber))))
+			return nil
+		case lua.LTInt:
+			field.Set(reflect.ValueOf(uint8(val.(lua.LInt))))
+			return nil
+		case lua.LTInt64:
+			field.Set(reflect.ValueOf(uint8(val.(lua.LInt64))))
+			return nil
+		case lua.LTUint:
+			field.Set(reflect.ValueOf(uint8(val.(lua.LUint))))
+			return nil
+		case lua.LTUint64:
+			field.Set(reflect.ValueOf(uint8(val.(lua.LUint64))))
+			return nil
+		case lua.LTString:
+			v := val.String()
+			if sz := len(v); sz > 0 {
+				field.Set(reflect.ValueOf([]byte{v[0]}))
+			}
+			return nil
+		default:
+			return fmt.Errorf("type mismatch for fied:%s must %s got:%s", tname, fname, ltype)
+		}
+
 	case reflect.Int:
 		switch val.Type() {
 		case lua.LTNumber:
