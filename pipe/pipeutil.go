@@ -21,13 +21,13 @@ func (px *Chains) LValue(lv lua.LValue) {
 	switch lv.Type() {
 
 	case lua.LTUserData:
-		px.Object(lv.(*lua.LUserData).Value)
+		px.Prepare(lv.(*lua.LUserData).Value)
 
 	case lua.LTVelaData:
-		px.Object(lv.(*lua.VelaData).Data)
+		px.Prepare(lv.(*lua.VelaData).Data)
 
 	case lua.LTObject:
-		px.Object(lv)
+		px.Prepare(lv)
 
 	case lua.LTGoFuncErr:
 		fn := px.LFuncErr(lv.(lua.GoFuncErr))
@@ -40,6 +40,7 @@ func (px *Chains) LValue(lv lua.LValue) {
 	case lua.LTGoFuncInt:
 		fn := px.LFuncInt(lv.(lua.GoFuncInt))
 		px.append(fn)
+
 	case lua.LTGoFunction:
 		fn := px.GoFunc(lv.(lua.GoFunction))
 		px.append(fn)
@@ -51,48 +52,40 @@ func (px *Chains) LValue(lv lua.LValue) {
 	}
 }
 
-func (px *Chains) Object(v interface{}) {
-	fn := px.Prepare(v)
-	if fn == nil {
-		return
-	}
-
-	px.append(fn)
-}
-
-func (px *Chains) Prepare(v interface{}) Handler {
+func (px *Chains) Prepare(v interface{}) {
+	var handle Handler
 	switch item := v.(type) {
 
 	case io.Writer:
-		return px.Writer(item)
+		handle = px.Writer(item)
 
 	case *lua.LFunction:
-		return px.LFunc(item)
+		handle = px.LFunc(item)
 	case lua.Console:
-		return px.Console(item)
+		handle = px.Console(item)
 	case PCall:
-		return item.PCall
+		handle = item.PCall
 
 	case func():
-		return func(...interface{}) error {
+		handle = func(...interface{}) error {
 			item()
 			return nil
 		}
 
 	case func(interface{}):
-		return func(...interface{}) error {
+		handle = func(...interface{}) error {
 			item(v)
 			return nil
 		}
 
 	case func() error:
-		return func(...interface{}) error {
+		handle = func(...interface{}) error {
 			item()
 			return nil
 		}
 
 	case func(interface{}) error:
-		return func(v ...interface{}) error {
+		handle = func(v ...interface{}) error {
 			if len(v) == 0 {
 				return nil
 			}
@@ -101,9 +94,10 @@ func (px *Chains) Prepare(v interface{}) Handler {
 
 	default:
 		px.invalid("invalid pipe object")
+		return
 	}
 
-	return nil
+	px.append(handle)
 }
 
 func (px *Chains) GoFunc(fn lua.GoFunction) Handler {
@@ -209,6 +203,22 @@ func (px *Chains) Console(out lua.Console) Handler {
 		}
 		out.Println(data)
 		return nil
+	}
+}
+
+func (px *Chains) InvokeGo(v interface{}, x func(error) (stop bool)) {
+	sz := len(px.chain)
+	if sz == 0 {
+		return
+	}
+
+	for i := 0; i < sz; i++ {
+		fn := px.chain[i]
+		if e := fn(v); e != nil && x != nil {
+			if x(e) {
+				return
+			}
+		}
 	}
 }
 
