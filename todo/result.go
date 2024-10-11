@@ -13,34 +13,14 @@ func Ok[T, E, U any](value T) Result[T, E] {
 }
 
 // Err 返回表示错误的 Result
-func Err[T, E any](err E) Result[T, E] {
-	return Result[T, E]{Error: err, Ok: false}
-}
+func Err[T, E any](err E) Result[T, E] { return Result[T, E]{Error: err, Ok: false} }
 
-// Unwrap 返回成功的值，如果 Result 是错误则引发 panic
-func (r Result[T, E]) Unwrap() (t T, ok bool) {
-	if !r.Ok {
-		return r.Value, false
-		//panic("called `Unwrap` on an `Err` value")
-	}
-	return r.Value, true
-}
-
-// UnwrapErr 返回错误值，如果 Result 是成功则引发 panic
-func (r Result[T, E]) Err() E {
-	if r.Ok {
-		panic("called `UnwrapErr` on an `Ok` value")
-	}
-	return r.Error
-}
-
-// Expect 返回成功的值，否则引发带有消息的 panic
-func (r Result[T, E]) Expect(fn func(E)) T {
+func (r Result[T, E]) Unwrap() (t T, ok bool) { return r.Value, r.Ok }
+func (r Result[T, E]) UnwrapErr() (E, bool)   { return r.Error, !r.Ok }
+func (r Result[T, E]) Expect(fn func(E)) {
 	if !r.Ok {
 		fn(r.Error)
 	}
-
-	return r.Value
 }
 
 func Then[T, E, U any](r Result[T, E], fn func(T) U) Result[U, E] {
