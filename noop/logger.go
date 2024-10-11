@@ -27,16 +27,8 @@ func (l *Logger) Infof(s string, a ...any) {
 }
 
 func NewLogger() *Logger {
-	encoderCfg := zapcore.EncoderConfig{
-		MessageKey:     "msg",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
-	}
-	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoderCfg), os.Stdout, zapcore.DebugLevel)
-
+	encoder := zap.NewDevelopmentEncoderConfig()
+	core := zapcore.NewCore(zapcore.NewConsoleEncoder(encoder), os.Stdout, zapcore.DebugLevel)
 	return &Logger{
 		sugar: zap.New(core).WithOptions().Sugar(),
 	}
