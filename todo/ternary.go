@@ -1,7 +1,7 @@
-package tern
+package todo
 
-func IF[T any](condition bool, a, b T) T {
-	if condition {
+func IF[T any](flag bool, a, b T) T {
+	if flag {
 		return a
 	}
 	return b

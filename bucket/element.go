@@ -197,12 +197,15 @@ func (elem *Element[T]) Unwrap() (t T, e error) {
 		return
 	}
 
-	t, ok = v.(T)
-	if ok {
+	switch vt := v.(type) {
+	case T:
 		elem.flag = OK
-		elem.data = t
-		elem.flag = 1
-		return t, nil
+		elem.data = vt
+		return vt, nil
+	case *T:
+		elem.flag = OK
+		elem.data = *vt
+		return *vt, nil
 	}
 
 	elem.flag = TypeError

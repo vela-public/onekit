@@ -73,14 +73,12 @@ func main() {
 
 	type app struct{ A, B, C int }
 	bkt := bucket.Pack[*app](db, "20241010")
-	bkt2 := bucket.To[*app, app](bkt)
 	_ = bucket.Pack[*app](db, "20241010")
 	_ = bkt.Set("k", &app{10, 100, 500}, 1000)
 	fmt.Println(bkt.Get("k").Value())
 	time.Sleep(time.Millisecond * 300)
 	fmt.Println(bkt.Get("k").Value())
 	time.Sleep(time.Millisecond * 300)
-	fmt.Println(bkt2.Get("k").Unwrap())
 	time.Sleep(time.Millisecond * 300)
 	fmt.Println(bkt.Get("k").Value())
 	time.Sleep(time.Millisecond * 300)

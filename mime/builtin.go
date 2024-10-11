@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/vela-public/onekit/cast"
-	"github.com/vela-public/onekit/tern"
+	"github.com/vela-public/onekit/todo"
 	"strconv"
 	"time"
 )
@@ -88,7 +88,7 @@ func (Bool) MimeDecode(data []byte) (any, error) {
 func (Bool) MimeEncode(a any) ([]byte, error) {
 	v, ok := a.(bool)
 	if ok {
-		return tern.IF[[]byte](v, True, False), nil
+		return todo.IF[[]byte](v, True, False), nil
 	}
 	return nil, fmt.Errorf("unable encode must bool , got: %T", a)
 }
