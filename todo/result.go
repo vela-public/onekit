@@ -17,12 +17,26 @@ func Err[T, E any](err E) Result[T, E] { return Result[T, E]{Error: err, Ok: fal
 
 func (r Result[T, E]) Unwrap() (t T, ok bool) { return r.Value, r.Ok }
 func (r Result[T, E]) UnwrapErr() (E, bool)   { return r.Error, !r.Ok }
+
 func (r Result[T, E]) Expect(fn func(E)) {
 	if !r.Ok {
 		fn(r.Error)
 	}
 }
 
+func (r Result[T, E]) Y(fn func(T)) Result[T, E] {
+	if r.Ok {
+		fn(r.Value)
+	}
+	return r
+}
+
+func (r Result[T, E]) N(fn func(E)) Result[T, E] {
+	if !r.Ok {
+		fn(r.Error)
+	}
+	return r
+}
 func Then[T, E, U any](r Result[T, E], fn func(T) U) Result[U, E] {
 	if r.Ok {
 		// 当 r 是成功状态时，应用函数 f 并构造新的成功 Result
