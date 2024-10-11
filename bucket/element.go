@@ -6,22 +6,44 @@ import (
 	"fmt"
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/mime"
-	"strconv"
 	"time"
 )
 
-type Element struct {
-	size  uint64
-	ttl   uint64
-	mime  string
-	chunk []byte
+type Element[T any] struct {
+	now  int64
+	flag ErrNo
+	data T
+	info error
+
+	size uint64 //mime name size
+	ttl  uint64
+	mime string
+	text []byte
 }
 
-func (elem *Element) set(name string, chunk []byte, expire int) {
+func (elem *Element[T]) ErrNo() ErrNo {
+	return elem.flag
+}
+
+func (elem *Element[T]) Mime() string {
+	return elem.mime
+}
+
+func (elem *Element[T]) len() int {
+	return 16 + len(elem.mime) + len(elem.text)
+}
+func (elem *Element[T]) Now() int64 {
+	if elem.now == 0 {
+		elem.now = time.Now().UnixMilli()
+	}
+	return elem.now
+}
+
+func (elem *Element[T]) fill(name string, text []byte, expire int) {
 	var ttl uint64
 
 	if expire > 0 {
-		ttl = uint64(time.Now().UnixMilli()) + uint64(expire)
+		ttl = uint64(elem.Now()) + uint64(expire)
 	}
 
 	//如果ttl 为空 第二次传值有时间
@@ -31,60 +53,106 @@ func (elem *Element) set(name string, chunk []byte, expire int) {
 
 	elem.mime = name
 	elem.size = uint64(len(name))
-	elem.chunk = chunk
-
+	elem.text = text
 }
 
-func iEncode(it *Element, v interface{}, expire int) error {
-	chunk, name, err := mime.Encode(v)
+func (elem *Element[T]) Set(t T, expire int) {
+	chunk, name, err := mime.Encode(t)
+	if err != nil {
+		elem.flag = MimeEncodeError
+		elem.info = err
+		return
+	}
+	elem.fill(name, chunk, expire)
+	elem.data = t
+	elem.flag = OK
+}
+
+func (elem *Element[T]) Upsert(t T, expire int) error {
+	chunk, name, err := mime.Encode(t)
 	if err != nil {
 		return err
 	}
-	it.set(name, chunk, expire)
-	return nil
-}
 
-func iDecode(it *Element, data []byte) error {
-	n := len(data)
-	if n == 0 {
-		it.mime = mime.NIL
-		it.size = 3
-		it.chunk = nil
+	elem.mime = name
+	elem.size = uint64(len(name))
+	elem.text = chunk
+
+	if elem.ttl == 0 && expire == 0 {
 		return nil
 	}
 
-	if n < 16 {
-		return fmt.Errorf("inavlid item , too small")
+	if elem.ttl == 0 && expire > 0 { // 设置过期
+		elem.ttl = uint64(elem.Now()) + uint64(expire)
+		return nil
 	}
 
-	size := binary.BigEndian.Uint64(data[0:8])
+	if elem.Now() >= int64(elem.ttl) { // 已经过期
+		elem.ttl = uint64(elem.Now()) + uint64(expire)
+		return nil
+	}
+
+	if elem.ttl-uint64(elem.Now()) > uint64(expire) { // 刷新过期时间
+		elem.ttl = uint64(elem.Now()) + uint64(expire)
+		return nil
+	}
+
+	return nil
+}
+
+func (elem *Element[T]) Expired() bool {
+	if elem.ttl == 0 || int64(elem.ttl) > elem.now {
+		return false
+	}
+	return true
+}
+
+func (elem *Element[T]) Build(data []byte) {
+	sz := len(data)
+	if sz == 0 {
+		elem.flag = NotFound
+		elem.info = fmt.Errorf("not found")
+		return
+	}
+
+	if sz < 16 {
+		elem.flag = TooSmall
+		elem.info = fmt.Errorf("bad element , too small")
+		return
+	}
+
+	n := binary.BigEndian.Uint64(data[:8])
+
+	if n+16 == uint64(sz) {
+		elem.flag = TooBig
+		elem.info = fmt.Errorf("bad element , too big")
+		return
+	}
+
+	name := cast.B2S(data[16 : 16+n])
+	text := data[n+16:]
 	ttl := binary.BigEndian.Uint64(data[8:16])
 	now := time.Now().UnixMilli()
 
 	if ttl == 0 || int64(ttl) > now {
-		if size+16 == uint64(n) {
-			return fmt.Errorf("inavlid item , too big")
-		}
-
-		name := data[16 : 16+size]
-		chunk := data[size+16:]
-
-		it.size = size
-		it.ttl = ttl
-		it.mime = cast.B2S(name)
-		it.chunk = chunk
-		return nil
+		elem.size = n
+		elem.ttl = ttl
+		elem.mime = name
+		elem.text = text
+		elem.now = now
+		return
 	}
 
-	it.size = 3
-	it.mime = mime.NIL
-	it.chunk = it.chunk[:0]
-	it.ttl = 0
-	return nil
+	elem.flag = Expired
+	elem.mime = name
+	elem.size = n
+	elem.text = nil
+	elem.ttl = ttl
+	elem.now = now
 }
 
-func (elem Element) Byte() []byte {
-	var buf bytes.Buffer
+func (elem *Element[T]) Text() []byte {
+	buf := bytes.NewBuffer(make([]byte, 0, elem.len()))
 	size := make([]byte, 8)
 	binary.BigEndian.PutUint64(size, elem.size)
 	buf.Write(size)
@@ -94,72 +162,50 @@ func (elem Element) Byte() []byte {
 	buf.Write(ttl)
 
 	buf.WriteString(elem.mime)
-	buf.Write(elem.chunk)
+	buf.Write(elem.text)
 	return buf.Bytes()
 }
 
-func (elem Element) Decode() (interface{}, error) {
-	if elem.mime == "" {
-		return nil, fmt.Errorf("not found mime type")
+func (elem *Element[T]) Value() T {
+	if elem.flag != 0 {
+		return elem.data
 	}
-
-	if elem.mime == mime.NIL {
-		return nil, nil
-	}
-
-	return mime.Decode[any](elem.mime, elem.chunk)
+	t, _ := elem.Unwrap()
+	return t
 }
 
-func (elem Element) IsNil() bool {
-	return elem.size == 0 || elem.mime == mime.NIL
+func (elem *Element[T]) UnwrapErr() error {
+	return elem.info
 }
 
-func (elem *Element) incr(v float64, expire int) (sum float64) {
-	num, err := elem.Decode()
-	if err != nil {
-		goto NEW
+func (elem *Element[T]) Unwrap() (t T, e error) {
+	if elem.flag != 0 {
+		return elem.data, elem.info
 	}
 
-	switch n := num.(type) {
-	case nil:
-		sum = v
-	case float64:
-		sum = n + v
-	case float32:
-		sum = float64(n) + v
-	case int:
-		sum = float64(n) + v
-	case int8:
-		sum = float64(n) + v
-	case int16:
-		sum = float64(n) + v
-	case int32:
-		sum = float64(n) + v
-	case int64:
-		sum = float64(n) + v
-	case uint:
-		sum = float64(n) + v
-	case uint8:
-		sum = float64(n) + v
-	case uint16:
-		sum = float64(n) + v
-	case uint32:
-		sum = float64(n) + v
-	case uint64:
-		sum = float64(n) + v
-	case string:
-		nf, _ := strconv.ParseFloat(n, 10)
-		sum = nf + v
-	case []byte:
-		nf, _ := strconv.ParseFloat(cast.B2S(n), 10)
-		sum = nf + v
-
-	default:
-		sum = v
+	var v any
+	de, ok := any(elem.data).(mime.Decoder)
+	if ok {
+		v, e = de.MimeDecode(elem.text)
+	} else {
+		v, e = mime.Decode(elem.mime, elem.text)
 	}
 
-NEW:
-	chunk, name, _ := mime.Encode(sum)
-	elem.set(name, chunk, expire)
-	return
+	if e != nil {
+		elem.flag = MimeDecodeError
+		elem.info = e
+		return
+	}
+
+	t, ok = v.(T)
+	if ok {
+		elem.flag = OK
+		elem.data = t
+		elem.flag = 1
+		return t, nil
+	}
+
+	elem.flag = TypeError
+	elem.info = fmt.Errorf("bad element , type mismatch must:%T got:%T", elem.data, v)
+	return elem.data, elem.info
 }

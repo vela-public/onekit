@@ -1,79 +1,41 @@
 package mime
 
 import (
-	"errors"
-	"fmt"
 	"reflect"
 	"sync"
-	"time"
 )
 
 var (
-	mutex sync.RWMutex
+	mt = &Table{
+		tab: make(map[string]TypeOf),
+	}
 )
 
-var (
-	DefaultEncode = BinaryEncode
-	DefaultDecode = BinaryDecode
-
-	mimeEncode = make(map[string]EncodeFunc)
-	mimeDecode = make(map[string]DecodeFunc)
-
-	notFoundEncode = errors.New("not found mime encode")
-)
-
-type EncodeFunc func(interface{}) ([]byte, error)
-type DecodeFunc func([]byte) (interface{}, error)
+type Table struct {
+	mux sync.Mutex
+	tab map[string]TypeOf
+}
 
 func Encode(v interface{}) ([]byte, string, error) {
 	name := Name(v)
-	switch vt := v.(type) {
-	case Encoder:
-		data, err := vt.MimeEncode()
-		return data, name, err
-
-	default:
-		fn := mimeEncode[name]
-		if fn == nil {
-			fn = DefaultEncode
-		}
-
-		data, err := fn(v)
-		if err == nil {
-			return data, name, nil
-		}
-		return nil, name, err
-	}
-}
-
-func Check[T any](data []byte) (T, error) {
-	var t T
-	var ok bool
-
-	name := Name(t)
-	fn := mimeDecode[name]
-	if fn == nil {
-		fn = DefaultDecode
+	t, ok := mt.tab[name]
+	if !ok {
+		return nil, name, NotFound
 	}
 
-	v, err := fn(data)
-	if err != nil {
-		return t, err
+	data, err := t.MimeEncode(v)
+	if err == nil {
+		return data, name, nil
 	}
-
-	t, ok = v.(T)
-	if ok {
-		return t, nil
-	}
-	return t, fmt.Errorf("type mismatch")
+	return nil, name, err
 }
 
 func Decode(name string, data []byte) (interface{}, error) {
-	fn := mimeDecode[name]
-	if fn == nil {
-		fn = DefaultDecode
+	t, ok := mt.tab[name]
+	if !ok {
+		return nil, NotFound
 	}
-	return fn(data)
+	return t.MimeDecode(data)
 }
 
 func Name(v interface{}) string {
@@ -91,40 +53,56 @@ LOOP:
 	return vt.String()
 }
 
-func Register(v interface{}, encode EncodeFunc, decode DecodeFunc) {
-	mutex.Lock()
-	defer mutex.Unlock()
-	name := Name(v)
-	if _, ok := mimeDecode[name]; ok {
-		panic("duplicate mime decode name " + name)
+func Register(t TypeOf) {
+	mt.mux.Lock()
+	defer mt.mux.Unlock()
+	name := Name(t.TypeFor())
+	_, ok := mt.tab[name]
+	if ok {
+		panic("duplicate mime " + name)
+		return
+	}
+	mt.tab[name] = t
+}
+
+func TypeFor[T any]() {
+	mt.mux.Lock()
+	defer mt.mux.Unlock()
+
+	var vt T
+	var of TypeOf
+	name := Name(vt)
+
+	_, ok := mt.tab[name]
+	if ok {
 		return
 	}
 
-	if _, ok := mimeEncode[name]; ok {
-		panic("duplicate mime encode name " + name)
+	of, ok = any(vt).(TypeOf)
+	if ok {
+		mt.tab[name] = of
 		return
 	}
 
-	mimeDecode[name] = decode
-	mimeEncode[name] = encode
+	mt.tab[name] = Unknown[T]{}
 }
 
 func init() {
-	Register(nil, conventionalEncodeFunc, NullDecode)
-	Register("", conventionalEncodeFunc, StringDecode)
-	Register([]byte{}, conventionalEncodeFunc, BytesDecode)
-	Register(true, conventionalEncodeFunc, BoolDecode)
-	Register(float64(0), conventionalEncodeFunc, Float64Decode)
-	Register(float32(0), conventionalEncodeFunc, Float32Decode)
-	Register(int(0), conventionalEncodeFunc, Int32Decode)
-	Register(int8(0), conventionalEncodeFunc, Int8Decode)
-	Register(int16(0), conventionalEncodeFunc, Int16Decode)
-	Register(int32(0), conventionalEncodeFunc, Int32Decode)
-	Register(int64(0), conventionalEncodeFunc, Int64Decode)
-	Register(uint(0), conventionalEncodeFunc, Uint32Decode)
-	Register(uint8(0), conventionalEncodeFunc, Uint8Decode)
-	Register(uint16(0), conventionalEncodeFunc, Uint16Decode)
-	Register(uint32(0), conventionalEncodeFunc, Uint32Decode)
-	Register(uint64(0), conventionalEncodeFunc, Uint64Decode)
-	Register(time.Now(), conventionalEncodeFunc, TimeDecode)
+	Register(Nil{})   //nil
+	Register(Text{})  //string
+	Register(Bytes{}) //[]byte
+	Register(Bool{})  //bool
+	Register(UInteger[uint8]{})
+	Register(UInteger[uint16]{})
+	Register(UInteger[uint32]{})
+	Register(UInteger[uint]{})
+	Register(UInteger[uint64]{})
+	Register(Integer[int8]{})
+	Register(Integer[int16]{})
+	Register(Integer[int32]{})
+	Register(Integer[int]{})
+	Register(Integer[int64]{})
+	Register(Float[float32]{})
+	Register(Float[float64]{})
+	Register(Time{})
 }

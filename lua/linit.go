@@ -44,7 +44,7 @@ var luaLibs = []luaLib{
 // OpenLibs loads the built-in libraries. It is equivalent to running OpenLoad,
 // then OpenBase, then iterating over the other OpenXXX functions in any order.
 func (ls *LState) OpenLibs() {
-	// NB: Map iteration order in Go is deliberately randomised, so must open Load/Base
+	// NB: Map iteration order in Go is deliberately randomised, so must open Find/Base
 	// prior to iterating.
 	for _, lib := range luaLibs {
 		ls.Push(ls.NewFunction(lib.libFunc))

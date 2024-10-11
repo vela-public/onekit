@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/vela-public/onekit/bucket"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/luakit"
-	"path/filepath"
+	"github.com/vela-public/onekit/mime"
+	"time"
 )
 
 type C2 struct {
@@ -17,6 +20,34 @@ type Config struct {
 	Name string   `lua:"name"`
 	Addr []string `lua:"addr"`
 	C2   *C2      `lua:"c2"`
+}
+
+type App struct {
+	A, B, C int
+}
+
+func (a App) TypeFor() any { return App{} }
+
+func (a App) MimeDecode(data []byte) (any, error) {
+	s := bytes.Split(data, []byte(","))
+	if len(s) != 3 {
+		return nil, fmt.Errorf("data format error")
+	}
+	var err error
+
+	var v App
+	v.A, err = mime.Int[int](s[0], 32)
+	v.B, err = mime.Int[int](s[1], 32)
+	v.C, err = mime.Int[int](s[2], 32)
+	return v, err
+}
+
+func (a App) MimeEncode(data any) ([]byte, error) {
+	v, ok := data.(App)
+	if ok {
+		return []byte(fmt.Sprintf("%d,%d,%d", v.A, v.B, v.C)), nil
+	}
+	return nil, fmt.Errorf("data format error")
 }
 
 func Decoder(L *lua.LState) int {
@@ -34,16 +65,40 @@ func Decoder(L *lua.LState) int {
 
 func main() {
 
-	file := "cmd/vela.lua"
-
-	co := luakit.NewLuaState()
-	defer co.Close()
-
-	co.SetGlobal("decode", co.NewFunction(Decoder))
-
-	if err := co.DoFile(file); err != nil {
+	db, err := bucket.Open("one.db", 0600, bucket.Default)
+	if err != nil {
 		panic(err)
 	}
+	defer db.Close()
 
-	fmt.Println(filepath.Dir("/root/index/a.lua"))
+	type app struct{ A, B, C int }
+	bkt := bucket.Pack[*app](db, "20241010")
+	bkt2 := bucket.To[*app, app](bkt)
+	_ = bucket.Pack[*app](db, "20241010")
+	_ = bkt.Set("k", &app{10, 100, 500}, 1000)
+	fmt.Println(bkt.Get("k").Value())
+	time.Sleep(time.Millisecond * 300)
+	fmt.Println(bkt.Get("k").Value())
+	time.Sleep(time.Millisecond * 300)
+	fmt.Println(bkt2.Get("k").Unwrap())
+	time.Sleep(time.Millisecond * 300)
+	fmt.Println(bkt.Get("k").Value())
+	time.Sleep(time.Millisecond * 300)
+	fmt.Println(bkt.Get("k").Value())
+	//fmt.Println(filepath.Dir("/root/index/a.lua"))
+	//println(mime.Name(NewA()))
+	//println(NewA() == nil)
+	//bkt := bucket.Pack[int](db, "2024.10.10.nil")
+
+	//bkt := bucket.Pack[int](db, "20241010.int")
+	//fmt.Println(bkt.Set("k", 10, 1000))
+	//fmt.Println(bkt.Get("k").Value())
+	//time.Sleep(time.Millisecond * 300)
+	//fmt.Println(bkt.Get("k").Value())
+	//time.Sleep(time.Millisecond * 300)
+	//fmt.Println(bkt.Get("k").Value())
+	//time.Sleep(time.Millisecond * 300)
+	//fmt.Println(bkt.Get("k").Value())
+	//time.Sleep(time.Millisecond * 300)
+	//fmt.Println(bkt.Get("k").Value())
 }
