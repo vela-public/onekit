@@ -42,8 +42,8 @@ func (px *Chains) LValue(lv lua.LValue) {
 	}
 }
 
-func (px *Chains) Prepare(v interface{}) {
-	switch value := v.(type) {
+func (px *Chains) Prepare(obj interface{}) {
+	switch value := obj.(type) {
 	case lua.LValue:
 		px.LValue(value)
 
@@ -63,8 +63,12 @@ func (px *Chains) Prepare(v interface{}) {
 		})
 
 	case func(interface{}):
-		px.append(func(...interface{}) error {
-			value(v)
+		px.append(func(v ...interface{}) error {
+			if len(v) == 0 {
+				value(nil)
+			} else {
+				value(v[0])
+			}
 			return nil
 		})
 
@@ -77,9 +81,10 @@ func (px *Chains) Prepare(v interface{}) {
 	case func(interface{}) error:
 		px.append(func(v ...interface{}) error {
 			if len(v) == 0 {
-				return nil
+				return value(nil)
+			} else {
+				return value(v[0])
 			}
-			return value(v[0])
 		})
 
 	default:
