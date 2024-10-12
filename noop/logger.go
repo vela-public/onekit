@@ -7,6 +7,7 @@ import (
 )
 
 type Logger struct {
+	core  zapcore.Core
 	sugar *zap.SugaredLogger
 }
 
@@ -26,7 +27,7 @@ func (l *Logger) Infof(s string, a ...any) {
 	l.sugar.Infof(s, a...)
 }
 
-func NewLogger() *Logger {
+func NewLogger(options ...zap.Option) *Logger {
 	able := zap.LevelEnablerFunc(func(lv zapcore.Level) bool {
 		return lv >= zapcore.DebugLevel
 	})
@@ -36,8 +37,9 @@ func NewLogger() *Logger {
 	cfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	encoder := zapcore.NewConsoleEncoder(cfg)
 	core := zapcore.NewCore(encoder, sync, able)
-	sugar := zap.New(core, zap.AddCallerSkip(1), zap.AddCaller()).Sugar()
+	sugar := zap.New(core, options...).Sugar()
 	return &Logger{
+		core:  core,
 		sugar: sugar,
 	}
 }
