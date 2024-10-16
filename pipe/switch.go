@@ -27,6 +27,7 @@ func (s *Switch) OnBefore(v any, options ...func(*HandleEnv)) {
 func (s *Switch) OnAfter(v any, options ...func(*HandleEnv)) {
 	s.After.NewHandler(v, options...)
 }
+
 func (s *Switch) NotFound(v any, options ...func(*HandleEnv)) {
 	s.Default.NewHandler(v, options...)
 }
