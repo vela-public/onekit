@@ -22,9 +22,9 @@ type Logger struct {
 }
 
 // NewLogger 创建新的日志实例
-func NewLogger() *Logger {
+func NewLogger(skip int) *Logger {
 	return &Logger{
-		skip: 1,
+		skip: 1 + skip,
 	}
 }
 
@@ -32,7 +32,7 @@ func NewLogger() *Logger {
 func (l *Logger) Log(level LogLevel, message string) {
 
 	// 获取调用的文件名和行号
-	_, file, line, ok := runtime.Caller(2 + l.skip)
+	_, file, line, ok := runtime.Caller(l.skip)
 	if !ok {
 		file = "unknown"
 		line = 0
