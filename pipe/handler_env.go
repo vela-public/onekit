@@ -55,6 +55,12 @@ func Reuse(L *lua.LState, global bool) func(*HandleEnv) {
 	}
 }
 
+func Protect(b bool) func(*HandleEnv) {
+	return func(e *HandleEnv) {
+		e.Protect = b
+	}
+}
+
 func LState(co *lua.LState) func(*HandleEnv) {
 	return func(e *HandleEnv) {
 		e.Parent = co
