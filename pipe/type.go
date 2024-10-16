@@ -17,7 +17,7 @@ type Bytes interface {
 	Bytes() []byte
 }
 
-func Invoke[T func(T)](fn T) func(any) {
+func Invoke[T any](fn func(T)) func(any) {
 	return func(v any) {
 		t, ok := v.(T)
 		if ok {
@@ -26,7 +26,7 @@ func Invoke[T func(T)](fn T) func(any) {
 	}
 }
 
-func InvokeE[T func(T) error](fn T) func(any) error {
+func InvokeE[T any](fn func(T) error) func(any) error {
 	return func(v any) error {
 		var t T
 		var ok bool
