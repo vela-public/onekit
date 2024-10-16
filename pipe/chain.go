@@ -16,6 +16,12 @@ func (c *Chain) append(v *Handler) {
 	c.handle = append(c.handle, v)
 }
 
+func (c *Chain) Merge(sub *Chain) {
+	for _, h := range sub.handle {
+		c.append(h)
+	}
+}
+
 func (c *Chain) Do(ctx *Context, v ...any) {
 	sz := len(c.handle)
 	if sz == 0 {
