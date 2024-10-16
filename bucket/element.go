@@ -140,6 +140,7 @@ func (elem *Element[T]) Build(data []byte) {
 		elem.mime = name
 		elem.text = text
 		elem.now = now
+		elem.flag = built
 		return
 	}
 
