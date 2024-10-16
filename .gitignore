@@ -1,2 +1,4 @@
 .idea/*
 cmd/*
+clean_tag.bat
+*.exe
