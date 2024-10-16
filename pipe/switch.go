@@ -20,6 +20,17 @@ func More(ctx *Context, more ...func(*Context)) {
 	}
 }
 
+func (s *Switch) OnBefore(v any, options ...func(*HandleEnv)) {
+	s.Before.NewHandler(v, options...)
+}
+
+func (s *Switch) OnAfter(v any, options ...func(*HandleEnv)) {
+	s.After.NewHandler(v, options...)
+}
+func (s *Switch) NotFound(v any, options ...func(*HandleEnv)) {
+	s.Default.NewHandler(v, options...)
+}
+
 func (s *Switch) Invoke(v any, more ...func(*Context)) {
 	s.Before.Invoke(v)
 
