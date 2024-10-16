@@ -1,69 +1,54 @@
 package pipe
 
-import (
-	"fmt"
-	"github.com/vela-public/onekit/cast"
-	"github.com/vela-public/onekit/deflect"
-	"github.com/vela-public/onekit/lua"
-
-	"io"
-)
-
-type PCall interface {
-	PCall(v ...interface{}) error
+/*
+func (ch *Chains) Len() int {
+	return len(ch.chain)
 }
 
-func (px *Chains) Len() int {
-	return len(px.chain)
-}
-
-func (px *Chains) LValue(lv lua.LValue) {
+func (ch *Chains) LValue(lv lua.LValue) {
 	switch lv.Type() {
 
 	case lua.LTUserData:
-		px.Prepare(lv.(*lua.LUserData).Value)
+		ch.Prepare(lv.(*lua.LUserData).Value)
 	case lua.LTVelaData:
-		px.Prepare(lv.(*lua.VelaData).Data)
+		ch.Prepare(lv.(*lua.VelaData).Data)
 	case lua.LTObject:
-		px.Prepare(lv)
+		ch.Prepare(lv)
 	case lua.LTGoFuncErr:
-		px.LFuncErr(lv.(lua.GoFuncErr))
+		ch.LFuncErr(lv.(lua.GoFuncErr))
 	case lua.LTGoFuncStr:
-		px.LFuncStr(lv.(lua.GoFuncStr))
+		ch.LFuncStr(lv.(lua.GoFuncStr))
 	case lua.LTGoFuncInt:
-		px.LFuncInt(lv.(lua.GoFuncInt))
+		ch.LFuncInt(lv.(lua.GoFuncInt))
 	case lua.LTGoFunction:
-		px.GoFunc(lv.(lua.GoFunction))
+		ch.GoFunc(lv.(lua.GoFunction))
 	case lua.LTFunction:
-		px.LFunc(lv.(*lua.LFunction))
+		ch.LFunc(lv.(*lua.LFunction))
 
 	default:
-		px.invalid("invalid pipe lua type , got %s", lv.Type().String())
+		ch.invalid("invalid pipe pool type , got %s", lv.Type().String())
 	}
 }
 
-func (px *Chains) Prepare(obj interface{}) {
+func (ch *Chains) Prepare(obj interface{}) {
 	switch value := obj.(type) {
 	case lua.LValue:
-		px.LValue(value)
+		ch.LValue(value)
 
-	case io.Writer:
-		px.Writer(value)
+	case io.Single:
+		ch.Single(value)
 
 	case lua.Console:
-		px.append(px.Console(value))
-
-	case PCall:
-		px.append(value.PCall)
+		ch.append(ch.Console(value))
 
 	case func():
-		px.append(func(...interface{}) error {
+		ch.append(func(...interface{}) error {
 			value()
 			return nil
 		})
 
 	case func(interface{}):
-		px.append(func(v ...interface{}) error {
+		ch.append(func(v ...interface{}) error {
 			if len(v) == 0 {
 				value(nil)
 			} else {
@@ -73,13 +58,13 @@ func (px *Chains) Prepare(obj interface{}) {
 		})
 
 	case func() error:
-		px.append(func(...interface{}) error {
+		ch.append(func(...interface{}) error {
 			_ = value()
 			return nil
 		})
 
 	case func(interface{}) error:
-		px.append(func(v ...interface{}) error {
+		ch.append(func(v ...interface{}) error {
 			if len(v) == 0 {
 				return value(nil)
 			} else {
@@ -88,48 +73,48 @@ func (px *Chains) Prepare(obj interface{}) {
 		})
 
 	default:
-		px.invalid("invalid pipe object")
+		ch.invalid("invalid pipe object")
 		return
 	}
 }
 
-func (px *Chains) GoFunc(fn lua.GoFunction) {
-	px.append(func(v ...interface{}) error {
+func (ch *Chains) GoFunc(fn lua.GoFunction) {
+	ch.append(func(v ...interface{}) error {
 		return fn()
 	})
 }
 
-func (px *Chains) LFuncErr(fn lua.GoFuncErr) {
-	px.append(func(v ...interface{}) error {
+func (ch *Chains) LFuncErr(fn lua.GoFuncErr) {
+	ch.append(func(v ...interface{}) error {
 		return fn(v...)
 	})
 }
 
-func (px *Chains) LFuncStr(fn lua.GoFuncStr) {
-	px.append(func(v ...interface{}) error {
+func (ch *Chains) LFuncStr(fn lua.GoFuncStr) {
+	ch.append(func(v ...interface{}) error {
 		fn(v...)
 		return nil
 	})
 }
 
-func (px *Chains) LFuncInt(fn lua.GoFuncInt) {
-	px.append(func(v ...interface{}) error {
+func (ch *Chains) LFuncInt(fn lua.GoFuncInt) {
+	ch.append(func(v ...interface{}) error {
 		fn(v...)
 		return nil
 	})
 }
 
-func (px *Chains) LFunc(fn *lua.LFunction) {
-	px.append(func(v ...interface{}) error {
+func (ch *Chains) LFunc(fn *lua.LFunction) {
+	ch.append(func(v ...interface{}) error {
 		size := len(v)
 		if size == 0 {
 			return nil
 		}
 
-		var co *lua.LState
-		L, ok := v[size-1].(*lua.LState)
+		var co *lua.Main
+		L, ok := v[size-1].(*lua.Main)
 		if ok {
-			co = px.clone(L)
+			co = ch.clone(L)
 			size = size - 1
 		}
 		cp := lua.P{
@@ -142,7 +127,7 @@ func (px *Chains) LFunc(fn *lua.LFunction) {
 		for i := 0; i < size; i++ {
 			args[i] = deflect.ToLValueL(co, v[i])
 		}
-		defer px.xEnv.Free(co)
+		defer ch.xEnv.Free(co)
 
 		if len(args) == 0 {
 			return fmt.Errorf("reflectx to LValue fail %v", v)
@@ -152,7 +137,7 @@ func (px *Chains) LFunc(fn *lua.LFunction) {
 	})
 }
 
-func (px *Chains) write(w io.Writer, v ...interface{}) error {
+func (ch *Chains) write(w io.Single, v ...interface{}) error {
 	size := len(v)
 	if size == 0 {
 		return nil
@@ -166,24 +151,24 @@ func (px *Chains) write(w io.Writer, v ...interface{}) error {
 	return err
 }
 
-func (px *Chains) Writer(w io.Writer) {
-	px.append(func(v ...interface{}) error {
+func (ch *Chains) Single(w io.Single) {
+	ch.append(func(v ...interface{}) error {
 		if w == nil {
 			return fmt.Errorf("invalid io writer %p", w)
 		}
 
-		return px.write(w, v...)
+		return ch.write(w, v...)
 	})
 }
 
-func (px *Chains) SetEnv(env Environment) *Chains {
+func (ch *Chains) SetEnv(env LuaVM) *Chains {
 	if env != nil {
-		px.xEnv = env
+		ch.xEnv = env
 	}
-	return px
+	return ch
 }
 
-func (px *Chains) Console(out lua.Console) Handler {
+func (ch *Chains) Console(out lua.Console) Handler {
 	return func(v ...interface{}) error {
 		size := len(v)
 		if size == 0 {
@@ -199,14 +184,14 @@ func (px *Chains) Console(out lua.Console) Handler {
 	}
 }
 
-func (px *Chains) InvokeGo(v interface{}, x func(error) (stop bool)) {
-	sz := len(px.chain)
+func (ch *Chains) InvokeGo(v interface{}, x func(error) (stop bool)) {
+	sz := len(ch.chain)
 	if sz == 0 {
 		return
 	}
 
 	for i := 0; i < sz; i++ {
-		fn := px.chain[i]
+		fn := ch.chain[i]
 		if e := fn(v); e != nil && x != nil {
 			if x(e) {
 				return
@@ -215,17 +200,17 @@ func (px *Chains) InvokeGo(v interface{}, x func(error) (stop bool)) {
 	}
 }
 
-func (px *Chains) Invoke(v interface{}, x func(error) (stop bool)) {
-	n := len(px.chain)
+func (ch *Chains) Invoke(v interface{}, x func(error) (stop bool)) {
+	n := len(ch.chain)
 	if n == 0 {
 		return
 	}
 
-	co := px.xEnv.Clone(px.vm)
-	defer px.xEnv.Free(co)
+	co := ch.xEnv.Clone(ch.vm)
+	defer ch.xEnv.Free(co)
 
 	for i := 0; i < n; i++ {
-		fn := px.chain[i]
+		fn := ch.chain[i]
 		if e := fn(v, co); e != nil && x != nil {
 			if x(e) {
 				return
@@ -237,28 +222,28 @@ func (px *Chains) Invoke(v interface{}, x func(error) (stop bool)) {
 
 //兼容老的数据
 
-func (px *Chains) Do(arg interface{}, co *lua.LState, x func(error)) {
-	n := len(px.chain)
+func (ch *Chains) Do(arg interface{}, co *lua.Main, x func(error)) {
+	n := len(ch.chain)
 	if n == 0 {
 		return
 	}
 
 	for i := 0; i < n; i++ {
-		fn := px.chain[i]
+		fn := ch.chain[i]
 		if e := fn(arg, co); e != nil && x != nil {
 			x(e)
 		}
 	}
 }
 
-func (px *Chains) Case(v interface{}, id int, cnd string, co *lua.LState) error {
-	n := len(px.chain)
+func (ch *Chains) Case(v interface{}, id int, cnd string, co *lua.Main) error {
+	n := len(ch.chain)
 	if n == 0 {
 		return nil
 	}
 
 	for i := 0; i < n; i++ {
-		fn := px.chain[i]
+		fn := ch.chain[i]
 		if e := fn(v, id, cnd, co); e != nil {
 			return e
 		}
@@ -267,14 +252,14 @@ func (px *Chains) Case(v interface{}, id int, cnd string, co *lua.LState) error 
 	return nil
 }
 
-func (px *Chains) Call2(v1 interface{}, v2 interface{}, co *lua.LState) error {
-	n := len(px.chain)
+func (ch *Chains) Call2(v1 interface{}, v2 interface{}, co *lua.Main) error {
+	n := len(ch.chain)
 	if n == 0 {
 		return nil
 	}
 
 	for i := 0; i < n; i++ {
-		fn := px.chain[i]
+		fn := ch.chain[i]
 		if e := fn(v1, v2, co); e != nil {
 			return e
 		}
@@ -283,15 +268,15 @@ func (px *Chains) Call2(v1 interface{}, v2 interface{}, co *lua.LState) error {
 	return nil
 }
 
-func (px *Chains) Call(co *lua.LState, v ...interface{}) error {
-	n := len(px.chain)
+func (ch *Chains) Call(co *lua.Main, v ...interface{}) error {
+	n := len(ch.chain)
 	if n == 0 {
 		return nil
 	}
 
 	param := append(v, co)
 	for i := 0; i < n; i++ {
-		fn := px.chain[i]
+		fn := ch.chain[i]
 		if e := fn(param...); e != nil {
 			return e
 		}
@@ -299,3 +284,4 @@ func (px *Chains) Call(co *lua.LState, v ...interface{}) error {
 
 	return nil
 }
+*/

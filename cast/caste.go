@@ -978,7 +978,7 @@ func ToStringE(i interface{}) (string, error) {
 	case json.Number:
 		return s.String(), nil
 	case []byte:
-		return string(s), nil
+		return B2S(s), nil
 	case template.HTML:
 		return string(s), nil
 	case template.URL:

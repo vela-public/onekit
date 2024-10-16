@@ -1090,7 +1090,7 @@ func (ls *LState) pushCallFrame(cf callFrame, fn LValue, meta bool) { // +inline
 	ls.stack.Push(cf)
 	newcf := ls.stack.Last()
 	// this section is inlined by go-inline
-	// source function is 'func (ls *LState) initCallFrame(cf *callFrame) ' in '_state.go'
+	// source function is 'func (ls *Main) initCallFrame(cf *callFrame) ' in '_state.go'
 	{
 		cf := newcf
 		if cf.Fn.IsG {

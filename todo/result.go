@@ -8,7 +8,7 @@ type Result[T, E any] struct {
 }
 
 // Ok 返回表示成功的 Result
-func Ok[T, E, U any](value T) Result[T, E] {
+func Ok[T, E any](value T) Result[T, E] {
 	return Result[T, E]{Value: value, Ok: true}
 }
 
@@ -37,6 +37,7 @@ func (r Result[T, E]) N(fn func(E)) Result[T, E] {
 	}
 	return r
 }
+
 func Then[T, E, U any](r Result[T, E], fn func(T) U) Result[U, E] {
 	if r.Ok {
 		// 当 r 是成功状态时，应用函数 f 并构造新的成功 Result

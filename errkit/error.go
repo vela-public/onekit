@@ -59,3 +59,7 @@ func (e *JoinError) Wrap() error {
 func New() *JoinError {
 	return &JoinError{}
 }
+
+func Errors() *JoinError {
+	return &JoinError{}
+}

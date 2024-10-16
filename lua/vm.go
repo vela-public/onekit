@@ -713,7 +713,7 @@ func init() {
 				callable, meta = L.metaCall(lv)
 			}
 			// this section is inlined by go-inline
-			// source function is 'func (ls *LState) pushCallFrame(cf callFrame, fn LValue, meta bool) ' in '_state.go'
+			// source function is 'func (ls *Main) pushCallFrame(cf callFrame, fn LValue, meta bool) ' in '_state.go'
 			{
 				ls := L
 				cf := callFrame{Fn: callable, Pc: 0, Base: RA, LocalBase: RA + 1, ReturnBase: RA, NArgs: nargs, NRet: nret, Parent: cf, TailCall: 0}
@@ -731,7 +731,7 @@ func init() {
 				ls.stack.Push(cf)
 				newcf := ls.stack.Last()
 				// this section is inlined by go-inline
-				// source function is 'func (ls *LState) initCallFrame(cf *callFrame) ' in '_state.go'
+				// source function is 'func (ls *Main) initCallFrame(cf *callFrame) ' in '_state.go'
 				{
 					cf := newcf
 					if cf.Fn.IsG {
@@ -859,7 +859,7 @@ func init() {
 				L.RaiseError("attempt to call a non-function object")
 			}
 			// this section is inlined by go-inline
-			// source function is 'func (ls *LState) closeUpvalues(idx int) ' in '_state.go'
+			// source function is 'func (ls *Main) closeUpvalues(idx int) ' in '_state.go'
 			{
 				ls := L
 				idx := lbase
@@ -913,7 +913,7 @@ func init() {
 					L.reg.Insert(lv, cf.LocalBase)
 				}
 				// this section is inlined by go-inline
-				// source function is 'func (ls *LState) initCallFrame(cf *callFrame) ' in '_state.go'
+				// source function is 'func (ls *Main) initCallFrame(cf *callFrame) ' in '_state.go'
 				{
 					ls := L
 					if cf.Fn.IsG {
@@ -1063,7 +1063,7 @@ func init() {
 			RA := lbase + A
 			B := int(inst & 0x1ff) //GETB
 			// this section is inlined by go-inline
-			// source function is 'func (ls *LState) closeUpvalues(idx int) ' in '_state.go'
+			// source function is 'func (ls *Main) closeUpvalues(idx int) ' in '_state.go'
 			{
 				ls := L
 				idx := lbase
@@ -1093,7 +1093,7 @@ func init() {
 
 			if L.Parent != nil && L.stack.Sp() == 1 {
 				// this section is inlined by go-inline
-				// source function is 'func copyReturnValues(L *LState, regv, start, n, b int) ' in '_vm.go'
+				// source function is 'func copyReturnValues(L *Main, regv, start, n, b int) ' in '_vm.go'
 				{
 					regv := reg.Top()
 					start := RA
@@ -1203,7 +1203,7 @@ func init() {
 			}
 			islast := baseframe == L.stack.Pop() || L.stack.IsEmpty()
 			// this section is inlined by go-inline
-			// source function is 'func copyReturnValues(L *LState, regv, start, n, b int) ' in '_vm.go'
+			// source function is 'func copyReturnValues(L *Main, regv, start, n, b int) ' in '_vm.go'
 			{
 				regv := cf.ReturnBase
 				start := RA
@@ -1412,7 +1412,7 @@ func init() {
 			A := int(inst>>18) & 0xff //GETA
 			RA := lbase + A
 			// this section is inlined by go-inline
-			// source function is 'func (ls *LState) closeUpvalues(idx int) ' in '_state.go'
+			// source function is 'func (ls *Main) closeUpvalues(idx int) ' in '_state.go'
 			{
 				ls := L
 				idx := RA

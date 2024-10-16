@@ -67,3 +67,10 @@ type MetaEx interface {
 type NewMetaEx interface {
 	NewMeta(*LState, LValue, LValue)
 }
+
+type Preloader interface {
+	Set(string, LValue)
+	SetGlobal(string, LValue)
+	Get(string) LValue
+	Global(string) LValue
+}

@@ -29,7 +29,7 @@ import (
 //
 // If a function has the signature:
 //
-//	func(*LState) int // *LState defined in this package, not in lua
+//	func(*Main) int // *Main defined in this package, not in lua
 //
 // The argument and return value conversions described above are skipped, and
 // the function is called with the arguments passed on the Lua stack. Return

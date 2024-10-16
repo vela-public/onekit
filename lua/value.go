@@ -247,6 +247,7 @@ type LState struct {
 	Exdata       interface{}
 	Console      Console
 	metadata     [7]interface{}
+	Pipe         LValue
 }
 
 func (ls *LState) String() string                     { return fmt.Sprintf("thread: %p", ls) }

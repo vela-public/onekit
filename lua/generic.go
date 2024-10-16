@@ -7,6 +7,22 @@ import (
 	"github.com/vela-public/onekit/cast"
 )
 
+type GenericType interface {
+	LValue
+	Index(*LState, string) LValue
+	NewIndex(*LState, string, LValue)
+	MetaTable(*LState, string) LValue
+	Meta(*LState, LValue) LValue
+	NewMeta(*LState, LValue, LValue)
+	Wrap() any
+	ToLValue() LValue
+	LValue() (LValue, bool)
+	GobEncode() ([]byte, error)
+	GobDecode(data []byte) error
+	MarshalJSON() ([]byte, error)
+	UnmarshalJSON(bytes []byte) error
+}
+
 type Generic[T any] struct {
 	Data T
 }
@@ -138,12 +154,24 @@ func (gen *Generic[T]) Meta(L *LState, key LValue) LValue {
 	return LNil
 }
 
+func (gen *Generic[T]) MetaTable(L *LState, key string) LValue {
+	var value any = gen.Data
+	if v, ok := value.(IndexEx); ok {
+		return v.Index(L, key)
+	}
+	return LNil
+}
+
 func (gen *Generic[T]) NewMeta(L *LState, key LValue, val LValue) {
 	var value any = gen.Data
 	if v, ok := value.(NewMetaEx); ok {
 		v.NewMeta(L, key, val)
 		return
 	}
+}
+
+func (gen *Generic[T]) Wrap() any {
+	return gen.Data
 }
 
 func (gen *Generic[T]) Hijack(fsm *CallFrameFSM) bool {
