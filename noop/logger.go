@@ -75,6 +75,11 @@ func (l *Logger) Error(message string) {
 	l.Log(ERROR, message)
 }
 
+// Error 打印错误级别日志
+func (l *Logger) Debugf(message string) {
+	l.Log(INFO, message)
+}
+
 // Info 打印信息级别日志
 func (l *Logger) Infof(format string, v ...any) {
 	message := fmt.Sprintf(format, v...)
