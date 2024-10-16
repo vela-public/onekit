@@ -65,35 +65,34 @@ func (l *Logger) Info(message string) {
 	l.Log(INFO, message)
 }
 
-// Warn 打印警告级别日志
 func (l *Logger) Warn(message string) {
 	l.Log(WARN, message)
 }
 
-// Error 打印错误级别日志
 func (l *Logger) Error(message string) {
 	l.Log(ERROR, message)
 }
 
-// Error 打印错误级别日志
-func (l *Logger) Debugf(message string) {
+func (l *Logger) Debug(message string) {
 	l.Log(INFO, message)
 }
 
-// Info 打印信息级别日志
 func (l *Logger) Infof(format string, v ...any) {
 	message := fmt.Sprintf(format, v...)
 	l.Log(INFO, message)
 }
 
-// Warn 打印警告级别日志
 func (l *Logger) Warnf(format string, v ...any) {
 	message := fmt.Sprintf(format, v...)
 	l.Log(WARN, message)
 }
 
-// Error 打印错误级别日志
 func (l *Logger) Errorf(format string, v ...any) {
 	message := fmt.Sprintf(format, v...)
 	l.Log(ERROR, message)
+}
+
+func (l *Logger) Debugf(format string, v ...any) {
+	message := fmt.Sprintf(format, v...)
+	l.Log(INFO, message)
 }
