@@ -6,6 +6,10 @@ func Lua(L *lua.LState, options ...func(*HandleEnv)) *Chain {
 	env := NewEnv(options...)
 	c := &Chain{}
 
+	if env.Seek == 0 {
+		env.Seek = 1
+	}
+
 	n := L.GetTop()
 	if n-env.Seek < 0 {
 		return c
