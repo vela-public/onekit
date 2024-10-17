@@ -197,6 +197,8 @@ func InvokerFunc(h *Handler, v any) {
 		InvokerFunc(h, elem.Value)
 	case *lua.VelaData:
 		InvokerFunc(h, elem.Data)
+	case lua.GenericType:
+		InvokerFunc(h, elem.Wrap())
 	case func(any):
 		h.invoke = func(a *Context) error {
 			return h.SafeCall(func(v any) error { elem(v); return nil }, a)
