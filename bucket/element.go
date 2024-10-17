@@ -180,36 +180,38 @@ func (elem *Element[T]) UnwrapErr() error {
 }
 
 func (elem *Element[T]) Unwrap() (t T, e error) {
-	if elem.flag != 0 {
+
+	switch elem.flag {
+	case Init, built:
+		var v any
+		de, ok := any(elem.data).(mime.Decoder)
+		if ok {
+			v, e = de.MimeDecode(elem.text)
+		} else {
+			v, e = mime.Decode(elem.mime, elem.text)
+		}
+
+		if e != nil {
+			elem.flag = MimeDecodeError
+			elem.info = e
+			return
+		}
+
+		switch vt := v.(type) {
+		case T:
+			elem.flag = OK
+			elem.data = vt
+			return vt, nil
+		case *T:
+			elem.flag = OK
+			elem.data = *vt
+			return *vt, nil
+		}
+
+		elem.flag = TypeError
+		elem.info = fmt.Errorf("bad element , type mismatch must:%T got:%T", elem.data, v)
+		return elem.data, elem.info
+	default:
 		return elem.data, elem.info
 	}
-
-	var v any
-	de, ok := any(elem.data).(mime.Decoder)
-	if ok {
-		v, e = de.MimeDecode(elem.text)
-	} else {
-		v, e = mime.Decode(elem.mime, elem.text)
-	}
-
-	if e != nil {
-		elem.flag = MimeDecodeError
-		elem.info = e
-		return
-	}
-
-	switch vt := v.(type) {
-	case T:
-		elem.flag = OK
-		elem.data = vt
-		return vt, nil
-	case *T:
-		elem.flag = OK
-		elem.data = *vt
-		return *vt, nil
-	}
-
-	elem.flag = TypeError
-	elem.info = fmt.Errorf("bad element , type mismatch must:%T got:%T", elem.data, v)
-	return elem.data, elem.info
 }
