@@ -104,20 +104,17 @@ func (c *Chain) handler(v any, env *HandleEnv) (r todo.Result[*Handler, error]) 
 	h, ok := v.(*Handler)
 	if ok {
 		c.append(h)
-		r.Value = h
-		r.Ok = true
+		r = todo.Ok[*Handler, error](h)
+		return
 	}
 
 	hd := &Handler{env: env}
 	hd.prepare(v)
 	if hd.info == nil {
 		c.append(hd)
-		r.Value = hd
-		r.Ok = true
+		r = todo.Ok[*Handler, error](hd)
 		return
 	}
-	r.Value = hd
-	r.Error = hd.info
-	r.Ok = false
+	r = todo.Err[*Handler, error](hd, hd.info)
 	return
 }

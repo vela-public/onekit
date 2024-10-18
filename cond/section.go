@@ -462,7 +462,7 @@ func (s *Section) pure(ov *option) (bool, error) {
 			continue
 		}
 
-		if !s.Match(ov.peek(s.keys[i]), ov) {
+		if !s.Match(ov.field(s.keys[i]), ov) {
 			continue
 		}
 
@@ -472,8 +472,8 @@ func (s *Section) pure(ov *option) (bool, error) {
 }
 
 func (s *Section) Call(ov *option) (bool, error) {
-	if ov.peek == nil && ov.compare == nil {
-		return false, fmt.Errorf("invalid peek function")
+	if ov.field == nil && ov.compare == nil {
+		return false, fmt.Errorf("invalid field function")
 	}
 
 	if !s.Ok() {

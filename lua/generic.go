@@ -7,6 +7,42 @@ import (
 	"github.com/vela-public/onekit/cast"
 )
 
+type ValueType interface {
+	ToValue() LValue
+}
+
+type FunctionType interface {
+	AssertFunction() (*LFunction, bool)
+}
+
+type StringType interface {
+	AssertString() (string, bool)
+}
+
+type IndexType interface {
+	Index(*LState, string) LValue
+}
+
+type NewIndexType interface {
+	NewIndex(*LState, string, LValue)
+}
+
+type MetaType interface {
+	Meta(*LState, LValue) LValue
+}
+
+type NewMetaType interface {
+	NewMeta(*LState, LValue, LValue)
+}
+
+type MetaTableType interface {
+	MetaTable(*LState, string) LValue
+}
+
+type FieldType interface {
+	Field(string) string
+}
+
 type GenericType interface {
 	LValue
 	Index(*LState, string) LValue

@@ -11,7 +11,7 @@ func (cnd *Cond) append(s *Section) {
 }
 
 func (cnd *Cond) CheckMany(L *lua.LState, opt ...OptionFunc) {
-	ov := &option{}
+	ov := &option{co: L}
 	for _, fn := range opt {
 		fn(ov)
 	}
@@ -152,7 +152,7 @@ func (cnd *Cond) Match(v interface{}, opt ...OptionFunc) bool {
 
 	ov := cnd.with(v, opt...)
 
-	if ov.peek == nil && ov.compare == nil {
+	if ov.field == nil && ov.compare == nil {
 		return false
 	}
 

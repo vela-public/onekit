@@ -9,17 +9,17 @@ import (
 
 type Method func(string, string) bool
 
-type Peek func(string) string
+type FuncType func(string) string
 
 type CompareEx interface {
 	Compare(string, string, Method) bool //key string , val string , equal
 }
 
-type FieldEx interface {
+type FieldType interface {
 	Field(string) string
 }
 
-func String(raw string) Peek {
+func String(raw string) FuncType {
 	size := len(raw)
 
 	return func(key string) string { // * , ext , ipv4, ipv6 , [1,3]

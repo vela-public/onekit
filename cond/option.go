@@ -13,7 +13,7 @@ type option struct {
 	seek      int
 	value     interface{}
 	logic     Logic
-	peek      Peek
+	field     FuncType
 	errs      *errkit.JoinError
 	compare   func(string, string, Method) bool
 	co        *lua.LState
@@ -66,57 +66,59 @@ func (opt *option) Pay(i int, v string) {
 
 func (opt *option) NewPeek(v interface{}) bool {
 	switch item := v.(type) {
-	case Peek:
-		opt.peek = item
+	case FuncType:
+		opt.field = item
 		return true
 
-	case FieldEx:
-		opt.peek = item.Field
+	case FieldType:
+		opt.field = item.Field
 		return true
 
 	case CompareEx:
 		opt.compare = item.Compare
 
 	case string:
-		opt.peek = String(item)
+		opt.field = String(item)
 		return true
 
 	case []byte:
-		opt.peek = String(string(item))
+		opt.field = String(string(item))
 		return true
 
 	case func() string:
-		opt.peek = func(string) string {
+		opt.field = func(string) string {
 			return item()
 		}
 		return true
-	case lua.IndexEx:
-		opt.peek = func(key string) string {
+	case lua.IndexType:
+		opt.field = func(key string) string {
 			return item.Index(opt.co, key).String()
 		}
 		return true
 
-	case lua.MetaEx:
-		opt.peek = func(key string) string {
+	case lua.MetaType:
+		opt.field = func(key string) string {
 			return item.Meta(opt.co, lua.S2L(key)).String()
 		}
 		return true
 
-	case lua.MetaTableEx:
-		opt.peek = func(key string) string {
+	case lua.MetaTableType:
+		opt.field = func(key string) string {
 			return item.MetaTable(opt.co, key).String()
 		}
 		return true
 
 	case *lua.LTable:
-		opt.peek = func(key string) string {
+		opt.field = func(key string) string {
 			return item.RawGetString(key).String()
 		}
 		return true
 
 	case fmt.Stringer:
-		opt.peek = String(item.String())
+		opt.field = String(item.String())
 		return true
+	case lua.GenericType:
+		return opt.NewPeek(item.Wrap())
 	}
 
 	return false
