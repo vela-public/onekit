@@ -48,6 +48,10 @@ func (r Result[T, E]) String() string {
 	return ""
 }
 
+func (r Result[T, E]) Bad() bool {
+	return r.Flag == Invalid || r.Flag == Undefined
+}
+
 func (r Result[T, E]) Type() lua.LValueType {
 	return lua.LTObject
 }
@@ -172,7 +176,7 @@ func Err[T, E any](v T, err E) Result[T, E] {
 }
 
 func (r Result[T, E]) Unwrap() (t T, ok bool) { return r.Value, r.Flag == Succeed }
-func (r Result[T, E]) UnwrapErr() (E, bool)   { return r.Error, r.Flag != Succeed }
+func (r Result[T, E]) UnwrapErr() E           { return r.Error }
 
 func (r Result[T, E]) Used() bool {
 	if r.Flag == Undefined {
