@@ -131,8 +131,19 @@ func (f *FastJSON) To(key string) any {
 
 }
 
-func (f *FastJSON) Parse(body string) todo.Result[*FastJSON, error] {
+func (f *FastJSON) ParseText(body string) todo.Result[*FastJSON, error] {
 	v, err := fastjson.Parse(body)
+	if err != nil {
+		f.value = Empty
+		return todo.Err(f, err)
+	}
+
+	f.value = v
+	return todo.NewOK[*FastJSON, error](f)
+}
+
+func (f *FastJSON) Parse(p *fastjson.Parser, body string) todo.Result[*FastJSON, error] {
+	v, err := p.Parse(body)
 	if err != nil {
 		f.value = Empty
 		return todo.Err(f, err)
