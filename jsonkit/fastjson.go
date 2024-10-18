@@ -221,3 +221,38 @@ func (f *FastJSON) NewIndex(L *lua.LState, key string, val lua.LValue) {
 		f.value.Set(key, fastjson.MustParse("\""+val.String()+"\""))
 	}
 }
+
+func (f *FastJSON) NewMeta(L *lua.LState, k lua.LValue, val lua.LValue) {
+	key := k.String()
+
+	switch val.Type() {
+	case lua.LTNil:
+		return
+	case lua.LTNumber, lua.LTBool, lua.LTInt, lua.LTInt64, lua.LTUint, lua.LTUint64:
+		fv, err := fastjson.Parse(val.String())
+		if err != nil {
+			L.RaiseError("fastjson decode fail %v", err)
+			return
+		}
+
+		f.value.Set(key, fv)
+	case lua.LTObject:
+		item, ok := val.(*FastJSON)
+		if ok {
+			f.value.Set(key, item.value)
+			return
+		}
+
+		fv, err := fastjson.Parse(val.String())
+		if err != nil {
+			L.RaiseError("fastjson decode fail %v", err)
+			return
+		}
+
+		f.value.Set(key, fv)
+	case lua.LTString:
+		f.value.Set(key, fastjson.MustParse("\""+val.String()+"\""))
+	default:
+		f.value.Set(key, fastjson.MustParse("\""+val.String()+"\""))
+	}
+}
