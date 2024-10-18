@@ -23,6 +23,10 @@ func (f *FastJSON) AssertString() (string, bool)           { return "", false }
 func (f *FastJSON) AssertFunction() (*lua.LFunction, bool) { return nil, false }
 func (f *FastJSON) Hijack(*lua.CallFrameFSM) bool          { return false }
 
+func (f *FastJSON) Wrap() *fastjson.Value {
+	return f.value
+}
+
 func (f *FastJSON) Get(key string) *fastjson.Value {
 	value := f.cache.Get(key)
 	if value != nil {
@@ -92,7 +96,7 @@ func (f *FastJSON) Text(key string) string {
 	return cast.B2S(text)
 }
 
-func (f *FastJSON) Unwrap(key string) any {
+func (f *FastJSON) To(key string) any {
 	v := f.Get(key)
 	switch v.Type() {
 	case fastjson.TypeNull:
