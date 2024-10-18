@@ -139,14 +139,7 @@ func (f *FastJSON) Parse(body string) todo.Result[*FastJSON, error] {
 }
 
 func (f *FastJSON) visit(key string) lua.LValue {
-	if f.value == nil {
-		return lua.LNil
-	}
-
-	v := f.value.Get(key)
-	if v == nil {
-		return lua.LNil
-	}
+	v := f.Get(key)
 
 	switch v.Type() {
 	case fastjson.TypeNull:
