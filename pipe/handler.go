@@ -1,10 +1,7 @@
 package pipe
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/errkit"
 	"github.com/vela-public/onekit/lua"
 	"io"
@@ -41,68 +38,12 @@ func (h *Handler) Writer(w io.Writer, c *Context) error {
 		if item == nil {
 			continue
 		}
-		switch v := item.(type) {
-		case string:
-			handle(i, cast.S2B(v))
-		case []byte:
-			handle(i, v)
-		case fmt.Stringer:
-			handle(i, cast.S2B(v.String()))
-		case bytes.Buffer:
-			handle(i, v.Bytes())
-		case *bytes.Buffer:
-			handle(i, v.Bytes())
-		case Bytes:
-			handle(i, v.Bytes())
-		case int8:
-			text := strconv.FormatInt(int64(v), 10)
-			handle(i, cast.S2B(text))
-		case int16:
-			text := strconv.FormatInt(int64(v), 10)
-			handle(i, cast.S2B(text))
-		case int32:
-			text := strconv.FormatInt(int64(v), 10)
-			handle(i, cast.S2B(text))
-		case int:
-			text := strconv.FormatInt(int64(v), 10)
-			handle(i, cast.S2B(text))
-		case int64:
-			text := strconv.FormatInt(v, 10)
-			handle(i, cast.S2B(text))
-		case uint8:
-			text := strconv.FormatUint(uint64(v), 10)
-			handle(i, cast.S2B(text))
-		case uint16:
-			text := strconv.FormatUint(uint64(v), 10)
-			handle(i, cast.S2B(text))
-		case uint32:
-			text := strconv.FormatUint(uint64(v), 10)
-			handle(i, cast.S2B(text))
-		case uint:
-			text := strconv.FormatUint(uint64(v), 10)
-			handle(i, cast.S2B(text))
-		case uint64:
-			text := strconv.FormatUint(uint64(v), 10)
-			handle(i, cast.S2B(text))
-
-		case float32:
-			text := strconv.FormatFloat(float64(v), 'f', -1, 64)
-			handle(i, cast.S2B(text))
-		case float64:
-			text := strconv.FormatFloat(v, 'f', -1, 64)
-			handle(i, cast.S2B(text))
-		case bool:
-			text := strconv.FormatBool(v)
-			handle(i, cast.S2B(text))
-
-		default:
-			text, err := json.Marshal(item)
-			if err != nil {
-				errs.Try(strconv.Itoa(i), err)
-			} else {
-				handle(i, text)
-			}
+		text, err := MarshalText(item)
+		if err != nil {
+			errs.Try(strconv.Itoa(i), err)
+			continue
 		}
+		handle(i, text)
 	}
 
 	return errs.Wrap()
