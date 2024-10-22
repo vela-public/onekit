@@ -1,6 +1,7 @@
 package luakit
 
 import (
+	"context"
 	"github.com/vela-public/onekit/lua"
 	"sync"
 )
@@ -20,17 +21,16 @@ func Thread(L *lua.LState) *Pool {
 	}
 }
 
-func LuaVM(debug bool, callback ...func(*lua.LState)) *Pool {
+func LuaVM(ctx context.Context, debug bool, callback func(*lua.LState), options ...func(lua.Preloader)) *Pool {
+	kit := Apply(options...)
 	fn := func() interface{} {
-		co := lua.NewState(lua.Options{
+		co := kit.NewState(ctx, lua.Options{
 			CallStackSize:       lua.CallStackSize,
 			RegistrySize:        lua.RegistrySize,
 			IncludeGoStackTrace: debug,
 		})
 
-		for _, call := range callback {
-			call(co)
-		}
+		callback(co)
 		return co
 	}
 
