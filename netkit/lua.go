@@ -19,5 +19,5 @@ func Preload(loader lua.Preloader) {
 	kv.Set("ip", lua.NewFunction(newLuaIP))
 	kv.Set("ping", lua.NewFunction(newLuaPing))
 	kv.Set("cat", lua.NewFunction(newLuaNetCat))
-	loader.Set("netkit", lua.NewExport("lua.netkit.export", lua.WithTable(kv)))
+	loader.SetGlobal("netkit", lua.NewExport("lua.netkit.export", lua.WithTable(kv)))
 }
