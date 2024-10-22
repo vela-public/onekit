@@ -1,32 +1,8 @@
 package libkit
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-)
-
-package fileutil
-
-import (
-"bufio"
-"bytes"
-"crypto/tls"
-"debug/elf"
-"fmt"
-"github.com/vela-public/exception"
-"github.com/vela-public/sliceutil"
-"github.com/vela-public/strutil"
-"io"
-"io/fs"
-"net/http"
-"os"
-"path/filepath"
-"regexp"
-"strconv"
-"strings"
-"time"
 )
 
 // FileExists checks if the file exists in the provided path
@@ -40,7 +16,6 @@ func FileExists(filename string) bool {
 	}
 	return !info.IsDir()
 }
-
 
 // OpenOrCreate opens the named file for reading. If successful, methods on
 // the returned file can be used for reading; the associated file
