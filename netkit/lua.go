@@ -12,12 +12,12 @@ func newLuaNetCat(L *lua.LState) int {
 	return 1
 }
 
-func Constructor(tab lua.UserKV) {
+func Preload(loader lua.Preloader) {
 	kv := lua.NewUserKV()
 	kv.Set("ipv4", lua.NewFunction(newLuaIpv4))
 	kv.Set("ipv6", lua.NewFunction(newLuaIPv6))
 	kv.Set("ip", lua.NewFunction(newLuaIP))
 	kv.Set("ping", lua.NewFunction(newLuaPing))
 	kv.Set("cat", lua.NewFunction(newLuaNetCat))
-	tab.Set("netkit", lua.NewExport("lua.netkit.export", lua.WithTable(kv)))
+	loader.Set("netkit", lua.NewExport("lua.netkit.export", lua.WithTable(kv)))
 }
