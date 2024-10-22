@@ -15,6 +15,9 @@ func (k *Kit) Set(s string, value lua.LValue) {
 }
 
 func (k *Kit) SetGlobal(s string, value lua.LValue) {
+	if k.G == nil {
+		k.G = make(map[string]lua.LValue)
+	}
 	k.G[s] = value
 }
 
@@ -23,6 +26,10 @@ func (k *Kit) Get(s string) lua.LValue {
 }
 
 func (k *Kit) Global(s string) lua.LValue {
+	if k.G == nil {
+		return lua.LNil
+	}
+
 	return k.G[s]
 }
 
