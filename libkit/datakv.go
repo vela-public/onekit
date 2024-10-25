@@ -5,7 +5,7 @@ import (
 )
 
 type DataKey interface {
-	string | uint | int | uint64 | int64 | []byte | bool | float64 | float32
+	string | uint8 | int8 | uint16 | int16 | uint | int | uint32 | int32 | uint64 | int64 | []byte | bool | float64 | float32
 }
 
 func Equal[T DataKey](a, b T) bool {
@@ -136,4 +136,8 @@ func (d *DataKV[K, V]) Del(key K) {
 
 DONE:
 	*d = a
+}
+
+func NewDataKV[K DataKey, V any]() *DataKV[K, V] {
+	return new(DataKV[K, V])
 }
