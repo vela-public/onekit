@@ -14,3 +14,14 @@ func Merge[T comparable](a []T, b T) []T {
 	}
 	return append(a, b)
 }
+
+func Merges[T comparable](a []T, b ...T) []T {
+	sz := len(a)
+	if sz == 0 {
+		return b
+	}
+	for _, v := range b {
+		a = Merge(a, v)
+	}
+	return a
+}
