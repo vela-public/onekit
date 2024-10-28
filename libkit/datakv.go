@@ -123,6 +123,12 @@ func (d *DataKV[K, V]) Get(key K) (v V) {
 	return
 }
 
+func (d *DataKV[K, V]) Range(f func(key K, value V)) {
+	for _, kv := range *d {
+		f(kv.key, kv.val)
+	}
+}
+
 func (d *DataKV[K, V]) Del(key K) {
 	a := *d
 	n := len(a)
