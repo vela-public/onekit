@@ -2,6 +2,7 @@ package libkit
 
 import (
 	"bytes"
+	"encoding/json"
 )
 
 type DataKey interface {
@@ -34,8 +35,8 @@ func Equal[T DataKey](a, b T) bool {
 }
 
 type KeyVal[K DataKey, V any] struct {
-	key K
-	val V
+	Key   K `json:"key"`
+	Value V `json:"value"`
 }
 
 type DataKV[K DataKey, V any] []KeyVal[K, V]
@@ -51,8 +52,8 @@ func (d *DataKV[K, V]) Swap(i, j int) {
 
 func (d *DataKV[K, V]) Less(i, j int) bool {
 	a := *d
-	k1 := a[i].key
-	k2 := a[j].key
+	k1 := a[i].Key
+	k2 := a[j].Key
 
 	switch v := any(k1).(type) {
 	case string:
@@ -82,14 +83,18 @@ func (d *DataKV[K, V]) Less(i, j int) bool {
 	}
 }
 
+func (d *DataKV[K, V]) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d)
+}
+
 func (d *DataKV[K, V]) Set(key K, value V) {
 	args := *d
 
 	n := len(args)
 	for i := 0; i < n; i++ {
 		kv := &args[i]
-		if Equal(key, kv.key) {
-			kv.val = value
+		if Equal(key, kv.Key) {
+			kv.Value = value
 			return
 		}
 	}
@@ -98,9 +103,9 @@ func (d *DataKV[K, V]) Set(key K, value V) {
 	if c > n {
 		args = args[:n+1]
 		kv := &args[n]
-		kv.key = key
+		kv.Key = key
 
-		kv.val = value
+		kv.Value = value
 		*d = args
 		return
 	}
@@ -116,8 +121,8 @@ func (d *DataKV[K, V]) Get(key K) (v V) {
 	sz := d.Len()
 	for i := 0; i < sz; i++ {
 		kv := &(*d)[i]
-		if Equal(key, kv.key) {
-			return kv.val
+		if Equal(key, kv.Key) {
+			return kv.Value
 		}
 	}
 	return
@@ -125,7 +130,7 @@ func (d *DataKV[K, V]) Get(key K) (v V) {
 
 func (d *DataKV[K, V]) Range(f func(key K, value V)) {
 	for _, kv := range *d {
-		f(kv.key, kv.val)
+		f(kv.Key, kv.Value)
 	}
 }
 
@@ -134,7 +139,7 @@ func (d *DataKV[K, V]) Del(key K) {
 	n := len(a)
 	for i := 0; i < n; i++ {
 		kv := &a[i]
-		if Equal(kv.key, key) {
+		if Equal(kv.Key, key) {
 			a = append(a[:i], a[:i+1]...)
 			goto DONE
 		}
