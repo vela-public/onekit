@@ -111,8 +111,8 @@ func (d *DataKV[K, V]) Set(key K, value V) {
 	}
 
 	kv := KeyVal[K, V]{
-		key: key,
-		val: value,
+		Key:   key,
+		Value: value,
 	}
 	*d = append(args, kv)
 }
