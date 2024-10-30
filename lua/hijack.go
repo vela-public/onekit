@@ -7,6 +7,20 @@ type CallFrameFSM struct {
 	base *callFrame
 }
 
+func (fsm *CallFrameFSM) LVAsBool(flag bool) {
+	C := int(fsm.inst>>9) & 0x1ff //GETC
+	if (C == 0) == flag {
+		fsm.co.currentFrame.Pc++
+	}
+}
+
+func (fsm *CallFrameFSM) Push(lv LValue) {
+	reg := fsm.co.reg
+	base := fsm.co.currentFrame.LocalBase
+	RA := base + (int(fsm.inst>>18) & 0xff)
+	reg.Set(RA, lv)
+}
+
 func (fsm *CallFrameFSM) OpCode() int {
 	return fsm.op
 }

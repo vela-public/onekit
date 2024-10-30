@@ -150,6 +150,12 @@ func (r Result[T, E]) AssertFunction() (*lua.LFunction, bool) {
 }
 
 func (r Result[T, E]) Hijack(fsm *lua.CallFrameFSM) bool {
+
+	if fsm.OpCode() == lua.OP_TEST {
+		fsm.LVAsBool(r.Flag == Succeed)
+		return true
+	}
+
 	var data any
 	switch r.Flag {
 	case Undefined:
