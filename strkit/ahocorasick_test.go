@@ -2,6 +2,7 @@ package strkit
 
 import (
 	"math/rand"
+	"strings"
 	"testing"
 )
 
@@ -16,6 +17,24 @@ func TestAc(t *testing.T) {
 		t.Logf("%s\n", data[term.From:term.To])
 	}
 
+}
+
+func TestSplit(t *testing.T) {
+	segments := strings.Split("/app/info//////", "/")
+	t.Log(len(segments))
+
+	nf := len(segments) - 1
+
+trim:
+	if segments[nf] == "" {
+		segments = segments[:nf]
+		nf = len(segments) - 1
+		goto trim
+	}
+
+	for i, seg := range segments {
+		t.Logf("%d:%s", i, seg)
+	}
 }
 
 func Test1(t *testing.T) {

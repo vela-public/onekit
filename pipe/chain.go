@@ -1,6 +1,5 @@
 package pipe
 
-import "C"
 import (
 	"fmt"
 	"github.com/vela-public/onekit/cond"

@@ -1,6 +1,7 @@
 package jsonkit
 
 import (
+	"fmt"
 	"github.com/valyala/fastjson"
 	"github.com/valyala/fastjson/fastfloat"
 	"github.com/vela-public/onekit/cast"
@@ -86,6 +87,16 @@ func (f *FastJSON) Bool(key string) bool {
 	return b
 }
 
+func (f *FastJSON) Chunk(key string) []byte {
+	data := f.Get(key)
+	text := data.MarshalTo(nil)
+
+	if data.Type() == fastjson.TypeString && len(text) >= 2 && text[0] == '"' {
+		return text[1 : len(text)-1]
+	}
+	return text
+}
+
 func (f *FastJSON) Text(key string) string {
 	data := f.Get(key)
 	text := data.MarshalTo(nil)
@@ -132,6 +143,11 @@ func (f *FastJSON) To(key string) any {
 }
 
 func (f *FastJSON) ParseText(body string) todo.Result[*FastJSON, error] {
+	if len(body) == 0 {
+		f.value = Empty
+		return todo.Err[*FastJSON, error](f, fmt.Errorf("empty body"))
+	}
+
 	v, err := fastjson.Parse(body)
 	if err != nil {
 		f.value = Empty

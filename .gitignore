@@ -2,3 +2,4 @@
 cmd/*
 clean_tag.bat
 *.exe
+testdata/*

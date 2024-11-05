@@ -144,6 +144,10 @@ func InvokerFunc(h *Handler, v any) {
 		h.invoke = func(a *Context) error {
 			return h.SafeCall(func(v any) error { elem(v); return nil }, a)
 		}
+	case func(any) error:
+		h.invoke = func(a *Context) error {
+			return h.SafeCall(func(v any) error { return elem(v) }, a)
+		}
 	default:
 		h.info = fmt.Errorf("not compatible %T", v)
 	}
