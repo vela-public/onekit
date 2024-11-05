@@ -5,61 +5,70 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-func FastJSON() func(*FileTail) {
+type FileTailFunc func(*FileTail)
+type FileTailGuide struct{}
+
+func NewTailGuide() FileTailGuide {
+	return FileTailGuide{}
+}
+
+var Tail = FileTailGuide{}
+
+func (FileTailGuide) FastJSON() FileTailFunc {
 	return func(ft *FileTail) {
 		ft.setting.FastJSON = true
 	}
 }
 
-func Log(l Logger) func(*FileTail) {
+func (FileTailGuide) Log(l Logger) FileTailFunc {
 	return func(ft *FileTail) {
 		ft.logger = l
 	}
 }
 
-func Limit(n int) func(*FileTail) {
+func (FileTailGuide) Limit(n int) FileTailFunc {
 	return func(ft *FileTail) {
 		ft.setting.Limit = n
 	}
 }
 
-func Follow(b bool) func(*FileTail) {
+func (FileTailGuide) Follow(b bool) FileTailFunc {
 	return func(ft *FileTail) {
 		ft.setting.Follow = b
 	}
 }
 
-func Delim(byt byte) func(*FileTail) {
+func (FileTailGuide) Delim(byt byte) FileTailFunc {
 	return func(ft *FileTail) {
 		ft.setting.Delim = byt
 	}
 }
 
-func Pipe(v any, options ...func(*pipe.HandleEnv)) func(*FileTail) {
+func (FileTailGuide) Pipe(v any, options ...func(*pipe.HandleEnv)) FileTailFunc {
 	return func(ft *FileTail) {
 		ft.private.Chain.NewHandler(v, options...)
 	}
 }
 
-func Db(b *bbolt.DB) func(*FileTail) {
+func (FileTailGuide) Db(b *bbolt.DB) FileTailFunc {
 	return func(ft *FileTail) {
 		ft.private.DB = b
 	}
 }
 
-func WaitFor(n int) func(*FileTail) {
+func (FileTailGuide) WaitFor(n int) FileTailFunc {
 	return func(ft *FileTail) {
 		ft.setting.Wait = n
 	}
 }
 
-func Thread(n int) func(*FileTail) {
+func (FileTailGuide) Thread(n int) FileTailFunc {
 	return func(ft *FileTail) {
 		ft.setting.Thread = n
 	}
 }
 
-func Target(s ...string) func(*FileTail) {
+func (FileTailGuide) Target(s ...string) FileTailFunc {
 	return func(ft *FileTail) {
 		ft.setting.Target = append(ft.setting.Target, s...)
 	}

@@ -153,9 +153,11 @@ func (ft *FileTail) Prepare(parent context.Context) {
 	ft.private.context,
 		ft.private.cancel = context.WithCancel(parent)
 
-	ft.private.queue = make(chan Line, 32)
 	ft.private.limit = NewLimit(ft.private.context, ft.setting.Limit)
-	ft.private.pool, _ = ants.NewPool(ft.setting.Thread)
+	ft.private.pool, _ = ants.NewPool(ft.setting.Thread, ants.WithPanicHandler(func(v interface{}) {
+		ft.logger.Errorf("pool panic %v", v)
+	}))
+
 	ft.private.history = make(map[string]*Section)
 	ft.private.parser = new(fastjson.ParserPool)
 }
@@ -224,6 +226,10 @@ func (ft *FileTail) Detect(history map[string]*Section, file string) {
 func (ft *FileTail) observer() {
 	tk := time.NewTicker(time.Duration(ft.setting.Poll) * time.Second)
 	defer tk.Stop()
+
+	//首次打开 无需等待
+	ft.Upsert()
+
 	for {
 		select {
 		case <-ft.Done():
@@ -264,9 +270,8 @@ func (ft *FileTail) Cancel() {
 }
 
 func (ft *FileTail) Close() error {
-	ft.Cancel()
-	close(ft.private.queue)
 	ft.private.pool.Release()
+	ft.Cancel()
 	return nil
 }
 
@@ -282,13 +287,13 @@ func (ft *FileTail) Drop() *cond.Ignore {
 	return ft.private.Drop
 }
 
-func (ft *FileTail) Apply(opts ...func(*FileTail)) {
+func (ft *FileTail) Apply(opts ...FileTailFunc) {
 	for _, fn := range opts {
 		fn(ft)
 	}
 }
 
-func New(name string, opts ...func(*FileTail)) *FileTail {
+func NewTail(name string, opts ...FileTailFunc) *FileTail {
 	cfg := Default(name)
 	ft := &FileTail{
 		setting: cfg,
