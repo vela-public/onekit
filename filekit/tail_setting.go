@@ -6,6 +6,7 @@ import (
 )
 
 type Setting struct {
+	Mode     string   `lua:"mode"`
 	Name     string   `lua:"name"`
 	Limit    int      `lua:"limit"`
 	Thread   int      `lua:"thread"`
@@ -16,11 +17,13 @@ type Setting struct {
 	Target   []string `lua:"target"`
 	Bucket   []string `lua:"bucket"`
 	FastJSON bool     `lua:"fastjson"`
+	Location SeekInfo `lua:"location"`
 	Poll     int      `lua:"poll"`
 }
 
 func Default(name string) *Setting {
 	return &Setting{
+		Mode:   "history",
 		Name:   name,
 		Limit:  0,
 		Delim:  '\n',

@@ -61,6 +61,14 @@ func (FileTailGuide) WaitFor(n int) FileTailFunc {
 		ft.setting.Wait = n
 	}
 }
+func (FileTailGuide) Location(offset int64, whence int) FileTailFunc {
+	return func(ft *FileTail) {
+		ft.setting.Mode = "location"
+		ft.setting.Location.Offset = offset
+		ft.setting.Location.Whence = whence
+	}
+
+}
 
 func (FileTailGuide) Thread(n int) FileTailFunc {
 	return func(ft *FileTail) {

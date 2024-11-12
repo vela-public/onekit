@@ -109,11 +109,11 @@ func (ft *FileTail) Tell(file string, offset int64) {
 	ft.logger.Errorf("%s tail save seek:%d", file, offset)
 }
 
-func (ft *FileTail) SeekTo(file string) int64 {
+func (ft *FileTail) SeekTo(name string) int64 {
 	db := bucket.Pack[int64](ft.private.DB, ft.setting.Bucket...)
-	seek, err := db.Get(file).Unwrap()
+	seek, err := db.Get(name).Unwrap()
 	if err != nil {
-		ft.logger.Errorf("%s tail seek fail %v", file, err)
+		ft.logger.Errorf("%s tail seek fail %v", name, err)
 	}
 	return seek
 }

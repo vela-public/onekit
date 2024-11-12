@@ -9,15 +9,21 @@ import (
 	"time"
 )
 
+type SeekInfo struct {
+	Offset int64 `lua:"offset"`
+	Whence int   `lua:"whence"`
+}
+
 type Section struct {
-	flag ErrNo
-	info error
-	tail *FileTail
-	path string
-	seek int64
-	file *os.File
-	buff *bufio.Reader
-	time time.Time //start time
+	flag     ErrNo
+	info     error
+	tail     *FileTail
+	path     string
+	seek     int64
+	location SeekInfo
+	file     *os.File
+	buff     *bufio.Reader
+	time     time.Time //start time
 }
 
 func (s *Section) open() (stop bool) {
