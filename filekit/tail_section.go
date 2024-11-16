@@ -133,7 +133,7 @@ func (s *Section) detect() {
 	case Paused:
 		s.reload()
 	case Stopped:
-		s.tail.logger.Errorf("%s %v", s.info)
+		s.tail.logger.Errorf("%s %v", s.path, s.info)
 	case Cleaned:
 		s.tail.logger.Errorf("%s clean", s.path)
 	case Done:
