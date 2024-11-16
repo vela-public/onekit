@@ -57,7 +57,7 @@ func (s *Section) follow() bool {
 	seek := s.tail.SeekTo(s.path)
 	stat, err := os.Stat(s.path)
 	if err != nil {
-		s.flag = Stopped
+		s.flag = Paused
 		s.info = err
 		s.tail.E("%s stat fail %v", s.path, err)
 		return false
@@ -198,7 +198,7 @@ func (s *Section) line() {
 				s.Handle(raw)
 				return
 			default:
-				s.flag = Stopped
+				s.flag = Paused
 				s.info = err
 				s.tail.E("%s read line error %v", s.path, err)
 				return
