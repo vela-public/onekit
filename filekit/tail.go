@@ -164,7 +164,12 @@ func (ft *FileTail) Prepare(parent context.Context) {
 }
 
 func (ft *FileTail) clean(data map[string]*Section) {
-	for _, s := range data {
+	for filename, s := range data {
+		if s.flag == Running { // Prevent slow reading speed
+			ft.private.history[filename] = s
+			continue
+		}
+
 		s.close()
 		s.flag = Cleaned
 		ft.logger.Errorf("clean %s", s.path)
