@@ -56,11 +56,18 @@ func (FileTailGuide) Db(b *bbolt.DB) FileTailFunc {
 	}
 }
 
+func (FileTailGuide) SkipFile(fn func(string) bool) FileTailFunc {
+	return func(ft *FileTail) {
+		ft.private.SkipFile = append(ft.private.SkipFile, fn)
+	}
+}
+
 func (FileTailGuide) WaitFor(n int) FileTailFunc {
 	return func(ft *FileTail) {
 		ft.setting.Wait = n
 	}
 }
+
 func (FileTailGuide) Location(offset int64, whence int) FileTailFunc {
 	return func(ft *FileTail) {
 		ft.setting.Mode = "location"

@@ -37,17 +37,18 @@ type FileTail struct {
 	}
 
 	private struct {
-		history map[string]*Section
-		queue   chan Line
-		limit   *limit
-		context context.Context
-		cancel  context.CancelFunc
-		parser  *fastjson.ParserPool
-		pool    *ants.Pool
-		Chain   *pipe.Chain
-		Switch  *pipe.Switch
-		DB      *bbolt.DB
-		Drop    *cond.Ignore
+		history  map[string]*Section
+		queue    chan Line
+		limit    *limit
+		context  context.Context
+		cancel   context.CancelFunc
+		parser   *fastjson.ParserPool
+		pool     *ants.Pool
+		Chain    *pipe.Chain
+		Switch   *pipe.Switch
+		DB       *bbolt.DB
+		Drop     *cond.Ignore
+		SkipFile []func(string) bool
 	}
 }
 
@@ -169,6 +170,19 @@ func (ft *FileTail) clean(data map[string]*Section) {
 		ft.logger.Errorf("clean %s", s.path)
 	}
 }
+
+func (ft *FileTail) SkipFile(filename string) bool {
+	if len(ft.private.SkipFile) == 0 {
+		return false
+	}
+
+	for _, skip := range ft.private.SkipFile {
+		if skip(filename) {
+			return true
+		}
+	}
+	return false
+}
 func (ft *FileTail) Upsert() {
 	history := make(map[string]*Section)
 	sz := len(ft.setting.Target)
@@ -184,6 +198,9 @@ func (ft *FileTail) Upsert() {
 		}
 
 		for _, file := range files {
+			if ft.SkipFile(file) {
+				continue
+			}
 			ft.Detect(history, file)
 		}
 	}
