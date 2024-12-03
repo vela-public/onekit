@@ -36,6 +36,10 @@ func (c *Context) String() string {
 	return ""
 }
 
+func (c *Context) UnwrapErr() error {
+	return c.errs.Wrap()
+}
+
 func (c *Context) Type() lua.LValueType                   { return lua.LTObject }
 func (c *Context) AssertFloat64() (float64, bool)         { return 0, false }
 func (c *Context) AssertString() (string, bool)           { return c.String(), true }
