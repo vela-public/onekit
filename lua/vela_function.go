@@ -36,5 +36,13 @@ func (gi GoFuncInt) Type() LValueType                   { return LTGoFuncInt }
 func (gi GoFuncInt) AssertFloat64() (float64, bool)     { return 0, false }
 func (gi GoFuncInt) AssertString() (string, bool)       { return "", false }
 func (gi GoFuncInt) AssertFunction() (*LFunction, bool) { return nil, false }
-func (gi GoFuncInt) Peek() LValue                       { return gi }
 func (gi GoFuncInt) Hijack(*CallFrameFSM) bool          { return false }
+
+type Invoker func(any) error
+
+func (i Invoker) String() string                     { return fmt.Sprintf("invoker function int : %p", i) }
+func (i Invoker) Type() LValueType                   { return LTInvoker }
+func (i Invoker) AssertFloat64() (float64, bool)     { return 0, false }
+func (i Invoker) AssertString() (string, bool)       { return "", false }
+func (i Invoker) AssertFunction() (*LFunction, bool) { return nil, false }
+func (i Invoker) Hijack(*CallFrameFSM) bool          { return false }
