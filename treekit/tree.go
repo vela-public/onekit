@@ -1,9 +1,7 @@
 package treekit
 
 import (
-	"github.com/awalterschulze/gographviz"
 	"github.com/vela-public/onekit/cast"
-	"io"
 	"strconv"
 	"strings"
 )
@@ -77,7 +75,6 @@ type TreeNodeFSM struct {
 	base   int
 	name   string
 	parent string
-	graph  *gographviz.Graph
 }
 
 func (fsm *TreeNodeFSM) incr() string {
@@ -106,6 +103,8 @@ func (t *TreeNode[T]) Attrs() map[string]string {
 	}
 }
 
+/*
+
 func (t *TreeNode[T]) Graphviz(w io.Writer) {
 
 	fsm := &TreeNodeFSM{
@@ -130,3 +129,4 @@ func (t *TreeNode[T]) graphviz(fsm *TreeNodeFSM) {
 		child.graphviz(fsm)
 	}
 }
+*/

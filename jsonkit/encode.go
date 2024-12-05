@@ -3,21 +3,18 @@ package jsonkit
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/valyala/bytebufferpool"
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/lua"
 	"strconv"
 	"time"
 )
 
-type ByteBuffer = bytebufferpool.ByteBuffer
-
 type JsonBuffer struct {
 	buffer *ByteBuffer
 }
 
 func NewJson() *JsonBuffer {
-	buff := bytebufferpool.Get()
+	buff := defaultPool.Get()
 	return &JsonBuffer{buffer: buff}
 }
 
