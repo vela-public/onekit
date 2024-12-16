@@ -6,12 +6,12 @@ import (
 )
 
 type Kit struct {
-	L lua.UserKV            //local
+	U lua.UserKV            //local
 	G map[string]lua.LValue //global
 }
 
 func (k *Kit) Set(s string, value lua.LValue) {
-	k.L.Set(s, value)
+	k.U.Set(s, value)
 }
 
 func (k *Kit) SetGlobal(s string, value lua.LValue) {
@@ -22,7 +22,7 @@ func (k *Kit) SetGlobal(s string, value lua.LValue) {
 }
 
 func (k *Kit) Get(s string) lua.LValue {
-	return k.L.Get(s)
+	return k.U.Get(s)
 }
 
 func (k *Kit) Global(s string) lua.LValue {
@@ -37,10 +37,11 @@ func (k *Kit) NewState(ctx context.Context, opts ...lua.Options) *lua.LState {
 	co := lua.NewState(opts...)
 	co.SetContext(ctx)
 	co.PreloadModule("luakit", func(L *lua.LState) int {
-		L.Push(k.L)
+		L.Push(k.U)
 		return 1
 	})
 
+	co.SetGlobal("luakit", k.U)
 	for name, value := range k.G {
 		co.SetGlobal(name, value)
 	}
@@ -49,8 +50,9 @@ func (k *Kit) NewState(ctx context.Context, opts ...lua.Options) *lua.LState {
 
 func Apply(preloads ...func(lua.Preloader)) *Kit {
 	kit := &Kit{
-		L: lua.NewUserKV(),
+		U: lua.NewUserKV(),
 	}
+	builtin(kit.U)
 
 	for _, loader := range preloads {
 		loader(kit)

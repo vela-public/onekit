@@ -65,5 +65,4 @@ func NewCondL(L *lua.LState) int {
 
 func Preload(v lua.Preloader) {
 	v.Set("cnd", lua.NewExport("lua.cnd.export", lua.WithFunc(NewCondL)))
-
 }

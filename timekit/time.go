@@ -44,7 +44,7 @@ func timeL(L *lua.LState) int {
 	case lua.LTString:
 		t, err := time.Parse(layout(), v.String())
 		if err != nil {
-			//L.RaiseError("time parse fail %v", err)
+			//U.RaiseError("time parse fail %v", err)
 			L.Push(lua.LInt64(0))
 			L.Push(lua.S2L(err.Error()))
 			return 2

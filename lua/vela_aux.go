@@ -87,6 +87,19 @@ func ToLValue(v interface{}) LValue {
 			return 0
 		})
 
+	case func() error:
+		return NewFunction(func(L *LState) int {
+			err := converted()
+			if err != nil {
+				L.Push(LString(err.Error()))
+				return 1
+			}
+			return 0
+		})
+
+	case func(*LState) int:
+		return NewFunction(converted)
+
 	case LValue:
 		return converted
 

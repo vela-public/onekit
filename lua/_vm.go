@@ -69,11 +69,11 @@ func mainLoopWithContext(L *LState, baseframe *callFrame) {
 // When this function returns the top of the registry will be set to regv+n.
 func copyReturnValues(L *LState, regv, start, n, b int) { // +inline-start
 	if b == 1 {
-		// +inline-call L.reg.FillNil  regv n
+		// +inline-call U.reg.FillNil  regv n
 	} else {
-		// +inline-call L.reg.CopyRange regv start -1 n
+		// +inline-call U.reg.CopyRange regv start -1 n
 		if b > 1 && n > (b-1) {
-			// +inline-call L.reg.FillNil  regv+b-1 n-(b-1)
+			// +inline-call U.reg.FillNil  regv+b-1 n-(b-1)
 		}
 	}
 } // +inline-end
@@ -124,7 +124,7 @@ func callGFunction(L *LState, tailcall bool) bool {
 		return true
 	}
 
-	// +inline-call L.reg.CopyRange frame.ReturnBase L.reg.Top()-gfnret -1 wantret
+	// +inline-call U.reg.CopyRange frame.ReturnBase U.reg.Top()-gfnret -1 wantret
 	L.stack.Pop()
 	L.currentFrame = L.stack.Last()
 	return false
@@ -253,7 +253,7 @@ func init() {
 			A := int(inst>>18) & 0xff //GETA
 			RA := lbase + A
 			Bx := int(inst & 0x3ffff) //GETBX
-			//reg.Set(RA, L.getField(cf.Fn.Env, cf.Fn.Proto.Constants[Bx]))
+			//reg.Set(RA, U.getField(cf.Fn.Env, cf.Fn.Proto.Constants[Bx]))
 			reg.Set(RA, L.getFieldString(cf.Fn.Env, cf.Fn.Proto.stringConstants[Bx]))
 			return 0
 		},
@@ -286,7 +286,7 @@ func init() {
 			A := int(inst>>18) & 0xff //GETA
 			RA := lbase + A
 			Bx := int(inst & 0x3ffff) //GETBX
-			//L.setField(cf.Fn.Env, cf.Fn.Proto.Constants[Bx], reg.Get(RA))
+			//U.setField(cf.Fn.Env, cf.Fn.Proto.Constants[Bx], reg.Get(RA))
 			L.setFieldString(cf.Fn.Env, cf.Fn.Proto.stringConstants[Bx], reg.Get(RA))
 			return 0
 		},
@@ -566,7 +566,7 @@ func init() {
 			} else {
 				callable, meta = L.metaCall(lv)
 			}
-			// +inline-call L.pushCallFrame callFrame{Fn:callable,Pc:0,Base:RA,LocalBase:RA+1,ReturnBase:RA,NArgs:nargs,NRet:nret,Parent:cf,TailCall:0} lv meta
+			// +inline-call U.pushCallFrame callFrame{Fn:callable,Pc:0,Base:RA,LocalBase:RA+1,ReturnBase:RA,NArgs:nargs,NRet:nret,Parent:cf,TailCall:0} lv meta
 			if callable.IsG && callGFunction(L, false) {
 				return 1
 			}
@@ -595,7 +595,7 @@ func init() {
 			if callable == nil {
 				L.RaiseError("attempt to call a non-function object")
 			}
-			// +inline-call L.closeUpvalues lbase
+			// +inline-call U.closeUpvalues lbase
 			if callable.IsG {
 				luaframe := cf
 				L.pushCallFrame(callFrame{
@@ -630,8 +630,8 @@ func init() {
 					cf.NArgs++
 					L.reg.Insert(lv, cf.LocalBase)
 				}
-				// +inline-call L.initCallFrame cf
-				// +inline-call L.reg.CopyRange base RA -1 reg.Top()-RA-1
+				// +inline-call U.initCallFrame cf
+				// +inline-call U.reg.CopyRange base RA -1 reg.Top()-RA-1
 				cf.Base = base
 				cf.LocalBase = base + (cf.LocalBase - lbase + 1)
 			}
@@ -644,7 +644,7 @@ func init() {
 			A := int(inst>>18) & 0xff //GETA
 			RA := lbase + A
 			B := int(inst & 0x1ff) //GETB
-			// +inline-call L.closeUpvalues lbase
+			// +inline-call U.closeUpvalues lbase
 			nret := B - 1
 			if B == 0 {
 				nret = reg.Top() - RA
@@ -655,12 +655,12 @@ func init() {
 			}
 
 			if L.Parent != nil && L.stack.Sp() == 1 {
-				// +inline-call copyReturnValues L reg.Top() RA n B
+				// +inline-call copyReturnValues U reg.Top() RA n B
 				switchToParentThread(L, n, false, true)
 				return 1
 			}
 			islast := baseframe == L.stack.Pop() || L.stack.IsEmpty()
-			// +inline-call copyReturnValues L cf.ReturnBase RA n B
+			// +inline-call copyReturnValues U cf.ReturnBase RA n B
 			L.currentFrame = L.stack.Last()
 			if islast || L.currentFrame == nil || L.currentFrame.Fn.IsG {
 				return 1
@@ -764,7 +764,7 @@ func init() {
 			lbase := cf.LocalBase
 			A := int(inst>>18) & 0xff //GETA
 			RA := lbase + A
-			// +inline-call L.closeUpvalues RA
+			// +inline-call U.closeUpvalues RA
 			return 0
 		},
 		func(L *LState, inst uint32, baseframe *callFrame) int { //OP_CLOSURE

@@ -21,6 +21,24 @@ func Thread(L *lua.LState) *Pool {
 	}
 }
 
+func NewState(ctx context.Context, debug bool, callback func(*lua.LState), options ...func(lua.Preloader)) *Pool {
+	kit := Apply(options...)
+	fn := func() interface{} {
+		co := kit.NewState(ctx, lua.Options{
+			CallStackSize:       lua.CallStackSize,
+			RegistrySize:        lua.RegistrySize,
+			IncludeGoStackTrace: debug,
+		})
+
+		callback(co)
+		return co
+	}
+
+	return &Pool{
+		bucket: sync.Pool{New: fn},
+	}
+}
+
 func LuaVM(ctx context.Context, debug bool, callback func(*lua.LState), options ...func(lua.Preloader)) *Pool {
 	kit := Apply(options...)
 	fn := func() interface{} {

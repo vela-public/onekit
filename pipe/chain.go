@@ -15,6 +15,10 @@ func (c *Chain) append(v *Handler) {
 	c.handle = append(c.handle, v)
 }
 
+func (c *Chain) Len() int {
+	return len(c.handle)
+}
+
 func (c *Chain) Merge(sub *Chain) {
 	for _, h := range sub.handle {
 		c.append(h)

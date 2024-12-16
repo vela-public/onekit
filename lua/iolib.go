@@ -405,8 +405,8 @@ normalreturn:
 
 errreturn:
 	L.RaiseError(err.Error())
-	//L.Push(LNil)
-	//L.Push(LString(err.Error()))
+	//U.Push(LNil)
+	//U.Push(LString(err.Error()))
 	return 2
 }
 

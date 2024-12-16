@@ -399,7 +399,7 @@ func init() {
 			A := int(inst>>18) & 0xff //GETA
 			RA := lbase + A
 			Bx := int(inst & 0x3ffff) //GETBX
-			//reg.Set(RA, L.getField(cf.Fn.Env, cf.Fn.Proto.Constants[Bx]))
+			//reg.Set(RA, U.getField(cf.Fn.Env, cf.Fn.Proto.Constants[Bx]))
 			reg.Set(RA, L.getFieldString(cf.Fn.Env, cf.Fn.Proto.stringConstants[Bx]))
 			return 0
 		},
@@ -432,7 +432,7 @@ func init() {
 			A := int(inst>>18) & 0xff //GETA
 			RA := lbase + A
 			Bx := int(inst & 0x3ffff) //GETBX
-			//L.setField(cf.Fn.Env, cf.Fn.Proto.Constants[Bx], reg.Get(RA))
+			//U.setField(cf.Fn.Env, cf.Fn.Proto.Constants[Bx], reg.Get(RA))
 			L.setFieldString(cf.Fn.Env, cf.Fn.Proto.stringConstants[Bx], reg.Get(RA))
 			return 0
 		},
@@ -1093,7 +1093,7 @@ func init() {
 
 			if L.Parent != nil && L.stack.Sp() == 1 {
 				// this section is inlined by go-inline
-				// source function is 'func copyReturnValues(L *Main, regv, start, n, b int) ' in '_vm.go'
+				// source function is 'func copyReturnValues(U *Main, regv, start, n, b int) ' in '_vm.go'
 				{
 					regv := reg.Top()
 					start := RA
@@ -1203,7 +1203,7 @@ func init() {
 			}
 			islast := baseframe == L.stack.Pop() || L.stack.IsEmpty()
 			// this section is inlined by go-inline
-			// source function is 'func copyReturnValues(L *Main, regv, start, n, b int) ' in '_vm.go'
+			// source function is 'func copyReturnValues(U *Main, regv, start, n, b int) ' in '_vm.go'
 			{
 				regv := cf.ReturnBase
 				start := RA

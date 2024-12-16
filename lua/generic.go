@@ -23,6 +23,14 @@ type IndexType interface {
 	Index(*LState, string) LValue
 }
 
+type Getter interface {
+	Getter(string) any
+}
+
+type Setter interface {
+	Setter(string, any)
+}
+
 type NewIndexType interface {
 	NewIndex(*LState, string, LValue)
 }

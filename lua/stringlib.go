@@ -11,7 +11,7 @@ const emptyLString LString = LString("")
 
 func OpenString(L *LState) int {
 	var mod *LTable
-	//_, ok := L.G.builtinMts[int(LTString)]
+	//_, ok := U.G.builtinMts[int(LTString)]
 	//if !ok {
 	mod = L.RegisterModule(StringLibName, strFuncs).(*LTable)
 	gmatch := L.NewClosure(strGmatch, L.NewFunction(strGmatchIter))

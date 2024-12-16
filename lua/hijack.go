@@ -87,6 +87,13 @@ func HijackTable(fsm *CallFrameFSM) bool {
 			return fsm.Index(v.Index)
 		}
 
+		if v, ok := data.(Getter); ok {
+			return fsm.Index(func(_ *LState, key string) LValue {
+				ret := v.Getter(key)
+				return ToLValue(ret)
+			})
+		}
+
 		return data.Hijack(fsm)
 
 	case OP_GETTABLEKS:
@@ -95,6 +102,13 @@ func HijackTable(fsm *CallFrameFSM) bool {
 
 		if v, ok := data.(IndexEx); ok {
 			return fsm.Index(v.Index)
+		}
+
+		if v, ok := data.(Getter); ok {
+			return fsm.Index(func(_ *LState, key string) LValue {
+				ret := v.Getter(key)
+				return ToLValue(ret)
+			})
 		}
 
 		return data.Hijack(fsm)
@@ -106,6 +120,14 @@ func HijackTable(fsm *CallFrameFSM) bool {
 			return fsm.Meta(v.Meta)
 		}
 
+		if v, ok := data.(Getter); ok {
+			return fsm.Meta(func(_ *LState, value LValue) LValue {
+				ret := v.Getter(value.String())
+				return ToLValue(ret)
+
+			})
+		}
+
 		return data.Hijack(fsm)
 
 	case OP_SETTABLEKS:
@@ -113,6 +135,12 @@ func HijackTable(fsm *CallFrameFSM) bool {
 		data := fsm.co.reg.Get(base + (int(fsm.inst>>18) & 0xff))
 		if v, ok := data.(NewIndexEx); ok {
 			return fsm.NewIndex(v.NewIndex)
+		}
+
+		if v, ok := data.(Setter); ok {
+			return fsm.NewIndex(func(_ *LState, key string, val LValue) {
+				v.Setter(key, val)
+			})
 		}
 		return data.Hijack(fsm)
 
@@ -122,6 +150,13 @@ func HijackTable(fsm *CallFrameFSM) bool {
 		if v, ok := data.(NewMetaEx); ok {
 			return fsm.NewMeta(v.NewMeta)
 		}
+
+		if v, ok := data.(Setter); ok {
+			return fsm.NewMeta(func(_ *LState, key LValue, val LValue) {
+				v.Setter(key.String(), val)
+			})
+		}
+
 		return data.Hijack(fsm)
 
 	default:
