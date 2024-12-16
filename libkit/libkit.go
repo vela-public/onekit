@@ -5,9 +5,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 )
 
 func Merge[T comparable](a []T, b T) []T {
@@ -162,9 +160,11 @@ func ReadlineFunc(path string, fn func(string) (stop bool, err error)) error {
 	return nil
 }
 
+/*
 func Wait() os.Signal {
 	chn := make(chan os.Signal, 1)
 	signal.Notify(chn, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
 	s := <-chn
 	return s
 }
+*/
