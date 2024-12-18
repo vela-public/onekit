@@ -1,4 +1,4 @@
-package libkit
+package wasm
 
 import (
 	"unsafe"

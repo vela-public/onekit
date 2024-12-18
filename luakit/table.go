@@ -98,13 +98,13 @@ func Copier(L *lua.LState, field reflect.Value, val lua.LValue) error {
 		if field.IsNil() {
 			field.Set(reflect.New(typ.Elem()))
 		}
-		return TableTo(L, val.(*lua.LTable), field.Interface())
+		return tableTo(L, val.(*lua.LTable), field.Interface(), true)
 
 	case reflect.Struct:
 		if val.Type() != lua.LTTable {
 			return fmt.Errorf("type mismatch for fied:%s must %s got:%s", tname, fname, ltype)
 		}
-		return TableTo(L, val.(*lua.LTable), field.Interface())
+		return tableTo(L, val.(*lua.LTable), field.Addr().Interface(), true)
 
 	case reflect.Slice:
 		switch val.Type() {
@@ -137,13 +137,18 @@ func Copier(L *lua.LState, field reflect.Value, val lua.LValue) error {
 	}
 }
 
-func TableTo(L *lua.LState, tab *lua.LTable, v any) error {
+func tableTo(L *lua.LState, tab *lua.LTable, v any, check bool) error {
 	vo := reflect.ValueOf(v)
-	if vo.Kind() != reflect.Ptr || vo.IsNil() {
+	if check && (vo.Kind() != reflect.Ptr || vo.IsNil()) {
 		return fmt.Errorf("must be non-nil pointer to %T", v)
 	}
 
 	dst := vo.Elem()
+	if dst.Kind() == reflect.Slice {
+		return Copier(L, dst, tab)
+
+	}
+
 	if dst.Kind() != reflect.Struct {
 		return fmt.Errorf("must be struct pointer to %T", v)
 	}
@@ -177,4 +182,9 @@ func TableTo(L *lua.LState, tab *lua.LTable, v any) error {
 	}
 
 	return nil
+
+}
+
+func TableTo(L *lua.LState, tab *lua.LTable, v any) error {
+	return tableTo(L, tab, v, true)
 }

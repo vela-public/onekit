@@ -18,7 +18,7 @@ func (i LInt) AssertFunction() (*LFunction, bool) { return nil, false }
 func (i LInt) Hijack(*CallFrameFSM) bool          { return false }
 
 func (ui LUint) Type() LValueType                   { return LTUint }
-func (ui LUint) String() string                     { return cast.ToString(ui) }
+func (ui LUint) String() string                     { return cast.ToString(uint32(ui)) }
 func (ui LUint) AssertFloat64() (float64, bool)     { return cast.ToFloat64(uint(ui)), true }
 func (ui LUint) AssertString() (string, bool)       { return "", false }
 func (ui LUint) AssertFunction() (*LFunction, bool) { return nil, false }
