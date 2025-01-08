@@ -98,7 +98,7 @@ func (fn *Function) AssertFunction() (*lua.LFunction, bool) {
 }
 
 func (fn *Function) pipeL(L *lua.LState) int {
-	sub := pipe.Lua(L, pipe.LState(L), pipe.Reuse(L, true))
+	sub := pipe.Lua(L, pipe.LState(L))
 	fn.handle.Merge(sub)
 	L.Push(fn)
 	return 1

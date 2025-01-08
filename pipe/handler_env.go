@@ -5,18 +5,11 @@ import (
 	"github.com/vela-public/onekit/lua"
 )
 
-type LuaPool interface {
-	Coroutine() *lua.LState
-	Clone(*lua.LState) *lua.LState
-	Put(*lua.LState)
-}
-
 type HandleEnv struct {
 	Protect bool
 	Seek    int
 	Mode    HandleType
 	Parent  *lua.LState
-	Pool    *LuaThreadPool
 }
 
 func (he *HandleEnv) PCall(fn *lua.LFunction, ctx *Context) error {
@@ -26,14 +19,12 @@ func (he *HandleEnv) PCall(fn *lua.LFunction, ctx *Context) error {
 		Fn:      fn,
 	}
 
-	co := he.Pool.Main
-	if he.Mode == ReuseCo {
-		co = he.Pool.Clone(he.Parent)
-		defer he.Pool.Put(co)
-	}
-
-	co.Pipe = lua.NewGeneric[*Context](ctx)
 	sz := len(ctx.data)
+	co := he.Parent.Coroutine()
+	defer func() {
+		he.Parent.Keepalive(co)
+	}()
+
 	param := make([]lua.LValue, sz)
 	for i := 0; i < sz; i++ {
 		item := ctx.data[i]
@@ -42,17 +33,6 @@ func (he *HandleEnv) PCall(fn *lua.LFunction, ctx *Context) error {
 
 	err := co.CallByParam(cp, param...)
 	return err
-}
-
-func Reuse(L *lua.LState, global bool) func(*HandleEnv) {
-	return func(e *HandleEnv) {
-		e.Mode = ReuseCo
-		if global {
-			e.Pool = DefaultLuaThreadPool
-		} else {
-			e.Pool = NewLuaThreadPool(L)
-		}
-	}
 }
 
 func Protect(b bool) func(*HandleEnv) {

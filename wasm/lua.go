@@ -15,6 +15,6 @@ func wasmL(L *lua.LState) int {
 	return 1
 }
 
-func Preload(v lua.Preloader) {
+func Preload(v lua.Preloader) { //luakit
 	v.Set("wasm", lua.NewExport("lua.wasm.export", lua.WithFunc(wasmL)))
 }

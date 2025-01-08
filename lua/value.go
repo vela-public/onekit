@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 )
 
 type LValueType int
@@ -22,12 +23,10 @@ const (
 	LTThread
 	LTTable
 	LTChannel
-	LTVelaData
 	LTSlice
 	LTMap
 	LTKv
 	LTSkv
-	LTAnyData
 	LTObject
 	LTGoFunction
 	LTGoFuncErr
@@ -35,9 +34,10 @@ const (
 	LTGoFuncInt
 	LTGeneric
 	LTInvoker
+	LTService
 )
 
-var lValueNames = [...]string{"nil", "boolean", "number", "int", "uint", "int64", "uint64", "string", "function", "userdata", "thread", "table", "channel", "veladata", "slice", "safe_map", "kv", "safe_kv", "AnyData", "object", "GoFunction", "GoFuncErr", "GoFuncStr", "GoFuncInt", "generic", "invoker"}
+var lValueNames = [...]string{"nil", "boolean", "number", "int", "uint", "int64", "uint64", "string", "function", "userdata", "thread", "table", "channel", "slice", "map", "kv", "safe_kv", "object", "GoFunction", "GoFuncErr", "GoFuncStr", "GoFuncInt", "generic", "invoker", "service"}
 
 func (vt LValueType) String() string {
 	return lValueNames[int(vt)]
@@ -46,9 +46,9 @@ func (vt LValueType) String() string {
 type LValue interface {
 	String() string
 	Type() LValueType
-	// to reduce `runtime.assertI2T2` costs, this method should be used instead of the type assertion in heavy paths(typically inside the VM).
+	// to reduce `runtime.asserfloat` costs, this method should be used instead of the type assertion in heavy paths(typically inside the VM).
 	AssertFloat64() (float64, bool)
-	// to reduce `runtime.assertI2T2` costs, this method should be used instead of the type assertion in heavy paths(typically inside the VM).
+	// to reduce `runtime.assertstring` costs, this method should be used instead of the type assertion in heavy paths(typically inside the VM).
 	AssertString() (string, bool)
 	// to reduce `runtime.assertI2T2` costs, this method should be used instead of the type assertion in heavy paths(typically inside the VM).
 	AssertFunction() (*LFunction, bool)
@@ -246,9 +246,10 @@ type LState struct {
 	ctx          context.Context
 	ctxCancelFn  context.CancelFunc
 	Exdata       interface{}
-	Console      Console
-	metadata     [7]interface{}
-	Pipe         LValue
+	private      struct {
+		Payload interface{}
+		Pool    *sync.Pool
+	}
 }
 
 func (ls *LState) String() string                     { return fmt.Sprintf("thread: %p", ls) }

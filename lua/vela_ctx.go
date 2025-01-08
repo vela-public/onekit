@@ -4,9 +4,9 @@ import (
 	"context"
 )
 
-func (ls *LState) CheckIndexEx(id int) IndexEx {
+func (ls *LState) CheckIndexEx(id int) IndexType {
 	lv := ls.Get(id)
-	ex, ok := lv.(IndexEx)
+	ex, ok := lv.(IndexType)
 	if ok {
 		return ex
 	}
@@ -38,11 +38,4 @@ func (ls *LState) SetValue(key interface{}, v interface{}) {
 	}
 
 	ls.ctx = context.WithValue(ls.ctx, key, v)
-}
-
-func (ls *LState) Output(v string) {
-	if ls.Console == nil {
-		return
-	}
-	ls.Console.Println(v)
 }

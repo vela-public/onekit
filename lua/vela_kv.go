@@ -14,22 +14,30 @@ type ExDataKV struct {
 
 type ExData []ExDataKV
 
-func (ed *ExData) Len() int {
-	return len(*ed)
+func (ee *ExData) Clone() *ExData {
+	sz := ee.Len()
+	e2 := make(ExData, sz)
+	a := *ee
+	for i := 0; i < sz; i++ {
+		e2[i] = a[i]
+	}
+	return &e2
 }
 
-func (ed *ExData) Swap(i, j int) {
-	a := *ed
+func (ee *ExData) Len() int { return len(*ee) }
+
+func (ee *ExData) Swap(i, j int) {
+	a := *ee
 	a[i], a[j] = a[j], a[i]
 }
 
-func (ed *ExData) Less(i, j int) bool {
-	a := *ed
+func (ee *ExData) Less(i, j int) bool {
+	a := *ee
 	return a[i].key < a[j].key
 }
 
-func (ed *ExData) Set(key string, value interface{}) {
-	args := *ed
+func (ee *ExData) Set(key string, value interface{}) {
+	args := *ee
 
 	n := len(args)
 	for i := 0; i < n; i++ {
@@ -51,23 +59,23 @@ func (ed *ExData) Set(key string, value interface{}) {
 		kv.key = key
 
 		kv.value = value
-		*ed = args
+		*ee = args
 		return
 	}
 
 	kv := ExDataKV{}
 	kv.key = key
 	kv.value = value
-	*ed = append(args, kv)
+	*ee = append(args, kv)
 
 	//排序
-	sort.Sort(ed)
+	sort.Sort(ee)
 }
 
-func (ed *ExData) Get(key string) interface{} {
+func (ee *ExData) Get(key string) interface{} {
 
-	a := *ed
-	i, j := 0, ed.Len()
+	a := *ee
+	i, j := 0, ee.Len()
 	for i < j {
 		h := int(uint(i+j) >> 1) // avoid overflow when computing h
 		switch strings.Compare(key, a[h].key) {
@@ -83,8 +91,8 @@ func (ed *ExData) Get(key string) interface{} {
 	return nil
 }
 
-func (ed *ExData) Del(key string) {
-	a := *ed
+func (ee *ExData) Del(key string) {
+	a := *ee
 	n := len(a)
 	for i := 0; i < n; i++ {
 		kv := &a[i]
@@ -95,11 +103,11 @@ func (ed *ExData) Del(key string) {
 	}
 
 DONE:
-	*ed = a
+	*ee = a
 }
 
-func (ed *ExData) Reset() {
-	*ed = (*ed)[:0]
+func (ee *ExData) Reset() {
+	*ee = (*ee)[:0]
 }
 
 type exUserKV struct {
@@ -112,28 +120,44 @@ type UserKV interface {
 	Get(string) LValue
 	Set(string, LValue)
 	V(string) (LValue, bool)
+	ForEach(func(key string, val LValue) (stop bool))
 }
 
 type userKV struct {
-	data []exUserKV
+	data  []exUserKV
+	index func(*LState, string) LValue
 }
 
 func NewUserKV() UserKV {
 	return &userKV{}
 }
 
-func (ukv *userKV) Len() int {
-	return len(ukv.data)
+func NewUserKVWithIndex(index func(*LState, string) LValue) UserKV {
+	return &userKV{index: index}
 }
 
-func (ukv *userKV) cap() int {
-	return cap(ukv.data)
+func (u *userKV) Len() int {
+	return len(u.data)
 }
 
-func (ukv *userKV) Get(key string) LValue {
-	n := ukv.Len()
+func (u *userKV) ForEach(fn func(key string, val LValue) (stop bool)) {
+	n := u.Len()
 	for i := 0; i < n; i++ {
-		kv := &ukv.data[i]
+		kv := &u.data[i]
+		if !fn(kv.key, kv.val) {
+			break
+		}
+	}
+}
+
+func (u *userKV) cap() int {
+	return cap(u.data)
+}
+
+func (u *userKV) Get(key string) LValue {
+	n := u.Len()
+	for i := 0; i < n; i++ {
+		kv := &u.data[i]
 		if kv.key == key {
 			return kv.val
 		}
@@ -141,20 +165,20 @@ func (ukv *userKV) Get(key string) LValue {
 	return LNil
 }
 
-func (ukv *userKV) Set(key string, val LValue) {
-	n := ukv.Len()
+func (u *userKV) Set(key string, val LValue) {
+	n := u.Len()
 	for i := 0; i < n; i++ {
-		kv := &ukv.data[i]
+		kv := &u.data[i]
 		if key == kv.key {
 			kv.val = val
 			return
 		}
 	}
 
-	c := ukv.cap()
+	c := u.cap()
 	if c > n {
-		ukv.data = ukv.data[:n+1]
-		kv := &ukv.data[n]
+		u.data = u.data[:n+1]
+		kv := &u.data[n]
 		kv.key = key
 		kv.val = val
 		return
@@ -164,13 +188,13 @@ func (ukv *userKV) Set(key string, val LValue) {
 	kv.key = key
 	kv.val = val
 
-	ukv.data = append(ukv.data, kv)
+	u.data = append(u.data, kv)
 }
 
-func (ukv *userKV) V(key string) (LValue, bool) {
-	n := ukv.Len()
+func (u *userKV) V(key string) (LValue, bool) {
+	n := u.Len()
 	for i := 0; i < n; i++ {
-		kv := &ukv.data[i]
+		kv := &u.data[i]
 		if kv.key == key {
 			return kv.val, true
 		}
@@ -178,63 +202,86 @@ func (ukv *userKV) V(key string) (LValue, bool) {
 	return nil, false
 }
 
-func (ukv *userKV) String() string                     { return fmt.Sprintf("function: %p", ukv) }
-func (ukv *userKV) Type() LValueType                   { return LTKv }
-func (ukv *userKV) AssertFloat64() (float64, bool)     { return 0, false }
-func (ukv *userKV) AssertString() (string, bool)       { return "", false }
-func (ukv *userKV) AssertFunction() (*LFunction, bool) { return nil, false }
-func (ukv *userKV) Hijack(*CallFrameFSM) bool          { return false }
-func (ukv *userKV) Index(L *LState, key string) LValue {
-	return ukv.Get(key)
+func (u *userKV) String() string                     { return fmt.Sprintf("function: %p", u) }
+func (u *userKV) Type() LValueType                   { return LTKv }
+func (u *userKV) AssertFloat64() (float64, bool)     { return 0, false }
+func (u *userKV) AssertString() (string, bool)       { return "", false }
+func (u *userKV) AssertFunction() (*LFunction, bool) { return nil, false }
+func (u *userKV) Hijack(*CallFrameFSM) bool          { return false }
+func (u *userKV) Index(L *LState, key string) LValue {
+	v := u.Get(key)
+	if v.Type() != LTNil {
+		return v
+	}
+
+	if u.index != nil {
+		return u.index(L, key)
+	}
+	return LNil
 }
 
 type safeUserKV struct {
 	sync.RWMutex
-
-	hook func(string) LValue
-	data []exUserKV
+	data  []exUserKV
+	index func(*LState, string) LValue
 }
 
 func NewSafeUserKV() UserKV {
 	return &safeUserKV{}
 }
 
-func (sukv *safeUserKV) Len() int {
-	return len(sukv.data)
-}
-
-func (sukv *safeUserKV) cap() int {
-	return cap(sukv.data)
-}
-
-func (sukv *safeUserKV) Swap(i, j int) {
-	sukv.data[i], sukv.data[j] = sukv.data[j], sukv.data[i]
-}
-
-func (sukv *safeUserKV) Less(i, j int) bool {
-	return sukv.data[i].key < sukv.data[j].key
-}
-
-func (sukv *safeUserKV) reset() {
-	sukv.Lock()
-
-	n := sukv.Len()
-	for i := 0; i < n; i++ {
-		sukv.data = nil
+func NewSafeUserKVWithIndex(index func(*LState, string) LValue) UserKV {
+	return &safeUserKV{
+		index: index,
 	}
-	sukv.data = sukv.data[:0]
-	sukv.Unlock()
 }
 
-func (sukv *safeUserKV) Set(key string, val LValue) {
-	sukv.Lock()
+func (ss *safeUserKV) Len() int {
+	return len(ss.data)
+}
 
-	n := sukv.Len()
-	c := sukv.cap()
+func (ss *safeUserKV) cap() int {
+	return cap(ss.data)
+}
+
+func (ss *safeUserKV) Swap(i, j int) {
+	ss.data[i], ss.data[j] = ss.data[j], ss.data[i]
+}
+
+func (ss *safeUserKV) Less(i, j int) bool {
+	return ss.data[i].key < ss.data[j].key
+}
+
+func (ss *safeUserKV) ForEach(fn func(key string, val LValue) (stop bool)) {
+	n := ss.Len()
+	for i := 0; i < n; i++ {
+		kv := &ss.data[i]
+		if !fn(kv.key, kv.val) {
+			break
+		}
+	}
+}
+
+func (ss *safeUserKV) reset() {
+	ss.Lock()
+
+	n := ss.Len()
+	for i := 0; i < n; i++ {
+		ss.data = nil
+	}
+	ss.data = ss.data[:0]
+	ss.Unlock()
+}
+
+func (ss *safeUserKV) Set(key string, val LValue) {
+	ss.Lock()
+
+	n := ss.Len()
+	c := ss.cap()
 
 	var newKV exUserKV
 	for i := 0; i < n; i++ {
-		kv := &sukv.data[i]
+		kv := &ss.data[i]
 		if key == kv.key {
 			kv.val = val
 			goto done
@@ -246,8 +293,8 @@ func (sukv *safeUserKV) Set(key string, val LValue) {
 	}
 
 	if c > n {
-		sukv.data = sukv.data[:n+1]
-		kv := &sukv.data[n]
+		ss.data = ss.data[:n+1]
+		kv := &ss.data[n]
 		kv.key = key
 		kv.val = val
 	}
@@ -255,24 +302,24 @@ func (sukv *safeUserKV) Set(key string, val LValue) {
 	newKV = exUserKV{}
 	newKV.key = key
 	newKV.val = val
-	sukv.data = append(sukv.data, newKV)
+	ss.data = append(ss.data, newKV)
 
 done:
 	//排序
-	sort.Sort(sukv)
-	sukv.Unlock()
+	sort.Sort(ss)
+	ss.Unlock()
 }
 
 // 获取
-func (sukv *safeUserKV) Get(key string) LValue {
-	sukv.RLock()
-	i, j := 0, sukv.Len()
+func (ss *safeUserKV) Get(key string) LValue {
+	ss.RLock()
+	i, j := 0, ss.Len()
 	val := LNil
 	for i < j {
 		h := int(uint(i+j) >> 1)
-		switch strings.Compare(key, sukv.data[h].key) {
+		switch strings.Compare(key, ss.data[h].key) {
 		case 0:
-			val = sukv.data[h].val
+			val = ss.data[h].val
 			goto done
 		case 1:
 			i = h + 1
@@ -282,19 +329,19 @@ func (sukv *safeUserKV) Get(key string) LValue {
 	}
 
 done:
-	sukv.RUnlock()
+	ss.RUnlock()
 	return val
 }
 
-func (sukv *safeUserKV) V(key string) (LValue, bool) {
-	sukv.RLock()
-	defer sukv.RUnlock()
-	i, j := 0, sukv.Len()
+func (ss *safeUserKV) V(key string) (LValue, bool) {
+	ss.RLock()
+	defer ss.RUnlock()
+	i, j := 0, ss.Len()
 	for i < j {
 		h := int(uint(i+j) >> 1)
-		switch strings.Compare(key, sukv.data[h].key) {
+		switch strings.Compare(key, ss.data[h].key) {
 		case 0:
-			return sukv.data[h].val, true
+			return ss.data[h].val, true
 
 		case 1:
 			i = h + 1
@@ -305,12 +352,20 @@ func (sukv *safeUserKV) V(key string) (LValue, bool) {
 	return nil, false
 }
 
-func (sukv *safeUserKV) String() string                     { return fmt.Sprintf("function: %p", sukv) }
-func (sukv *safeUserKV) Type() LValueType                   { return LTSkv }
-func (sukv *safeUserKV) AssertFloat64() (float64, bool)     { return 0, false }
-func (sukv *safeUserKV) AssertString() (string, bool)       { return "", false }
-func (sukv *safeUserKV) AssertFunction() (*LFunction, bool) { return nil, false }
-func (sukv *safeUserKV) Hijack(*CallFrameFSM) bool          { return false }
-func (sukv *safeUserKV) Index(L *LState, key string) LValue {
-	return sukv.Get(key)
+func (ss *safeUserKV) String() string                     { return fmt.Sprintf("function: %p", ss) }
+func (ss *safeUserKV) Type() LValueType                   { return LTSkv }
+func (ss *safeUserKV) AssertFloat64() (float64, bool)     { return 0, false }
+func (ss *safeUserKV) AssertString() (string, bool)       { return "", false }
+func (ss *safeUserKV) AssertFunction() (*LFunction, bool) { return nil, false }
+func (ss *safeUserKV) Hijack(*CallFrameFSM) bool          { return false }
+func (ss *safeUserKV) Index(L *LState, key string) LValue {
+	v := ss.Get(key)
+	if v.Type() != LTNil {
+		return v
+	}
+
+	if ss.index != nil {
+		return ss.index(L, key)
+	}
+	return LNil
 }

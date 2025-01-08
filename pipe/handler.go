@@ -97,6 +97,16 @@ func (h *Handler) Invoke(a *Context) error {
 
 func InvokerFunc(h *Handler, v any) {
 	switch elem := v.(type) {
+	case *Chain:
+		h.invoke = func(a *Context) error {
+			elem.Do(a, a.data...)
+			return nil
+		}
+	case *Switch:
+		h.invoke = func(a *Context) error {
+			elem.Invoke(a)
+			return nil
+		}
 	case io.Writer:
 		h.invoke = func(a *Context) error {
 			return h.Writer(elem, a)
@@ -129,21 +139,6 @@ func InvokerFunc(h *Handler, v any) {
 			_ = elem(a.data...)
 			return nil
 		}
-	case lua.GoFunction:
-		h.invoke = func(a *Context) error {
-			defer h.Protect()
-			return elem()
-		}
-	case *lua.LUserData:
-		InvokerFunc(h, elem.Value)
-	case *lua.VelaData:
-		InvokerFunc(h, elem.Data)
-	case lua.GenericType:
-		InvokerFunc(h, elem.Wrap())
-	case lua.Invoker:
-		h.invoke = func(a *Context) error {
-			return h.SafeCall(func(v any) error { return elem(v) }, a)
-		}
 	case func(any):
 		h.invoke = func(a *Context) error {
 			return h.SafeCall(func(v any) error { elem(v); return nil }, a)
@@ -152,6 +147,17 @@ func InvokerFunc(h *Handler, v any) {
 		h.invoke = func(a *Context) error {
 			return h.SafeCall(func(v any) error { return elem(v) }, a)
 		}
+	case *lua.LUserData:
+		InvokerFunc(h, elem.Value)
+
+	case lua.GenericType:
+		InvokerFunc(h, elem.UnwrapData())
+	case lua.Invoker:
+		h.invoke = func(a *Context) error {
+			return h.SafeCall(func(v any) error { return elem(v) }, a)
+		}
+	case lua.WrapType:
+		InvokerFunc(h, elem.UnwrapData())
 	default:
 		h.info = fmt.Errorf("not compatible %T", v)
 	}

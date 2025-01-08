@@ -38,17 +38,17 @@ func (s *Switch) OneL(L *lua.LState) int {
 	return s.push(L)
 }
 func (s *Switch) DefaultL(L *lua.LState) int {
-	s.Default = Lua(L, LState(L), Reuse(L, true))
+	s.Default = Lua(L, LState(L))
 	return s.push(L)
 }
 
 func (s *Switch) BeforeL(L *lua.LState) int {
-	s.Before = Lua(L, LState(L), Reuse(L, true))
+	s.Before = Lua(L, LState(L))
 	return s.push(L)
 }
 
 func (s *Switch) AfterL(L *lua.LState) int {
-	s.After = Lua(L, LState(L), Reuse(L, true))
+	s.After = Lua(L, LState(L))
 	return s.push(L)
 }
 

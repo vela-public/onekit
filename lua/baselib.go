@@ -53,7 +53,6 @@ var baseFuncs = map[string]LGFunction{
 	"require": loRequire,
 	// hidden features
 	"newproxy": baseNewProxy,
-	"pipe":     pipeL,
 }
 
 func baseAssert(L *LState) int {

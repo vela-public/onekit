@@ -8,7 +8,7 @@ import (
 const EOS = -1
 const _UNKNOWN = -2
 
-/* Error {{{ */
+/* Info {{{ */
 
 type Error struct {
 	Pos     int

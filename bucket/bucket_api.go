@@ -61,7 +61,7 @@ func (b *Bucket[T]) ForEach(callback func(key, val []byte) (error, ForEachFSM)) 
 			switch elem.flag {
 			case TooSmall, TooBig, Expired, NotFound:
 				return bt.Delete(k)
-			case built:
+			case Built:
 				e, fsm := callback(k, elem.text)
 				switch fsm {
 				case STOP:
@@ -138,7 +138,7 @@ func (b *Bucket[T]) Upsert(key string, v T, expire int) *Element[T] {
 		switch elem.flag {
 		case NotFound, TooBig, TooSmall:
 			elem.Set(v, expire)
-		case built:
+		case Built:
 			if e := elem.Upsert(v, expire); e != nil {
 				return e
 			}

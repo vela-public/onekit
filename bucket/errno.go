@@ -2,7 +2,7 @@ package bucket
 
 const (
 	OK              = 2
-	built           = 1
+	Built           = 1
 	Init            = 0
 	NotFound        = -1
 	TooSmall        = -2

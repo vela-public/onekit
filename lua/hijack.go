@@ -83,7 +83,7 @@ func HijackTable(fsm *CallFrameFSM) bool {
 	case OP_SELF:
 		base := fsm.co.currentFrame.LocalBase
 		data := fsm.co.reg.Get(base + int(fsm.inst&0x1ff))
-		if v, ok := data.(IndexEx); ok {
+		if v, ok := data.(IndexType); ok {
 			return fsm.Index(v.Index)
 		}
 
@@ -100,7 +100,7 @@ func HijackTable(fsm *CallFrameFSM) bool {
 		base := fsm.co.currentFrame.LocalBase
 		data := fsm.co.reg.Get(base + int(fsm.inst&0x1ff))
 
-		if v, ok := data.(IndexEx); ok {
+		if v, ok := data.(IndexType); ok {
 			return fsm.Index(v.Index)
 		}
 
@@ -116,7 +116,7 @@ func HijackTable(fsm *CallFrameFSM) bool {
 	case OP_GETTABLE:
 		base := fsm.co.currentFrame.LocalBase
 		data := fsm.co.Get(base + int(fsm.inst&0x1ff))
-		if v, ok := data.(MetaEx); ok {
+		if v, ok := data.(MetaType); ok {
 			return fsm.Meta(v.Meta)
 		}
 
@@ -133,7 +133,7 @@ func HijackTable(fsm *CallFrameFSM) bool {
 	case OP_SETTABLEKS:
 		base := fsm.co.currentFrame.LocalBase
 		data := fsm.co.reg.Get(base + (int(fsm.inst>>18) & 0xff))
-		if v, ok := data.(NewIndexEx); ok {
+		if v, ok := data.(NewIndexType); ok {
 			return fsm.NewIndex(v.NewIndex)
 		}
 
@@ -147,7 +147,7 @@ func HijackTable(fsm *CallFrameFSM) bool {
 	case OP_SETTABLE:
 		base := fsm.co.currentFrame.LocalBase
 		data := fsm.co.reg.Get(base + int(fsm.inst>>18)&0xff)
-		if v, ok := data.(NewMetaEx); ok {
+		if v, ok := data.(NewMetaType); ok {
 			return fsm.NewMeta(v.NewMeta)
 		}
 

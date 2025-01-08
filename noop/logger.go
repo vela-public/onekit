@@ -21,6 +21,38 @@ type Logger struct {
 	skip int
 }
 
+func (l *Logger) Debug(i ...interface{}) {
+}
+
+func (l *Logger) Info(i ...interface{}) {
+}
+
+func (l *Logger) Warn(i ...interface{}) {
+}
+
+func (l *Logger) Error(i ...interface{}) {
+}
+
+func (l *Logger) Panic(i ...interface{}) {
+}
+
+func (l *Logger) Fatal(i ...interface{}) {
+}
+
+func (l *Logger) Trace(i ...interface{}) {
+}
+
+func (l *Logger) Panicf(s string, i ...interface{}) {
+
+}
+
+func (l *Logger) Fatalf(s string, i ...interface{}) {
+}
+
+func (l *Logger) Tracef(s string, i ...interface{}) {
+
+}
+
 // NewLogger 创建新的日志实例
 func NewLogger(skip int) *Logger {
 	return &Logger{
@@ -58,23 +90,6 @@ func levelToString(level LogLevel) string {
 	default:
 		return "UNKNOWN"
 	}
-}
-
-// Info 打印信息级别日志
-func (l *Logger) Info(message string) {
-	l.Log(INFO, message)
-}
-
-func (l *Logger) Warn(message string) {
-	l.Log(WARN, message)
-}
-
-func (l *Logger) Error(message string) {
-	l.Log(ERROR, message)
-}
-
-func (l *Logger) Debug(message string) {
-	l.Log(INFO, message)
 }
 
 func (l *Logger) Infof(format string, v ...any) {

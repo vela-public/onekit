@@ -78,10 +78,16 @@ func Format(L *lua.LState, seek int) string {
 				args = append(args, lv)
 			case lua.LTUserData:
 				args = append(args, lv.(*lua.LUserData).Value)
-			case lua.LTVelaData:
-				args = append(args, lv.(*lua.VelaData).Data)
 			case lua.LTObject:
 				args = append(args, lv)
+			case lua.LTGeneric:
+				args = append(args, lv.(lua.WrapType).UnwrapData())
+			case lua.LTService:
+				em, ok := lv.(lua.WrapType)
+				if ok {
+					args = append(args, em.UnwrapData())
+				}
+
 			default:
 				args = append(args, lv)
 			}

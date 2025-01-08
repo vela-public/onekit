@@ -2,14 +2,14 @@ package lua
 
 import "fmt"
 
-type GoFunction func() error
+type GoFunction[T any] func(T)
 
-func (fn GoFunction) String() string                     { return fmt.Sprintf("Go function error: %p", fn) }
-func (fn GoFunction) Type() LValueType                   { return LTGoFunction }
-func (fn GoFunction) AssertFloat64() (float64, bool)     { return 0, false }
-func (fn GoFunction) AssertString() (string, bool)       { return "", false }
-func (fn GoFunction) AssertFunction() (*LFunction, bool) { return nil, false }
-func (fn GoFunction) Hijack(*CallFrameFSM) bool          { return false }
+func (fn GoFunction[T]) String() string                     { return fmt.Sprintf("Go function error: %p", fn) }
+func (fn GoFunction[T]) Type() LValueType                   { return LTGoFunction }
+func (fn GoFunction[T]) AssertFloat64() (float64, bool)     { return 0, false }
+func (fn GoFunction[T]) AssertString() (string, bool)       { return "", false }
+func (fn GoFunction[T]) AssertFunction() (*LFunction, bool) { return nil, false }
+func (fn GoFunction[T]) Hijack(*CallFrameFSM) bool          { return false }
 
 type GoFuncErr func(...interface{}) error
 

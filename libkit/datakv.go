@@ -2,7 +2,6 @@ package libkit
 
 import (
 	"bytes"
-	"encoding/json"
 )
 
 type DataKey interface {
@@ -81,10 +80,6 @@ func (d *DataKV[K, V]) Less(i, j int) bool {
 	default:
 		return false
 	}
-}
-
-func (d *DataKV[K, V]) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d)
 }
 
 func (d *DataKV[K, V]) Set(key K, value V) {

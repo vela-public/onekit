@@ -334,7 +334,7 @@ func (r *Request) SetResult(res interface{}) *Request {
 	return r
 }
 
-// SetError method is to register the request `Error` object for automatic unmarshalling for the request,
+// SetError method is to register the request `Info` object for automatic unmarshalling for the request,
 // if response status code is greater than 399 and content type either JSON or XML.
 //
 // Note: Error object can be pointer or non-pointer.
@@ -345,7 +345,7 @@ func (r *Request) SetResult(res interface{}) *Request {
 //
 // Accessing a error value from response instance.
 //
-//	response.Error().(*AuthError)
+//	response.Info().(*AuthError)
 func (r *Request) SetError(err interface{}) *Request {
 	r.Error = getPointer(err)
 	return r
@@ -780,7 +780,7 @@ func (r *Request) AddRetryCondition(condition RetryConditionFunc) *Request {
 //	client := resty.New()
 //
 //	resp, err := client.R().EnableTrace().Get("https://httpbin.org/get")
-//	fmt.Println("Error:", err)
+//	fmt.Println("Info:", err)
 //	fmt.Println("Trace Info:", resp.Request.TraceInfo())
 //
 // See `Client.EnableTrace` available too to get trace info for all requests.

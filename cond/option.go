@@ -2,6 +2,7 @@ package cond
 
 import (
 	"fmt"
+	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/errkit"
 	"github.com/vela-public/onekit/lua"
 )
@@ -113,12 +114,16 @@ func (opt *option) NewPeek(v interface{}) bool {
 			return item.RawGetString(key).String()
 		}
 		return true
-
+	case lua.Getter:
+		opt.field = func(key string) string {
+			return cast.ToString(item.Getter(key))
+		}
+		return true
 	case fmt.Stringer:
 		opt.field = String(item.String())
 		return true
-	case lua.GenericType:
-		return opt.NewPeek(item.Wrap())
+	case lua.WrapType:
+		return opt.NewPeek(item.UnwrapData())
 	}
 
 	return false

@@ -1,19 +1,11 @@
 package lua
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
-)
-
-const (
-	M0 int = iota
-	M1
-	M2
-	M3
-	M4
-	M5
-	M6
+	"sync"
 )
 
 func (ls *LState) CheckObject(n int) LValue {
@@ -111,91 +103,99 @@ func (ls *LState) Callback(fn CallBackFunction) {
 	}
 }
 
-func (ls *LState) SetMetadata(id int, v interface{}) {
-	switch id {
-	case M0, M1, M2, M3, M4, M5:
-		ls.metadata[id] = v
-	case M6:
-		if ls.metadata[id] != nil {
-			ls.RaiseError("The storage with metadata of 7 is not empty")
-			return
-		}
-		ls.metadata[id] = v
-	default:
-		ls.RaiseError("metadata over flow size:%d  id:%d", 7, id)
-	}
-}
-
-func (ls *LState) Metadata(id int) interface{} {
-	switch id {
-	case M0, M1, M2, M3, M4, M5, M6:
-		return ls.metadata[id]
-	default:
-		ls.RaiseError("metadata over flow size:%d  id:%d", 7, id)
-		return nil
-	}
-}
-
-func (ls *LState) A() interface{} {
-	return ls.Metadata(0)
-}
-
-func (ls *LState) B() interface{} {
-	return ls.Metadata(1)
-}
-
-func (ls *LState) C() interface{} {
-	return ls.Metadata(2)
-}
-
-func (ls *LState) D() interface{} {
-	return ls.Metadata(3)
-}
-
-func (ls *LState) E() interface{} {
-	return ls.Metadata(4)
-}
-
-func (ls *LState) SetA(v interface{}) {
-	ls.SetMetadata(0, v)
-}
-
-func (ls *LState) SetB(v interface{}) {
-	ls.SetMetadata(1, v)
-}
-func (ls *LState) SetC(v interface{}) {
-	ls.SetMetadata(2, v)
-}
-func (ls *LState) SetD(v interface{}) {
-	ls.SetMetadata(3, v)
-}
-func (ls *LState) SetE(v interface{}) {
-	ls.SetMetadata(4, v)
-}
-
-func (ls *LState) Copy(L *LState) {
-	ls.Exdata = L.Exdata
-	ls.ctx = L.ctx
-	ls.Console = L.Console
-	ls.metadata = L.metadata //数组深拷贝
-}
-
-func (ls *LState) Keepalive() {
-	ls.Console = nil
-	ls.Exdata = nil
-	ls.SetContext(nil)
-	ls.metadata = [7]interface{}{}
-	ls.SetTop(0)
-}
-
 func (ls *LState) StackTrace(level int) string {
 	return ls.stackTrace(level)
 }
 
-func (ls *LState) Use(value LValue) {
-	if ls.Console != nil {
-		ls.Console.Println(value.String())
+func (ls *LState) Payload() any {
+	return ls.private.Payload
+}
+
+func (ls *LState) NewThreadEx() *LState {
+	ctx, cancel := context.WithCancel(ls.Context())
+	al := newAllocator(32)
+	co := &LState{
+		G:       ls.G,
+		Env:     ls.Env,
+		Parent:  nil,
+		Panic:   ls.Panic,
+		Dead:    ls.Dead,
+		Options: ls.Options,
+
+		stop:         0,
+		alloc:        al,
+		currentFrame: nil,
+		wrapped:      false,
+		uvcache:      nil,
+		hasErrorFunc: false,
+		mainLoop:     mainLoop,
+		ctx:          ctx,
+		ctxCancelFn:  cancel,
+		private:      ls.private,
+	}
+	if co.Options.MinimizeStackMemory {
+		co.stack = newAutoGrowingCallFrameStack(64)
+	} else {
+		co.stack = newFixedCallFrameStack(64)
+	}
+	co.reg = newRegistry(ls, ls.Options.RegistrySize, ls.Options.RegistryGrowStep, ls.Options.RegistryMaxSize, al)
+	return ls
+}
+
+func (ls *LState) Coroutine() *LState {
+	if ls.private.Pool == nil {
+		ls.private.Pool = &sync.Pool{
+			New: func() interface{} {
+				return ls.NewThreadEx()
+			},
+		}
 	}
 
-	ls.Push(value)
+	co := ls.private.Pool.Get().(*LState)
+	return co
+}
+
+func (ls *LState) Keepalive(co *LState) {
+	if ls.private.Pool == nil {
+		return
+	}
+	co.Exdata = nil
+	co.SetTop(0)
+	ls.private.Pool.Put(co)
+}
+
+func NewStateEx(fns ...func(*Options)) *LState {
+	opt := &Options{
+		CallStackSize: 128,
+		RegistrySize:  128,
+	}
+
+	for _, fn := range fns {
+		fn(opt)
+	}
+
+	if opt.CallStackSize < 1 {
+		opt.CallStackSize = 256
+	}
+
+	if opt.CallStackSize < 128 {
+		opt.RegistrySize = 128
+	}
+
+	if opt.RegistryMaxSize < opt.RegistrySize {
+		opt.RegistryMaxSize = 0 // disable growth if max size is smaller than initial size
+	} else {
+		// if growth enabled, grow step is set
+		if opt.RegistryGrowStep < 1 {
+			opt.RegistryGrowStep = RegistryGrowStep
+		}
+	}
+
+	co := newLState(*opt)
+	if !opt.SkipOpenLibs {
+		co.OpenLibs()
+	}
+
+	co.private.Payload = opt.Payload
+	return co
 }

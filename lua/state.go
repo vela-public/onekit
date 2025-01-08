@@ -94,7 +94,7 @@ type P struct {
 type Options struct {
 	// Call stack size. This defaults to `lua.CallStackSize`.
 	CallStackSize int
-	// Data stack size. This defaults to `lua.RegistrySize`.
+	// Payload stack size. This defaults to `lua.RegistrySize`.
 	RegistrySize int
 	// Allow the registry to grow from the registry size specified up to a value of RegistryMaxSize. A value of 0
 	// indicates no growth is permitted. The registry will not shrink again after any growth.
@@ -109,6 +109,8 @@ type Options struct {
 	// If `MinimizeStackMemory` is set, the call stack will be automatically grown or shrank up to a limit of
 	// `CallStackSize` in order to minimize memory usage. This does incur a slight performance penalty.
 	MinimizeStackMemory bool
+	//private data object
+	Payload interface{}
 }
 
 /* }}} */

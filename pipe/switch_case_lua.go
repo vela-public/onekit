@@ -10,7 +10,7 @@ func (c *Case) push(L *lua.LState) int {
 }
 
 func (c *Case) invokeL(L *lua.LState) int {
-	happy := Lua(L, LState(L), Reuse(L, true))
+	happy := Lua(L, LState(L))
 	c.Happy = happy
 	return c.push(L)
 }
@@ -21,7 +21,7 @@ func (c *Case) breakL(L *lua.LState) int {
 }
 
 func (c *Case) debugL(L *lua.LState) int {
-	debug := Lua(L, LState(L), Reuse(L, true))
+	debug := Lua(L, LState(L))
 	c.Debug = debug
 	return c.push(L)
 }

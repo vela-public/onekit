@@ -654,13 +654,13 @@ func (c *Client) SetTimeout(timeout time.Duration) *Client {
 	return c
 }
 
-// SetError method is to register the global or client common `Error` object into Resty.
+// SetError method is to register the global or client common `Info` object into Resty.
 // It is used for automatic unmarshalling if response status code is greater than 399 and
 // content type either JSON or XML. Can be pointer or non-pointer.
 //
-//	client.SetError(&Error{})
+//	client.SetError(&Info{})
 //	// OR
-//	client.SetError(Error{})
+//	client.SetError(Info{})
 func (c *Client) SetError(err interface{}) *Client {
 	c.Error = typeOf(err)
 	return c
@@ -1096,7 +1096,7 @@ func (c *Client) SetJSONEscapeHTML(b bool) *Client {
 //	client := resty.New().EnableTrace()
 //
 //	resp, err := client.R().Get("https://httpbin.org/get")
-//	fmt.Println("Error:", err)
+//	fmt.Println("Info:", err)
 //	fmt.Println("Trace Info:", resp.Request.TraceInfo())
 //
 // Also `Request.EnableTrace` available too to get trace info for single request.

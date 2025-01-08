@@ -185,7 +185,7 @@ func parseRequestBody(c *Client, r *Request) error {
 			if err := handleMultipart(c, r); err != nil {
 				return err
 			}
-		case len(c.FormData) > 0 || len(r.FormData) > 0: // Handling Form Data
+		case len(c.FormData) > 0 || len(r.FormData) > 0: // Handling Form Payload
 			handleFormData(c, r)
 		case r.Body != nil: // Handling Request body
 			handleContentType(c, r)
@@ -394,7 +394,7 @@ func parseResponseBody(c *Client, res *Response) (err error) {
 			}
 		}
 
-		// HTTP status code > 399, considered as Error
+		// HTTP status code > 399, considered as Info
 		if res.IsError() {
 			// global error interface
 			if res.Request.Error == nil && c.Error != nil {

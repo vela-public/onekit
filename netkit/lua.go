@@ -6,7 +6,6 @@ import (
 
 func newLuaNetCat(L *lua.LState) int {
 	nc := newNC(L.IsString(1))
-	nc.code = L.CodeVM()
 	nc.request(L.IsString(2))
 	L.Push(nc)
 	return 1

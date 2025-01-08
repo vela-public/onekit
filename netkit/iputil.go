@@ -18,15 +18,15 @@ var (
 	// ipv4InternalRanges contains the IP ranges internal in IPv4 range.
 	ipv4InternalRanges = []string{
 		"0.0.0.0/8",       // Current network (only valid as source address)
-		"10.0.0.0/8",      // Private network
+		"10.0.0.0/8",      // WithIndexFunc network
 		"100.64.0.0/10",   // Shared Address Space
 		"127.0.0.0/8",     // Loopback
 		"169.254.0.0/16",  // Link-local (Also many cloud providers Metadata endpoint)
-		"172.16.0.0/12",   // Private network
+		"172.16.0.0/12",   // WithIndexFunc network
 		"192.0.0.0/24",    // IETF Protocol Assignments
 		"192.0.2.0/24",    // TEST-NET-1, documentation and examples
 		"192.88.99.0/24",  // IPv6 to IPv4 relay (includes 2002::/16)
-		"192.168.0.0/16",  // Private network
+		"192.168.0.0/16",  // WithIndexFunc network
 		"198.18.0.0/15",   // Network benchmark tests
 		"198.51.100.0/24", // TEST-NET-2, documentation and examples
 		"203.0.113.0/24",  // TEST-NET-3, documentation and examples

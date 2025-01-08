@@ -183,7 +183,7 @@ func (r *Response) fmtBodyString(sl int64) string {
 			defer releaseBuffer(out)
 			err := json.Indent(out, r.body, "", "   ")
 			if err != nil {
-				return fmt.Sprintf("*** Error: Unable to format response body - \"%s\" ***\n\nLog Body as-is:\n%s", err, r.String())
+				return fmt.Sprintf("*** Info: Unable to format response body - \"%s\" ***\n\nLog Body as-is:\n%s", err, r.String())
 			}
 			return out.String()
 		}

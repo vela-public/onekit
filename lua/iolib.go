@@ -406,7 +406,7 @@ normalreturn:
 errreturn:
 	L.RaiseError(err.Error())
 	//U.Push(LNil)
-	//U.Push(LString(err.Error()))
+	//U.Push(LString(err.Info()))
 	return 2
 }
 

@@ -5,7 +5,9 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 func Merge[T comparable](a []T, b T) []T {
@@ -54,6 +56,17 @@ func PickRandom[T any](v []T) T {
 
 // Contains if a slice contains an element
 func Contains[T comparable](inputSlice []T, element T) bool {
+	for _, inputValue := range inputSlice {
+		if inputValue == element {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Contains if a slice contains an element
+func In[T comparable](inputSlice []T, element T) bool {
 	for _, inputValue := range inputSlice {
 		if inputValue == element {
 			return true
@@ -160,11 +173,9 @@ func ReadlineFunc(path string, fn func(string) (stop bool, err error)) error {
 	return nil
 }
 
-/*
 func Wait() os.Signal {
 	chn := make(chan os.Signal, 1)
 	signal.Notify(chn, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
 	s := <-chn
 	return s
 }
-*/

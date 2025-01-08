@@ -11,7 +11,6 @@ import (
 )
 
 type ncat struct {
-	code string
 	url  URL
 	info map[int]reply
 	err  error

@@ -140,7 +140,7 @@ func (elem *Element[T]) Build(data []byte) {
 		elem.mime = name
 		elem.text = text
 		elem.now = now
-		elem.flag = built
+		elem.flag = Built
 		return
 	}
 
@@ -182,7 +182,7 @@ func (elem *Element[T]) UnwrapErr() error {
 func (elem *Element[T]) Unwrap() (t T, e error) {
 
 	switch elem.flag {
-	case Init, built:
+	case Init, Built:
 		var v any
 		de, ok := any(elem.data).(mime.Decoder)
 		if ok {

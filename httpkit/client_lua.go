@@ -26,7 +26,7 @@ func (c *Client) H(L *lua.LState) int {
 }
 
 func (c *Client) afterL(L *lua.LState) int {
-	pip := pipe.Lua(L, pipe.LState(L), pipe.Reuse(L, false))
+	pip := pipe.Lua(L, pipe.LState(L))
 	if pip.Len() == 0 {
 		return 0
 	}
@@ -37,7 +37,7 @@ func (c *Client) afterL(L *lua.LState) int {
 }
 
 func (c *Client) beforeL(L *lua.LState) int {
-	pip := pipe.Lua(L, pipe.LState(L), pipe.Reuse(L, false))
+	pip := pipe.Lua(L, pipe.LState(L), pipe.Protect(true))
 	if pip.Len() == 0 {
 		return 0
 	}

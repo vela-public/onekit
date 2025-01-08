@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"debug/elf"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/vela-public/onekit/libkit"
@@ -19,8 +18,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 // FileExistsIn checks if the file exists in the allowed paths
@@ -299,42 +296,6 @@ const (
 	YAML EncodeType = iota
 	JSON
 )
-
-func Unmarshal(encodeType EncodeType, data []byte, obj interface{}) error {
-	switch {
-	case FileExists(string(data)):
-		dataFile, err := os.Open(string(data))
-		if err != nil {
-			return err
-		}
-		defer dataFile.Close()
-		return UnmarshalFromReader(encodeType, dataFile, obj)
-	default:
-		return UnmarshalFromReader(encodeType, bytes.NewReader(data), obj)
-	}
-}
-
-func UnmarshalFromReader(encodeType EncodeType, r io.Reader, obj interface{}) error {
-	switch encodeType {
-	case YAML:
-		return yaml.NewDecoder(r).Decode(obj)
-	case JSON:
-		return json.NewDecoder(r).Decode(obj)
-	default:
-		return errors.New("unsopported encode type")
-	}
-}
-
-func MarshalToWriter(encodeType EncodeType, r io.Writer, obj interface{}) error {
-	switch encodeType {
-	case YAML:
-		return yaml.NewEncoder(r).Encode(obj)
-	case JSON:
-		return json.NewEncoder(r).Encode(obj)
-	default:
-		return errors.New("unsopported encode type")
-	}
-}
 
 func ExecutableName() string {
 	executablePath, err := os.Executable()

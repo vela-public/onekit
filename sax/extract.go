@@ -19,16 +19,16 @@ type Extractor struct {
 func (e *Extractor) parse() error {
 
 	switch entry := e.object.(type) {
-	case lua.IndexEx:
+	case lua.IndexType:
 		e.function = func(key string) string {
 			return entry.Index(e.co, key).String()
 		}
-	case lua.MetaEx:
+	case lua.MetaType:
 		e.function = func(key string) string {
 			return entry.Meta(e.co, lua.S2L(key)).String()
 		}
 
-	case lua.MetaTableEx:
+	case lua.MetaTableType:
 		e.function = func(key string) string {
 			return entry.MetaTable(e.co, key).String()
 		}

@@ -12,12 +12,15 @@ var (
 )
 
 type Table struct {
-	mux sync.Mutex
+	mux sync.RWMutex
 	tab map[string]TypeOf
 }
 
 func Encode(v interface{}) ([]byte, string, error) {
 	name := Name(v)
+	mt.mux.RLock()
+	defer mt.mux.RUnlock()
+
 	t, ok := mt.tab[name]
 	if !ok {
 		return nil, name, NotFound
@@ -31,6 +34,9 @@ func Encode(v interface{}) ([]byte, string, error) {
 }
 
 func Decode(name string, data []byte) (interface{}, error) {
+	mt.mux.RLock()
+	defer mt.mux.RUnlock()
+
 	t, ok := mt.tab[name]
 	if !ok {
 		return nil, NotFound
@@ -56,6 +62,7 @@ LOOP:
 func Register(t TypeOf) {
 	mt.mux.Lock()
 	defer mt.mux.Unlock()
+
 	name := Name(t.TypeFor())
 	_, ok := mt.tab[name]
 	if ok {

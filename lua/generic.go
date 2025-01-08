@@ -51,6 +51,10 @@ type FieldType interface {
 	Field(string) string
 }
 
+type WrapType interface {
+	UnwrapData() any
+}
+
 type GenericType interface {
 	LValue
 	Index(*LState, string) LValue
@@ -58,7 +62,7 @@ type GenericType interface {
 	MetaTable(*LState, string) LValue
 	Meta(*LState, LValue) LValue
 	NewMeta(*LState, LValue, LValue)
-	Wrap() any
+	UnwrapData() any
 	ToLValue() LValue
 	LValue() (LValue, bool)
 	GobEncode() ([]byte, error)
@@ -175,7 +179,7 @@ func (gen *Generic[T]) AssertFunction() (*LFunction, bool) {
 func (gen *Generic[T]) Index(L *LState, key string) LValue {
 	var value any = gen.Data
 
-	if v, ok := value.(IndexEx); ok {
+	if v, ok := value.(IndexType); ok {
 		return v.Index(L, key)
 	}
 
@@ -185,14 +189,14 @@ func (gen *Generic[T]) Index(L *LState, key string) LValue {
 func (gen *Generic[T]) NewIndex(L *LState, key string, val LValue) {
 	var value any = gen.Data
 
-	if v, ok := value.(NewIndexEx); ok {
+	if v, ok := value.(NewIndexType); ok {
 		v.NewIndex(L, key, val)
 	}
 }
 
 func (gen *Generic[T]) Meta(L *LState, key LValue) LValue {
 	var value any = gen.Data
-	if v, ok := value.(MetaEx); ok {
+	if v, ok := value.(MetaType); ok {
 		return v.Meta(L, key)
 	}
 	return LNil
@@ -200,7 +204,7 @@ func (gen *Generic[T]) Meta(L *LState, key LValue) LValue {
 
 func (gen *Generic[T]) MetaTable(L *LState, key string) LValue {
 	var value any = gen.Data
-	if v, ok := value.(IndexEx); ok {
+	if v, ok := value.(IndexType); ok {
 		return v.Index(L, key)
 	}
 	return LNil
@@ -208,13 +212,13 @@ func (gen *Generic[T]) MetaTable(L *LState, key string) LValue {
 
 func (gen *Generic[T]) NewMeta(L *LState, key LValue, val LValue) {
 	var value any = gen.Data
-	if v, ok := value.(NewMetaEx); ok {
+	if v, ok := value.(NewMetaType); ok {
 		v.NewMeta(L, key, val)
 		return
 	}
 }
 
-func (gen *Generic[T]) Wrap() any {
+func (gen *Generic[T]) UnwrapData() any {
 	return gen.Data
 }
 

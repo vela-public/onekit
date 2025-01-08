@@ -29,7 +29,7 @@ func LValue(v lua.LValue, options ...func(*HandleEnv)) *Chain {
 }
 
 func ChainL(L *lua.LState) int {
-	v := lua.NewGeneric[*Chain](Lua(L, LState(L), Reuse(L, true)))
+	v := lua.NewGeneric[*Chain](Lua(L, LState(L)))
 	L.Push(v)
 	return 1
 }

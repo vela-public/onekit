@@ -61,16 +61,6 @@ func (tb *LTable) CheckSockets(key string, L *LState) string {
 	return v
 }
 
-func (tb *LTable) CheckVelaData(L *LState, key string) *VelaData {
-	data := tb.RawGetString(key)
-	if data.Type() != LTVelaData {
-		L.RaiseError("invalid type , %s must be userdata , got %s", key, data.Type().String())
-		return nil
-	}
-
-	return data.(*VelaData)
-}
-
 func (tb *LTable) CheckBool(key string, d bool) bool {
 	v := tb.RawGetString(key)
 	if lv, ok := v.(LBool); ok {

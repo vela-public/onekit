@@ -248,39 +248,6 @@ func CheckSocket(v string) error {
 	return nil
 }
 
-func CheckIO(val *VelaData) IO {
-	obj, ok := val.Data.(IO)
-	if ok {
-		return obj
-	}
-	return nil
-}
-
-func CheckWriter(val *VelaData) Writer {
-	obj, ok := val.Data.(Writer)
-	if ok {
-		return obj
-	}
-	return nil
-}
-
-func CheckReader(val *VelaData) Reader {
-	obj, ok := val.Data.(Reader)
-	if ok {
-		return obj
-	}
-	return nil
-}
-
-func CheckCloser(val *VelaData) Closer {
-	obj, ok := val.Data.(Closer)
-	if !ok {
-		return nil
-	}
-
-	return obj
-}
-
 func S2B(s string) (b []byte) {
 	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
 	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
