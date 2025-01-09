@@ -14,7 +14,7 @@ require (
 	github.com/valyala/fasttemplate v1.2.2
 	github.com/vela-ssoc/vela-tunnel v0.0.0-20240220100114-2902c8b27efb
 	go.etcd.io/bbolt v1.3.11
-	golang.org/x/net v0.32.0
+	golang.org/x/net v0.34.0
 	golang.org/x/time v0.7.0
 )
 
@@ -27,5 +27,5 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/vela-ssoc/vela-common-mba v0.0.0-20240220012708-458dc14abc4c // indirect
 	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 )
