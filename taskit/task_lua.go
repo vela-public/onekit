@@ -6,6 +6,20 @@ import (
 	"strings"
 )
 
+func (t *task) debugL(L *lua.LState) int {
+	t.setting.Debug = lua.IsTrue(L.Get(1))
+	return 0
+}
+
+func (t *task) Index(L *lua.LState, key string) lua.LValue {
+	switch key {
+	case "debug":
+		return lua.NewFunction(t.debugL)
+
+	}
+	return lua.LNil
+}
+
 func (t *task) startL(L *lua.LState) int {
 	srv := luakit.Check[*Service](L, L.Get(1))
 	Start(L, srv.data, func(e error) {
@@ -75,5 +89,6 @@ func (t *task) Preload(kit *luakit.Kit) { //luakit.error() luakit.trace() luakit
 	kit.Set("error", lua.NewFunction(t.NewTaskErrorL))
 	kit.Set("debug", lua.NewFunction(t.NewTaskDebugL))
 	kit.Set("T", lua.NewFunction(t.NewTypeForL))
+	kit.SetGlobal("this", lua.NewGeneric[*task](t))
 	kit.SetGlobal("import", lua.NewExport("lua.taskit.export", lua.WithFunc(t.LinkL)))
 }

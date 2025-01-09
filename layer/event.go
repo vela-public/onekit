@@ -44,18 +44,20 @@ func (e *Event) Log() *Event {
 
 func (e *Event) Put() *Event {
 	xEnv := LazyEnv()
-	_ = xEnv.Push("/api/v1/broker/audit/event", e)
+	_ = xEnv.Transport().Push("/api/v1/broker/audit/event", e)
 	return e
 }
 
 func NewEvent(typeof string) *Event {
 	xEnv := LazyEnv()
 	return &Event{
-		MinionID: xEnv.ID(),
-		INet:     xEnv.Inet(),
-		Time:     time.Now(),
-		Level:    NOTICE,
-		TypeOf:   typeof,
+		MinionID:   xEnv.ID(),
+		INet:       xEnv.IP(),
+		Time:       time.Now(),
+		Level:      NOTICE,
+		TypeOf:     typeof,
+		RemoteAddr: "-",
+		LocalAddr:  "-",
 	}
 }
 

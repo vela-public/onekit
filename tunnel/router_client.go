@@ -6,7 +6,7 @@ import (
 )
 
 type Client struct {
-	table *TRouter
+	table *Router
 }
 
 func (c Client) String() string                         { return "tunnel.router.client" }

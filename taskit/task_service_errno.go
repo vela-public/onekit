@@ -22,7 +22,7 @@ var ErrNoMap = map[ErrNo]string{
 
 type ErrNo uint8
 
-func (en ErrNo) String() string { return ErrNoMap[en] }
+func (en ErrNo) String() string { return en.Text() }
 func (en ErrNo) Text() string {
 	buf := bytes.NewBuffer(make([]byte, 0, 50))
 	offset := 0
@@ -34,21 +34,24 @@ func (en ErrNo) Text() string {
 		offset++
 	}
 
-	switch {
-	case en == 0:
+	if en == 0 {
 		concat("zero")
-	case en&defined == defined:
+	}
+
+	if en&defined == defined {
 		concat("defined")
-	case en&Succeed == Succeed:
+	}
+	if en&Succeed == Succeed {
 		concat("succeed")
-	case en&Stopped == Stopped:
+	}
+	if en&Stopped == Stopped {
 		concat("stopped")
-	case en&Failed == Failed:
+	}
+	if en&Failed == Failed {
 		concat("failed")
-	case en&Reset == Reset:
+	}
+	if en&Reset == Reset {
 		concat("reset")
-	default:
-		concat("unknown")
 	}
 
 	return buf.String()

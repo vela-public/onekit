@@ -20,7 +20,7 @@ import (
 	"sync"
 )
 
-type TRouter struct {
+type Router struct {
 	mutex  sync.Mutex
 	cache  map[string]fasthttp.RequestHandler
 	route  *router.Router
@@ -28,53 +28,53 @@ type TRouter struct {
 	client *http.Client
 }
 
-func (trr *TRouter) H2S() tun.Server {
-	return trr.h2s()
+func (rr *Router) H2S() tun.Server {
+	return rr.h2s()
 }
 
-func (trr *TRouter) Serve() *fasthttp.Server {
+func (rr *Router) Serve() *fasthttp.Server {
 	return &fasthttp.Server{Handler: func(ctx *fasthttp.RequestCtx) {
-		trr.route.Handler(ctx)
+		rr.route.Handler(ctx)
 	}}
 }
 
-func (trr *TRouter) Cli() http.Client {
-	return *trr.client
+func (rr *Router) Cli() http.Client {
+	return *rr.client
 }
 
-func (trr *TRouter) url(req string) string {
+func (rr *Router) url(req string) string {
 	return fmt.Sprintf("http://ssoc/%s", req)
 }
 
-func (trr *TRouter) Exec(method, req string, v interface{}) (*http.Response, error) { //get
+func (rr *Router) Exec(method, req string, v interface{}) (*http.Response, error) { //get
 	switch method {
 	case "GET":
-		return trr.client.Get(trr.url(req))
+		return rr.client.Get(rr.url(req))
 	case "POST":
-		return trr.Call(req, v)
+		return rr.Call(req, v)
 	default:
 		return nil, fmt.Errorf("method %s not support", method)
 	}
 }
 
-func (trr *TRouter) Call(req string, v interface{}) (*http.Response, error) { //post
+func (rr *Router) Call(req string, v interface{}) (*http.Response, error) { //post
 	switch data := v.(type) {
 	case nil:
 		return nil, nil
 	case io.Reader:
-		return trr.client.Post(trr.url(req), "application/json", data)
+		return rr.client.Post(rr.url(req), "application/json", data)
 	case string:
 		reader := strings.NewReader(data)
-		return trr.client.Post(trr.url(req), "application/json", reader)
+		return rr.client.Post(rr.url(req), "application/json", reader)
 	case []byte:
 		reader := bytes.NewReader(data)
-		return trr.client.Post(trr.url(req), "application/json", reader)
+		return rr.client.Post(rr.url(req), "application/json", reader)
 	case fmt.Stringer:
 		reader := strings.NewReader(data.String())
-		return trr.client.Post(trr.url(req), "application/json", reader)
+		return rr.client.Post(rr.url(req), "application/json", reader)
 	case uint8, uint16, uint32, uint, uint64, int8, int16, int32, int, int64, float64, float32:
 		reader := strings.NewReader(cast.ToString(data))
-		return trr.client.Post(trr.url(req), "application/json", reader)
+		return rr.client.Post(rr.url(req), "application/json", reader)
 
 	default:
 		chunk, err := json.Marshal(data)
@@ -82,31 +82,31 @@ func (trr *TRouter) Call(req string, v interface{}) (*http.Response, error) { //
 			return nil, err
 		}
 		reader := bytes.NewReader(chunk)
-		return trr.client.Post(trr.url(req), "application/json", reader)
+		return rr.client.Post(rr.url(req), "application/json", reader)
 	}
 
 }
 
-func (trr *TRouter) Listen() (err error) {
-	trr.inner = fasthttputil.NewInmemoryListener()
+func (rr *Router) Listen() (err error) {
+	rr.inner = fasthttputil.NewInmemoryListener()
 
 	go func() {
-		err = fasthttp.Serve(trr.inner, func(ctx *fasthttp.RequestCtx) {
-			trr.route.Handler(ctx)
+		err = fasthttp.Serve(rr.inner, func(ctx *fasthttp.RequestCtx) {
+			rr.route.Handler(ctx)
 		})
 	}()
 
-	trr.client = &http.Client{
+	rr.client = &http.Client{
 		Transport: &http.Transport{
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				return trr.inner.Dial()
+				return rr.inner.Dial()
 			},
 		},
 	}
 	return
 }
 
-func (trr *TRouter) Bad(ctx *fasthttp.RequestCtx, code int, opt ...func(*problem.Problem)) {
+func (rr *Router) Bad(ctx *fasthttp.RequestCtx, code int, opt ...func(*problem.Problem)) {
 	p := problem.Problem{
 		Status:   code,
 		Instance: string(ctx.Request.RequestURI()),
@@ -123,21 +123,21 @@ func (trr *TRouter) Bad(ctx *fasthttp.RequestCtx, code int, opt ...func(*problem
 	ctx.Write(body)
 }
 
-func (trr *TRouter) handler() func(ctx *fasthttp.RequestCtx) {
+func (rr *Router) handler() func(ctx *fasthttp.RequestCtx) {
 	return func(ctx *fasthttp.RequestCtx) {
-		trr.route.Handler(ctx)
+		rr.route.Handler(ctx)
 	}
 }
 
-func (trr *TRouter) h2s() tun.Server {
+func (rr *Router) h2s() tun.Server {
 	return &fasthttp.Server{Handler: func(ctx *fasthttp.RequestCtx) {
-		trr.route.Handler(ctx)
+		rr.route.Handler(ctx)
 	}}
 }
 
-func (trr *TRouter) reload() {
+func (rr *Router) reload() {
 	r := router.New()
-	for key, handle := range trr.cache {
+	for key, handle := range rr.cache {
 		switch {
 		case strings.HasPrefix(key, fasthttp.MethodGet):
 			r.GET(key[4:], handle)
@@ -152,21 +152,21 @@ func (trr *TRouter) reload() {
 			r.PUT(key[4:], handle)
 			continue
 		default:
-			//trr.log.Errorf("%s not allow", key)
+			//rr.log.Errorf("%s not allow", key)
 		}
 	}
 
-	trr.route = r
+	rr.route = r
 }
 
-func (trr *TRouter) Upsert(method string, path string, handle fasthttp.RequestHandler) error {
-	trr.mutex.Lock()
-	defer trr.mutex.Unlock()
+func (rr *Router) Upsert(method string, path string, handle fasthttp.RequestHandler) error {
+	rr.mutex.Lock()
+	defer rr.mutex.Unlock()
 	key := fmt.Sprintf("%s_%s", method, path)
-	_, ok := trr.cache[key]
+	_, ok := rr.cache[key]
 	if !ok {
-		trr.cache[key] = handle
-		trr.route.Handle(method, path, handle)
+		rr.cache[key] = handle
+		rr.route.Handle(method, path, handle)
 		return nil
 	}
 
@@ -174,72 +174,72 @@ func (trr *TRouter) Upsert(method string, path string, handle fasthttp.RequestHa
 		return fmt.Errorf("%s %s already ok", method, path)
 	}
 
-	trr.cache[key] = handle
-	trr.reload()
+	rr.cache[key] = handle
+	rr.reload()
 	return nil
 }
 
-func (trr *TRouter) Then(fn func(*fasthttp.RequestCtx) error) func(*fasthttp.RequestCtx) {
+func (rr *Router) Then(fn func(*fasthttp.RequestCtx) error) func(*fasthttp.RequestCtx) {
 	return func(ctx *fasthttp.RequestCtx) {
 		if err := fn(ctx); err != nil {
-			trr.Bad(ctx, fasthttp.StatusInternalServerError, problem.Title("内部错误"), problem.Detail(err.Error()))
+			rr.Bad(ctx, fasthttp.StatusInternalServerError, problem.Title("内部错误"), problem.Detail(err.Error()))
 		}
 	}
 }
 
-func (trr *TRouter) Handle(method string, path string, handle fasthttp.RequestHandler) error {
-	trr.mutex.Lock()
-	defer trr.mutex.Unlock()
+func (rr *Router) Handle(method string, path string, handle fasthttp.RequestHandler) error {
+	rr.mutex.Lock()
+	defer rr.mutex.Unlock()
 
 	key := fmt.Sprintf("%s_%s", method, path)
 
-	_, ok := trr.cache[key]
+	_, ok := rr.cache[key]
 	if ok {
 		return fmt.Errorf("%s %s already ok", method, path)
 	}
-	trr.cache[key] = handle
-	trr.route.Handle(method, path, handle)
+	rr.cache[key] = handle
+	rr.route.Handle(method, path, handle)
 	return nil
 }
 
-func (trr *TRouter) GET(path string, handle fasthttp.RequestHandler) error {
-	return trr.Handle(fasthttp.MethodGet, path, handle)
+func (rr *Router) GET(path string, handle fasthttp.RequestHandler) error {
+	return rr.Handle(fasthttp.MethodGet, path, handle)
 }
 
-func (trr *TRouter) POST(path string, handle fasthttp.RequestHandler) error {
-	return trr.Handle(fasthttp.MethodPost, path, handle)
+func (rr *Router) POST(path string, handle fasthttp.RequestHandler) error {
+	return rr.Handle(fasthttp.MethodPost, path, handle)
 }
 
-func (trr *TRouter) DELETE(path string, handle fasthttp.RequestHandler) error {
-	return trr.Handle(fasthttp.MethodDelete, path, handle)
+func (rr *Router) DELETE(path string, handle fasthttp.RequestHandler) error {
+	return rr.Handle(fasthttp.MethodDelete, path, handle)
 }
 
-func (trr *TRouter) PUT(path string, handle fasthttp.RequestHandler) error {
-	return trr.Handle("put", path, handle)
+func (rr *Router) PUT(path string, handle fasthttp.RequestHandler) error {
+	return rr.Handle("put", path, handle)
 }
 
-func (trr *TRouter) Undo(method string, path string) {
-	trr.mutex.Lock()
-	defer trr.mutex.Unlock()
+func (rr *Router) Undo(method string, path string) {
+	rr.mutex.Lock()
+	defer rr.mutex.Unlock()
 	key := fmt.Sprintf("%s_%s", method, path)
 
-	_, ok := trr.cache[key]
+	_, ok := rr.cache[key]
 	if !ok {
 		return
 	}
 
-	delete(trr.cache, key)
+	delete(rr.cache, key)
 
-	trr.reload()
+	rr.reload()
 }
 
-func (trr *TRouter) callL(L *lua.LState) int {
+func (rr *Router) callL(L *lua.LState) int {
 	return 0
 }
 
-func (trr *TRouter) view(ctx *fasthttp.RequestCtx) error {
-	trr.mutex.Lock()
-	defer trr.mutex.Unlock()
+func (rr *Router) view(ctx *fasthttp.RequestCtx) error {
+	rr.mutex.Lock()
+	defer rr.mutex.Unlock()
 	enc := jsonkit.NewJson()
 	enc.Arr("")
 	add := func(method, path string) {
@@ -249,7 +249,7 @@ func (trr *TRouter) view(ctx *fasthttp.RequestCtx) error {
 		enc.KV("path", path[7:])
 		enc.End("},")
 	}
-	for key, _ := range trr.cache {
+	for key, _ := range rr.cache {
 		switch {
 		case strings.HasPrefix(key, fasthttp.MethodGet):
 			add(key[:3], key[4:])
@@ -271,5 +271,15 @@ func (trr *TRouter) view(ctx *fasthttp.RequestCtx) error {
 	enc.End("]")
 	ctx.Write(enc.Bytes())
 	return nil
+
+}
+
+func NewRouter() *Router {
+	r := &Router{
+		cache: make(map[string]fasthttp.RequestHandler, 32),
+		route: router.New(),
+	}
+	r.GET("/api/v1/arr/agent/router/info", r.Then(r.view))
+	return r
 
 }

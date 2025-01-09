@@ -5,6 +5,14 @@ import (
 	"time"
 )
 
+const (
+	ORunning StatusBit = 1 << iota
+	OFailed
+	OQuited
+)
+
+type StatusBit uint32
+
 // Ident 节点身份信息 重载了tunnel.Ident 方便接口统一
 type Ident struct {
 	Inet       net.IP        `json:"inet"`       // 内网出口 IP

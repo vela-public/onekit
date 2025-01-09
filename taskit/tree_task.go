@@ -61,8 +61,7 @@ func (t *Tree) SafeWakeup(tas *task) (err error) {
 		defer func() {
 			if e := recover(); e != nil {
 				tas.put(Panic)
-				err = fmt.Errorf("%v\n%s", e, libkit.StackTrace[string](1024*1024, false))
-				tas.private.Error = err
+				tas.private.Stack = fmt.Sprintf("%v\n%s", e, libkit.StackTrace[string](1024*1024, false))
 			}
 		}()
 	}

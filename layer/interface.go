@@ -10,7 +10,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"os"
 )
 
 type Doer interface {
@@ -80,21 +79,7 @@ type Closer interface {
 	Close() error
 }
 
-type Auxiliary interface {
-	Register(Closer)          //注册关闭器
-	Name() string             //当前环境的名称
-	DB() *bbolt.DB            //当前环境的缓存库
-	Prefix() string           //系统前缀
-	Dir() string              //当前环境目录
-	Exe() string              //运行executable
-	Mode() string             //当前环境模式
-	Spawn(int, func()) error  //异步执行 (delay int , task func())
-	Notify()                  //监控退出信号
-	Kill(os.Signal)           //退出
-	Context() context.Context //全局context
-}
-
-type Tunneler interface {
+type Transport interface {
 	Broker() (net.IP, int)
 	R() RouterType
 	Node() string
@@ -104,17 +89,21 @@ type Tunneler interface {
 	Fetch(path string, reader io.Reader, header http.Header) (*http.Response, error)
 	JSON(path string, data interface{}, result interface{}) error
 	Push(path string, data interface{}) error
-	OnConnect(name string, todo func() error)
 	Stream(context.Context, string, http.Header) (*websocket.Conn, error)
 	Attachment(name string) (Attachment, error)
 }
 
 type Environment interface {
-	context.Context
-	LoggerType
-	RouterType
-	Preloader
-	Auxiliary
-	NodeType
-	Tunneler
+	Register(Closer)          //注册关闭器
+	Name() string             //当前环境的名称
+	ID() string               //当前环境的ID
+	IP() string               //当前环境的IP
+	DB() *bbolt.DB            //当前环境的缓存库
+	Dir() string              //当前环境目录
+	Exe() string              //运行executable
+	Spawn(int, func()) error  //异步执行 (delay int , task func())
+	Context() context.Context //全局context
+	Logger() LoggerType       //日志接口
+	Node() NodeType           //节点信息
+	Transport() Transport     //网络接口
 }

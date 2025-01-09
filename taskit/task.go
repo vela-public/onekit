@@ -47,6 +47,11 @@ type task struct {
 	//root
 	root *Tree
 
+	//setting
+	setting struct {
+		Debug bool
+	}
+
 	private struct {
 		//with lua.LState context
 		Context context.Context
@@ -59,6 +64,7 @@ type task struct {
 
 		//error
 		Error error
+		Stack string
 
 		//flag for task
 		mute sync.Mutex

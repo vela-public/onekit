@@ -23,7 +23,7 @@ type config struct {
 
 type LHandle struct {
 	cfg     config
-	trr     *TRouter
+	trr     *Router
 	co      *lua.LState
 	webctx  *webkit.HttpContext
 	handle  *pipekit.Chain[*fasthttp.RequestCtx]
@@ -154,13 +154,13 @@ func (lh *LHandle) LFunc(L *lua.LState) *lua.LFunction {
 	return L.NewFunction(lh.ToCall)
 }
 
-func (trr *TRouter) newHandleL(L *lua.LState, method string) lua.LValue {
+func (rr *Router) newHandleL(L *lua.LState, method string) lua.LValue {
 	lh := &LHandle{
 		webctx: webkit.NewContext(),
 		cfg: config{
 			method: method,
 		},
-		trr:    trr,
+		trr:    rr,
 		co:     L.Coroutine(),
 		handle: pipekit.NewChain[*fasthttp.RequestCtx](),
 	}
