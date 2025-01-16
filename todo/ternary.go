@@ -20,3 +20,7 @@ func Or[T any](a *T, b *T) *T {
 	}
 	return a
 }
+
+func StringOr(a, b string) string {
+	return IF(a == "", b, a)
+}

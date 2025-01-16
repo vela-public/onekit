@@ -57,7 +57,7 @@ func (fn *Function) Write(buff []byte) (int, error) {
 		f := &jsonkit.FastJSON{}
 		chunk, e := fn.reader(page)
 		if e != nil {
-			fn.parent.NoError(e)
+			fn.parent.OnError(e)
 			return 0, e
 		}
 		f.ParseText(cast.B2S(chunk))
@@ -202,7 +202,7 @@ func (fn *Function) Call(L *lua.LState) int {
 	params := fn.ParamL(L)
 	ret, err := fn.api.Call(fn.parent.ctx, params...)
 	if err != nil {
-		fn.parent.NoError(err)
+		fn.parent.OnError(err)
 		return 0
 	}
 
@@ -214,7 +214,7 @@ func (fn *Function) Call(L *lua.LState) int {
 	case Text: //text
 		buff, e := fn.reader(page)
 		if e != nil {
-			fn.parent.NoError(e)
+			fn.parent.OnError(e)
 			return 0
 		}
 		L.Push(lua.B2L(buff))
@@ -224,7 +224,7 @@ func (fn *Function) Call(L *lua.LState) int {
 		f := &jsonkit.FastJSON{}
 		buff, e := fn.reader(page)
 		if e != nil {
-			fn.parent.NoError(e)
+			fn.parent.OnError(e)
 			return 0
 		}
 		f.ParseText(cast.B2S(buff))

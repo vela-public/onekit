@@ -227,6 +227,7 @@ type Global struct {
 }
 
 type LState struct {
+	name    string
 	G       *Global
 	Parent  *LState
 	Env     *LTable

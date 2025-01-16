@@ -1,7 +1,6 @@
 package pipe
 
 import (
-	"github.com/vela-public/onekit/layer"
 	"github.com/vela-public/onekit/lua"
 )
 
@@ -46,8 +45,4 @@ func SwitchL(L *lua.LState) int {
 func Preload(v lua.Preloader) {
 	v.Set("pipe", lua.NewExport("lua.pipe.export", lua.WithFunc(ChainL)))
 	v.Set("switch", lua.NewExport("lua.switch.export", lua.WithFunc(SwitchL)))
-}
-
-func WithEnv(env layer.Environment) {
-
 }

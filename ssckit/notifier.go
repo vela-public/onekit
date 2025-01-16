@@ -1,9 +1,20 @@
-package ssoc
+package ssckit
 
 import tun "github.com/vela-ssoc/vela-tunnel"
 
+type NotifierType interface {
+	Connected() error
+	Disconnect(err error)
+	Reconnected(addr *tun.Address)
+	Shutdown(err error)
+}
+
 type Notifier struct {
-	std *Standard
+	this *Application
+}
+
+func (n *Notifier) OnConnect(func() error) {
+
 }
 
 func (n *Notifier) Disconnect(err error) {

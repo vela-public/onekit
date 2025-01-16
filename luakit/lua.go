@@ -56,8 +56,8 @@ func (k *Kit) Global(s string) lua.LValue {
 	return k.G[s]
 }
 
-func (k *Kit) NewState(ctx context.Context, options ...func(*lua.Options)) *lua.LState {
-	co := lua.NewStateEx(options...)
+func (k *Kit) NewState(ctx context.Context, name string, options ...func(*lua.Options)) *lua.LState {
+	co := lua.NewStateEx(name, options...)
 	co.SetContext(ctx)
 
 	//local luakit = require("luakit")
@@ -68,8 +68,8 @@ func (k *Kit) NewState(ctx context.Context, options ...func(*lua.Options)) *lua.
 
 	//luakit = luakit.elastic
 	co.SetGlobal(k.name, k.U)
-	for name, value := range k.G {
-		co.SetGlobal(name, value)
+	for key, value := range k.G {
+		co.SetGlobal(key, value)
 	}
 	return co
 }

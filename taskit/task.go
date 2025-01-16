@@ -21,6 +21,7 @@ const (
 	Fail
 	Update
 	Disable
+	Empty
 )
 
 var TaskNoMap = map[TaskNo]string{
@@ -32,13 +33,14 @@ var TaskNoMap = map[TaskNo]string{
 	Fail:      "fail",
 	Update:    "update",
 	Disable:   "disable",
+	Empty:     "empty",
 }
 
 func (tn TaskNo) String() string {
 	return TaskNoMap[tn]
 }
 
-type TaskNo uint8
+type TaskNo uint32
 
 type task struct {
 	//config
@@ -49,7 +51,8 @@ type task struct {
 
 	//setting
 	setting struct {
-		Debug bool
+		Debug     bool
+		Keepalive bool
 	}
 
 	private struct {
@@ -131,7 +134,7 @@ func (t *task) build() {
 	//init lua.LState coroutine
 	kit := t.root.NewKit() // 功能的注入 lua 虚拟机
 	t.Preload(kit)
-	t.private.LState = kit.NewState(ctx, func(option *lua.Options) {
+	t.private.LState = kit.NewState(ctx, t.Key(), func(option *lua.Options) {
 		option.Payload = t
 	})
 
@@ -229,7 +232,7 @@ func (t *task) wakeup() error {
 	case t.has(Running):
 		return nil
 	case t.has(Panic):
-		//t.NoError("task panic")
+		//t.OnError("task panic")
 		return nil
 	case t.has(Disable):
 		return nil

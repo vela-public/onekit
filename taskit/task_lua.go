@@ -11,10 +11,23 @@ func (t *task) debugL(L *lua.LState) int {
 	return 0
 }
 
+func (t *task) keepaliveL(L *lua.LState) int {
+	t.setting.Keepalive = lua.IsTrue(L.Get(1))
+	return 0
+}
+
+func (t *task) TypeForL(L *lua.LState) int {
+	return t.NewTypeForL(L)
+}
+
 func (t *task) Index(L *lua.LState, key string) lua.LValue {
 	switch key {
 	case "debug":
 		return lua.NewFunction(t.debugL)
+	case "keepalive":
+		return lua.NewFunction(t.keepaliveL)
+	case "T":
+		return lua.NewFunction(t.TypeForL)
 
 	}
 	return lua.LNil
@@ -43,7 +56,7 @@ func (t *task) disableL(L *lua.LState) int {
 	return 0
 }
 
-func (t *task) LinkL(L *lua.LState) int {
+func (t *task) importL(L *lua.LState) int {
 	dst := strings.Split(L.CheckString(1), ".")
 	if len(dst) != 2 {
 		L.RaiseError("import name is empty")
@@ -81,7 +94,6 @@ func (t *task) LinkL(L *lua.LState) int {
 }
 
 func (t *task) Preload(kit *luakit.Kit) { //luakit.error() luakit.trace() luakit.T()
-	kit.Set("start", lua.NewFunction(t.startL))
 	kit.Set("private", lua.NewFunction(t.privateL))
 	kit.Set("disable", lua.NewFunction(t.disableL))
 	kit.Set("event", lua.NewFunction(t.NewTaskEventL))
@@ -90,5 +102,5 @@ func (t *task) Preload(kit *luakit.Kit) { //luakit.error() luakit.trace() luakit
 	kit.Set("debug", lua.NewFunction(t.NewTaskDebugL))
 	kit.Set("T", lua.NewFunction(t.NewTypeForL))
 	kit.SetGlobal("this", lua.NewGeneric[*task](t))
-	kit.SetGlobal("import", lua.NewExport("lua.taskit.export", lua.WithFunc(t.LinkL)))
+	kit.SetGlobal("import", lua.NewExport("lua.taskit.export", lua.WithFunc(t.importL)))
 }

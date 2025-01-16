@@ -3,7 +3,6 @@ package strkit
 import (
 	"encoding/base64"
 	"github.com/vela-public/onekit/cast"
-	"github.com/vela-public/onekit/libinjection"
 	"github.com/vela-public/onekit/todo"
 	"net/url"
 	"sort"
@@ -371,17 +370,6 @@ func (s *Safety) Do(text string) *SafetyFSM {
 		fsm.Ext = text[fsm.state.Ext:]
 	}
 
-	if len(fsm.Bad) == 0 && s.sqli {
-		if ok, fp := libinjection.IsSQLi(text); ok {
-			fsm.Bad = append(fsm.Bad, "SQL:"+fp)
-			return fsm
-		}
-
-		if ok := libinjection.IsXSS(text); ok {
-			fsm.Bad = append(fsm.Bad, "xss")
-			return fsm
-		}
-	}
 	return fsm
 }
 

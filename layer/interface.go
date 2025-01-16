@@ -36,6 +36,8 @@ type RouterType interface {
 	Handle(method, path string, handle fasthttp.RequestHandler) error
 	Bad(ctx *fasthttp.RequestCtx, code int, opt ...func(*problem.Problem))
 	Then(func(*fasthttp.RequestCtx) error) func(*fasthttp.RequestCtx)
+	Cli() http.Client
+	Call(url string, v interface{}) (*http.Response, error)
 }
 
 type LoggerType interface {
@@ -46,7 +48,6 @@ type LoggerType interface {
 	Panic(...interface{})
 	Fatal(...interface{})
 	Trace(...interface{})
-
 	Debugf(string, ...interface{})
 	Infof(string, ...interface{})
 	Warnf(string, ...interface{})
@@ -54,6 +55,7 @@ type LoggerType interface {
 	Panicf(string, ...interface{})
 	Fatalf(string, ...interface{})
 	Tracef(string, ...interface{})
+	Skip(n int) LoggerType
 }
 
 type NodeType interface {
@@ -94,16 +96,19 @@ type Transport interface {
 }
 
 type Environment interface {
-	Register(Closer)          //注册关闭器
-	Name() string             //当前环境的名称
-	ID() string               //当前环境的ID
-	IP() string               //当前环境的IP
-	DB() *bbolt.DB            //当前环境的缓存库
-	Dir() string              //当前环境目录
-	Exe() string              //运行executable
-	Spawn(int, func()) error  //异步执行 (delay int , task func())
-	Context() context.Context //全局context
-	Logger() LoggerType       //日志接口
-	Node() NodeType           //节点信息
-	Transport() Transport     //网络接口
+	Register(Closer)                //注册关闭器
+	Name() string                   //当前环境的名称
+	ID() string                     //当前环境的ID
+	IP() string                     //当前环境的IP
+	Prefix() string                 //当前环境的前缀
+	DB() *bbolt.DB                  //当前环境的缓存库
+	SHM() *bbolt.DB                 //当前环境的共享库
+	Dir() string                    //当前环境目录
+	Exe() string                    //运行executable
+	Preload(...func(lua.Preloader)) //预加载Lua环境
+	Spawn(int, func()) error        //异步执行 (delay int , task func())
+	Context() context.Context       //全局context
+	Logger() LoggerType             //日志接口
+	Node() NodeType                 //节点信息
+	Transport() Transport           //网络接口
 }

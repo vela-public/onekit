@@ -26,7 +26,7 @@ type Module struct {
 	error   *pipe.Chain
 }
 
-func (m *Module) NoError(e error) {
+func (m *Module) OnError(e error) {
 	if m.error.Len() == 0 {
 		fmt.Printf("%v\n", e)
 		return
@@ -56,9 +56,9 @@ func (m *Module) Hijack(fsm *lua.CallFrameFSM) bool      { return false }
 func (m *Module) show(ctx context.Context, mod api.Module, ptr uint32, size uint32) {
 	buff, ok := mod.Memory().Read(ptr, size)
 	if !ok {
-		m.NoError(fmt.Errorf("show: memory overflow"))
+		m.OnError(fmt.Errorf("show: memory overflow"))
 	} else {
-		m.NoError(fmt.Errorf(string(buff)))
+		m.OnError(fmt.Errorf(string(buff)))
 	}
 }
 

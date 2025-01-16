@@ -14,8 +14,6 @@ func MarshalText(item any) ([]byte, error) {
 		return cast.S2B(v), nil
 	case []byte:
 		return v, nil
-	case fmt.Stringer:
-		return cast.S2B(v.String()), nil
 	case bytes.Buffer:
 		return v.Bytes(), nil
 	case *bytes.Buffer:
@@ -62,6 +60,8 @@ func MarshalText(item any) ([]byte, error) {
 	case bool:
 		text := strconv.FormatBool(v)
 		return cast.S2B(text), nil
+	case fmt.Stringer:
+		return cast.S2B(v.String()), nil
 
 	default:
 		text, err := json.Marshal(item)

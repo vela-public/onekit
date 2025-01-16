@@ -44,6 +44,12 @@ func (t *task) View() *TaskView {
 		tv.Failed = false
 	}
 
+	sz := len(t.service.store)
+	if sz == 0 && t.has(Running) {
+		tv.Status = Empty.String()
+		return tv
+	}
+
 	for _, srv := range t.service.store {
 		r := &Runner{
 			Name:     srv.name,
@@ -59,5 +65,6 @@ func (t *task) View() *TaskView {
 		}
 		tv.Runners = append(tv.Runners, r)
 	}
+
 	return tv
 }

@@ -115,6 +115,7 @@ func (ls *LState) NewThreadEx() *LState {
 	ctx, cancel := context.WithCancel(ls.Context())
 	al := newAllocator(32)
 	co := &LState{
+		name:    ls.name,
 		G:       ls.G,
 		Env:     ls.Env,
 		Parent:  nil,
@@ -164,7 +165,11 @@ func (ls *LState) Keepalive(co *LState) {
 	ls.private.Pool.Put(co)
 }
 
-func NewStateEx(fns ...func(*Options)) *LState {
+func (ls *LState) Name() string {
+	return ls.name
+}
+
+func NewStateEx(name string, fns ...func(*Options)) *LState {
 	opt := &Options{
 		CallStackSize: 128,
 		RegistrySize:  128,
@@ -195,7 +200,7 @@ func NewStateEx(fns ...func(*Options)) *LState {
 	if !opt.SkipOpenLibs {
 		co.OpenLibs()
 	}
-
+	co.name = name
 	co.private.Payload = opt.Payload
 	return co
 }
