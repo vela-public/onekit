@@ -17,8 +17,9 @@ func (t *task) NewTaskTraceL(L *lua.LState) int {
 
 func (t *task) NewTaskErrorL(L *lua.LState) int {
 	xEnv := layer.LazyEnv()
-	text := luakit.Format(L, 0)
-	ev := event.Debug(xEnv, text)
+	line := L.Where(1)
+	text := "[" + line[:len(line)-1] + "]" + luakit.Format(L, 0)
+	ev := event.Error(xEnv, text)
 	ev.FromCode = t.Key()
 	ev.Error(xEnv.Logger())
 	if t.setting.Debug {

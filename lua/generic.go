@@ -4,7 +4,22 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+	"fmt"
 	"github.com/vela-public/onekit/cast"
+	"reflect"
+)
+
+type (
+	Call0 func()
+	Call1 func(any)
+	Call2 func(any, any)
+	Call3 func(any, any, any)
+)
+type (
+	CallE0 func() error
+	CallE1 func(any) error
+	CallE2 func(any, any) error
+	CallE3 func(any, any, any) error
 )
 
 type ValueType interface {
@@ -15,8 +30,16 @@ type FunctionType interface {
 	AssertFunction() (*LFunction, bool)
 }
 
+type Float64Type interface {
+	AssertFloat64() (float64, bool)
+}
+
 type StringType interface {
 	AssertString() (string, bool)
+}
+
+type HijackType interface {
+	Hijack(*CallFrameFSM) bool
 }
 
 type IndexType interface {
@@ -27,12 +50,20 @@ type Getter interface {
 	Getter(string) any
 }
 
+type IndexOfType interface {
+	IndexOf(*LState, string) LValue
+}
+
 type Setter interface {
 	Setter(string, any)
 }
 
 type NewIndexType interface {
 	NewIndex(*LState, string, LValue)
+}
+
+type NewIndexOfType interface {
+	NewIndexOf(*LState, string, LValue)
 }
 
 type MetaType interface {
@@ -43,8 +74,20 @@ type NewMetaType interface {
 	NewMeta(*LState, LValue, LValue)
 }
 
+type MetaOfType interface {
+	MetaOf(*LState, LValue) LValue
+}
+
+type NewMetaOfType interface {
+	NewMetaOf(*LState, LValue, LValue)
+}
+
 type MetaTableType interface {
 	MetaTable(*LState, string) LValue
+}
+
+type MetaTableOfType interface {
+	MetaTableOf(*LState, string) LValue
 }
 
 type FieldType interface {
@@ -57,13 +100,7 @@ type WrapType interface {
 
 type GenericType interface {
 	LValue
-	Index(*LState, string) LValue
-	NewIndex(*LState, string, LValue)
-	MetaTable(*LState, string) LValue
-	Meta(*LState, LValue) LValue
-	NewMeta(*LState, LValue, LValue)
 	UnwrapData() any
-	ToLValue() LValue
 	LValue() (LValue, bool)
 	GobEncode() ([]byte, error)
 	GobDecode(data []byte) error
@@ -72,17 +109,12 @@ type GenericType interface {
 }
 
 type Generic[T any] struct {
-	Data T
-}
-
-func NewGeneric[T any](data T) *Generic[T] {
-	return &Generic[T]{
-		Data: data,
+	Data  T
+	flag  bool
+	cache struct {
+		Type  reflect.Type
+		Value reflect.Value
 	}
-}
-
-func (gen *Generic[T]) ToLValue() LValue {
-	return ToLValue(gen.Data)
 }
 
 func (gen *Generic[T]) GobEncode() ([]byte, error) {
@@ -104,128 +136,93 @@ func (gen *Generic[T]) MarshalJSON() ([]byte, error) {
 }
 
 func (gen *Generic[T]) LValue() (LValue, bool) {
-	var v interface{} = gen.Data
-
-	if lv, ok := v.(LValue); ok {
-		return lv, true
-	}
-	return LNil, false
+	return TypeFor(gen.Data)
 }
 
 func (gen *Generic[T]) String() string {
-	if v, ok := gen.LValue(); ok {
+	var data any = gen.Data
+	if v, ok := data.(fmt.Stringer); ok {
 		return v.String()
 	}
 
 	return cast.ToString(gen.Data)
 }
-
-func (gen *Generic[T]) Type() LValueType {
-	return LTGeneric
-}
+func (gen *Generic[T]) Type() LValueType { return LTGeneric }
 
 func (gen *Generic[T]) AssertFloat64() (float64, bool) {
-	if v, ok := gen.LValue(); ok {
+	var data any = gen.Data
+	if v, ok := data.(Float64Type); ok {
 		return v.AssertFloat64()
 	}
-
 	return 0, false
 }
 
 func (gen *Generic[T]) AssertString() (string, bool) {
-	if v, ok := gen.LValue(); ok {
+	var data any = gen.Data
+	if v, ok := data.(StringType); ok {
 		return v.AssertString()
 	}
 	return "", false
 }
 
 func (gen *Generic[T]) AssertFunction() (*LFunction, bool) {
-
-	var a any = gen.Data
-
-	switch vt := a.(type) {
+	var dat any = gen.Data
+	switch vt := dat.(type) {
 	case *LFunction:
 		return vt, true
-	case LValue:
+	case FunctionType:
 		return vt.AssertFunction()
-	case interface{ AssertFunction() (*LFunction, bool) }:
-		return vt.AssertFunction()
-	case interface{ ToLFunction() *LFunction }:
-		return vt.ToLFunction(), true
-
-	case func():
-		return NewFunction(func(L *LState) int {
-			vt()
-			return 0
-		}), true
-
-	case func() error:
-		return NewFunction(func(L *LState) int {
-			if err := vt(); err != nil {
-				L.Push(S2L(err.Error()))
-				return 1
-			}
-			return 0
-		}), true
-
-	}
-	if v, ok := gen.LValue(); ok {
-		return v.AssertFunction()
-	}
-
-	return nil, false
-}
-
-func (gen *Generic[T]) Index(L *LState, key string) LValue {
-	var value any = gen.Data
-
-	if v, ok := value.(IndexType); ok {
-		return v.Index(L, key)
-	}
-
-	return LNil
-}
-
-func (gen *Generic[T]) NewIndex(L *LState, key string, val LValue) {
-	var value any = gen.Data
-
-	if v, ok := value.(NewIndexType); ok {
-		v.NewIndex(L, key, val)
+	case Call0:
+		return NewCall0(vt), true
+	case Call1:
+		return NewCall1(vt), true
+	case Call2:
+		return NewCall2(vt), true
+	case Call3:
+		return NewCall3(vt), true
+	case CallE0:
+		return NewCallE0(vt), true
+	case CallE1:
+		return NewCallE1(vt), true
+	case CallE2:
+		return NewCallE2(vt), true
+	case CallE3:
+		return NewCallE3(vt), true
+	default:
+		return nil, false
 	}
 }
 
-func (gen *Generic[T]) Meta(L *LState, key LValue) LValue {
-	var value any = gen.Data
-	if v, ok := value.(MetaType); ok {
-		return v.Meta(L, key)
+func (gen *Generic[T]) Hijack(fsm *CallFrameFSM) bool {
+	var data any = gen.Data
+	if v, ok := data.(HijackType); ok {
+		return v.Hijack(fsm)
 	}
-	return LNil
+
+	return false
 }
 
-func (gen *Generic[T]) MetaTable(L *LState, key string) LValue {
-	var value any = gen.Data
-	if v, ok := value.(IndexType); ok {
-		return v.Index(L, key)
+func (gen *Generic[T]) IndexOf(L *LState, key string) LValue {
+	if !gen.flag {
+		return LNil
 	}
-	return LNil
-}
-
-func (gen *Generic[T]) NewMeta(L *LState, key LValue, val LValue) {
-	var value any = gen.Data
-	if v, ok := value.(NewMetaType); ok {
-		v.NewMeta(L, key, val)
-		return
-	}
+	r := NewReflect(gen.Data)
+	return r.Index(L, key)
 }
 
 func (gen *Generic[T]) UnwrapData() any {
 	return gen.Data
 }
 
-func (gen *Generic[T]) Hijack(fsm *CallFrameFSM) bool {
-	if v, ok := gen.LValue(); ok {
-		return v.Hijack(fsm)
+func NewGeneric[T any](data T) *Generic[T] {
+	return &Generic[T]{
+		Data: data,
 	}
+}
 
-	return false
+func NewGenericR[T any](data T) *Generic[T] {
+	return &Generic[T]{
+		Data: data,
+		flag: true,
+	}
 }

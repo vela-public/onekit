@@ -6,12 +6,6 @@ import (
 	"time"
 )
 
-type TaskType interface {
-	Key() string
-	Hash() string
-	//todo
-}
-
 type ReloadType interface {
 	Start() error
 	Close() error

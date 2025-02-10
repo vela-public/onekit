@@ -1,6 +1,7 @@
 package taskit
 
 import (
+	"github.com/vela-public/onekit/layer"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/luakit"
 	"strings"
@@ -28,7 +29,13 @@ func (t *task) Index(L *lua.LState, key string) lua.LValue {
 		return lua.NewFunction(t.keepaliveL)
 	case "T":
 		return lua.NewFunction(t.TypeForL)
-
+	case "GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "CONNECT", "TRACE", "PATCH":
+		return lua.NewFunction(func(co *lua.LState) int {
+			r := layer.LazyEnv().Transport().R()
+			h := r.HandleL(co, key)
+			L.Push(h)
+			return 1
+		})
 	}
 	return lua.LNil
 }

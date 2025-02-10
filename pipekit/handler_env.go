@@ -13,7 +13,6 @@ type LuaPool interface {
 type HandleEnv struct {
 	Protect bool
 	Seek    int
-	Mode    HandleType
 	Parent  *lua.LState
 }
 

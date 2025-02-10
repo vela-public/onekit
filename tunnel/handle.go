@@ -8,9 +8,9 @@ import (
 	"github.com/vela-public/onekit/pipekit"
 	"github.com/vela-public/onekit/taskit"
 	"github.com/vela-public/onekit/webkit"
-	"net/http"
 	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 var typeof = reflect.TypeOf((*LHandle)(nil)).String()
@@ -26,7 +26,7 @@ type LHandle struct {
 	trr     *Router
 	co      *lua.LState
 	webctx  *webkit.HttpContext
-	handle  *pipekit.Chain[*fasthttp.RequestCtx]
+	handle  *pipekit.Chain[*webkit.WebContext]
 	private struct {
 		Count   int64 //请求次数
 		Failed  int64 //失败次数
@@ -50,17 +50,16 @@ func (lh *LHandle) Metadata() libkit.DataKV[string, any] {
 	return *mt
 }
 
-func (lh *LHandle) HandleFunc() fasthttp.RequestHandler {
-	return func(ctx *fasthttp.RequestCtx) {
-		lh.handle.Invoke(ctx)
-	}
+func (lh *LHandle) HandleFunc(ctx *fasthttp.RequestCtx) {
+	webctx := &webkit.WebContext{Request: ctx}
+	lh.handle.Invoke(webctx)
 }
 
 func (lh *LHandle) Start() error {
 	if lh.handle == nil {
 		return fmt.Errorf("router start fail not found handle")
 	}
-	return lh.trr.Handle(lh.cfg.method, lh.cfg.uri, lh.HandleFunc())
+	return lh.trr.Handle(lh.cfg.method, lh.cfg.uri, lh.HandleFunc)
 }
 
 func (lh *LHandle) Close() error {
@@ -73,29 +72,25 @@ func (lh *LHandle) Close() error {
 	return nil
 }
 
-func (lh *LHandle) ToCall(L *lua.LState) int {
-
-	uri := L.IsString(1)
-	handle := L.Get(2)
-	if len(uri) < 2 {
-		L.RaiseError("invalid router uri got empty")
-		return 0
+func (lh *LHandle) SetURI(path string) {
+	var uri string
+	if !strings.HasPrefix(path, "/api/v1/arr/lua/") {
+		uri = filepath.Join("/api/v1/arr/lua/", lh.co.Name(), path)
+	} else {
+		uri = filepath.Join("/", lh.co.Name(), path)
 	}
+	lh.cfg.uri = filepath.ToSlash(uri)
+}
 
-	tas := taskit.CheckTaskEx(L, func(err error) {
-		L.RaiseError("%v", err)
-	})
-
+func (lh *LHandle) NewSRV(L *lua.LState) lua.LValue {
+	uri := L.CheckString(1)
+	tas := taskit.CheckTaskEx(L, L.PanicErr)
 	if tas == nil {
-		L.RaiseError("not allow add router by not task")
-		return 0
+		return lua.LNil
 	}
 
-	path := filepath.Join("/api/v1/arr/lua/", tas.Key(), uri)
-
-	lh.cfg.uri = filepath.ToSlash(path)
-
-	srv := taskit.Create(L, lh.Name(), typeof)
+	lh.SetURI(uri)
+	srv := taskit.NCreate(L, lh.Name(), typeof)
 	if srv.Nil() {
 		srv.Set(lh)
 	} else {
@@ -103,67 +98,20 @@ func (lh *LHandle) ToCall(L *lua.LState) int {
 		srv.Set(lh)
 	}
 
-	switch handle.Type() {
-	case lua.LTNil:
-		lh.handle.NewHandler(func(ctx *fasthttp.RequestCtx) {
-			_, _ = ctx.WriteString("not found handle")
-		})
-	case lua.LTString:
-		lh.handle.NewHandler(func(ctx *fasthttp.RequestCtx) {
-			ctx.WriteString(handle.String())
-		})
-
-	case lua.LTFunction:
-		fn, ok := handle.AssertFunction()
-		if !ok {
-			L.RaiseError("invalid function value")
-			return 0
-		}
-
-		lh.handle.NewHandler(func(ctx *fasthttp.RequestCtx) {
-			co := L.Coroutine()
-			defer L.Keepalive(co)
-			pn := lua.P{
-				Fn:   fn,
-				NRet: 0,
-			}
-			co.SetValue(webkit.WEB_CONTEXT_KEY, ctx)
-
-			err := co.CallByParam(pn, lh.webctx)
-			if err != nil {
-				ctx.Error(err.Error(), http.StatusInternalServerError)
-				return
-			}
-		})
-
-	default:
-		lh.handle.NewHandler(func(ctx *fasthttp.RequestCtx) {
-			_, _ = ctx.WriteString(handle.String())
-		})
-	}
-
-	err := lh.Start()
-	if err != nil {
-		L.RaiseError("inject router error %v", err)
-	}
-
-	return 0
+	tas.Do(lh, L.PanicErr)
+	return srv
 }
 
-func (lh *LHandle) LFunc(L *lua.LState) *lua.LFunction {
-	return L.NewFunction(lh.ToCall)
-}
-
-func (rr *Router) newHandleL(L *lua.LState, method string) lua.LValue {
-	lh := &LHandle{
+func (rr *Router) HandleL(L *lua.LState, method string) lua.LValue {
+	chain := pipekit.Lua[*webkit.WebContext](L, pipekit.LState(L), pipekit.Protect(true), pipekit.Seek(2))
+	h := &LHandle{
 		webctx: webkit.NewContext(),
 		cfg: config{
 			method: method,
 		},
 		trr:    rr,
 		co:     L.Coroutine(),
-		handle: pipekit.NewChain[*fasthttp.RequestCtx](),
+		handle: chain,
 	}
-
-	return lh.LFunc(L)
+	return h.NewSRV(L)
 }

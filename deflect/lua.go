@@ -2,7 +2,6 @@ package deflect
 
 import (
 	"fmt"
-	"github.com/vela-public/onekit/luakit"
 	"reflect"
 
 	"github.com/vela-public/onekit/lua"
@@ -160,7 +159,7 @@ func ToLValueL(L *lua.LState, obj interface{}) lua.LValue {
 
 	case map[string]interface{}:
 		n := len(rv)
-		m := luakit.NewMap[string, lua.LValue](n)
+		m := lua.NewMap[string, lua.LValue](n)
 		if n == 0 {
 			return m
 		}

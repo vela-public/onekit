@@ -24,6 +24,10 @@ func CheckName(v string) error {
 			continue
 		case ch == '-':
 			continue
+		case ch == '/':
+			continue
+		case ch == '|':
+			continue
 		default:
 			return fmt.Errorf("not allowed char %v", string(ch))
 
@@ -69,14 +73,20 @@ func Create(L *lua.LState, name string, typeof string) *Service {
 		return nil
 	}
 
-	tas := CheckTaskEx(L, func(e error) {
-		L.RaiseError("%v", e)
-	})
-
+	tas := CheckTaskEx(L, L.PanicErr)
 	if tas == nil {
 		return nil
 	}
 
+	return tas.Create(L, name, typeof)
+}
+
+// NCreate 不检查name是否合法
+func NCreate(L *lua.LState, name string, typeof string) *Service {
+	tas := CheckTaskEx(L, L.PanicErr)
+	if tas == nil {
+		return nil
+	}
 	return tas.Create(L, name, typeof)
 }
 

@@ -37,11 +37,8 @@ type Application struct {
 	}
 
 	storage struct {
-		compacting uint32
-		once       sync.Once
-		opt        *bbolt.Options
-		app        *bbolt.DB
-		shm        *bbolt.DB
+		ssc *Database
+		shm *Database
 	}
 }
 
@@ -90,11 +87,18 @@ func (app *Application) Register(cc layer.Closer) {
 }
 
 func (app *Application) DB() *bbolt.DB {
-	return app.storage.app
+	if app.storage.ssc == nil {
+		return nil
+	}
+
+	return app.storage.ssc.dbless
 }
 
 func (app *Application) SHM() *bbolt.DB {
-	return app.storage.shm
+	if app.storage.shm == nil {
+		return nil
+	}
+	return app.storage.shm.dbless
 }
 
 func (app *Application) Dir() string {
@@ -123,6 +127,13 @@ func (app *Application) Error(i ...any) {
 	}
 
 	app.private.Logger.Error(i...)
+}
+
+func (app *Application) Errorf(s string, i ...any) {
+	if app.private.Logger == nil {
+		return
+	}
+	app.private.Logger.Errorf(s, i...)
 }
 
 func (app *Application) Logger() layer.LoggerType {
@@ -203,7 +214,35 @@ func (app *Application) Wait() {
 }
 
 func (app *Application) open() {
+	app.storage.ssc = &Database{
+		name: "ssc",
+		dir:  app.Dir(),
+		opt: &bbolt.Options{
+			Timeout:        10 * time.Second,
+			NoGrowSync:     false,
+			NoSync:         false,
+			NoFreelistSync: false,
+			FreelistType:   bbolt.FreelistMapType,
+		},
+		OnError: app.Errorf,
+	}
+	app.storage.ssc.Open()
+	app.storage.ssc.Define(app.Transport().R())
 
+	app.storage.shm = &Database{
+		name: "shm",
+		dir:  app.Dir(),
+		opt: &bbolt.Options{
+			Timeout:        30 * time.Second,
+			NoGrowSync:     true,
+			NoSync:         true,
+			NoFreelistSync: true,
+			FreelistType:   bbolt.FreelistMapType,
+		},
+		OnError: app.Errorf,
+	}
+	app.storage.shm.Open()
+	app.storage.ssc.Define(app.Transport().R())
 }
 
 func Apply(parent context.Context, name string, setting ...func(*Application)) *Application {

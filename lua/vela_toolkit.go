@@ -1,14 +1,11 @@
 package lua
 
 import (
-	"encoding/json"
 	"errors"
 	"net"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 	"unsafe"
 )
 
@@ -17,98 +14,6 @@ var (
 	InvalidIP     = errors.New("invalid ip addr")
 	InvalidPort   = errors.New("expect check socket err: port <1 or port > 65535")
 )
-
-func ToLValue(v interface{}) LValue {
-	switch converted := v.(type) {
-	case nil:
-		return LNil
-	case bool:
-		return LBool(converted)
-	case float64:
-		return LNumber(converted)
-	case float32:
-		return LNumber(converted)
-	case int8:
-		return LInt(converted)
-	case int16:
-		return LInt(converted)
-	case int:
-		return LInt(converted)
-	case int32:
-		return LInt(converted)
-	case uint8:
-		return LUint(converted)
-	case uint16:
-		return LUint(converted)
-	case uint:
-		return LUint(converted)
-	case uint32:
-		return LUint(converted)
-	case int64:
-		return LInt64(converted)
-	case uint64:
-		return LUint64(converted)
-	case string:
-		return S2L(converted)
-
-	case []byte:
-		return B2L(converted)
-
-	case time.Time:
-		tt := float64(converted.UTC().UnixNano()) / float64(time.Second)
-		return LNumber(tt)
-	case error:
-		if v == nil {
-			return LNil
-		}
-		return S2L(converted.Error())
-
-	case []string:
-		n := len(converted)
-
-		tab := newLTable(n, 0)
-		for i := 0; i < n; i++ {
-			tab.RawSetInt(i+1, S2L(converted[i]))
-		}
-		return tab
-
-	case []int:
-		n := len(converted)
-
-		tab := newLTable(n, 0)
-		for i := 0; i < n; i++ {
-			tab.RawSetInt(i+1, LInt(converted[i]))
-		}
-		return tab
-
-	case func():
-		return NewFunction(func(_ *LState) int {
-			converted()
-			return 0
-		})
-
-	case func() error:
-		return NewFunction(func(L *LState) int {
-			err := converted()
-			if err != nil {
-				L.Push(LString(err.Error()))
-				return 1
-			}
-			return 0
-		})
-
-	case func(*LState) int:
-		return NewFunction(converted)
-
-	case LValue:
-		return converted
-
-	case LVFace:
-		return converted.ToLValue()
-	}
-
-	return NewGeneric(v)
-}
 
 func IsString(v LValue) string {
 	d, ok := v.AssertString()
@@ -269,13 +174,58 @@ func B2L(b []byte) LString {
 	return *(*LString)(unsafe.Pointer(&b))
 }
 
-func JsonMarshal(L *LState, i interface{}) LString {
-	data, e := json.Marshal(i)
-	if e != nil {
-		L.RaiseError("%v", e)
-		return EmptyString
+func MustBe[T any](L *LState, idx int) T {
+	lv := L.Get(idx)
+	vt, ok := lv.(T)
+	if ok {
+		return vt
 	}
-	return *(*LString)(unsafe.Pointer(&data))
+
+	L.RaiseError("must be %T , got %s", vt, lv.Type().String())
+	return vt
+}
+
+func UnPack[T any](L *LState) []T {
+	n := L.GetTop()
+	if n == 0 {
+		return nil
+	}
+	var rc []T
+	for i := 1; i <= n; i++ {
+		rc = append(rc, MustBe[T](L, i))
+	}
+	return rc
+}
+
+func UnpackGo(L *LState) []any {
+	n := L.GetTop()
+	if n == 0 {
+		return nil
+	}
+
+	var rc []any
+	for i := 1; i <= n; i++ {
+		lv := L.Get(i)
+		switch lv.Type() {
+		case LTString:
+			rc = append(rc, lv.String())
+		case LTNumber:
+			rc = append(rc, float64(lv.(LNumber)))
+		case LTBool:
+			if lv.(LBool) == true {
+				rc = append(rc, true)
+			} else {
+				rc = append(rc, false)
+			}
+		case LTNil:
+			rc = append(rc, nil)
+		case LTFunction:
+			rc = append(rc, lv.(*LFunction))
+		default:
+			rc = append(rc, lv)
+		}
+	}
+	return rc
 }
 
 func L2SS(L *LState) []string {
@@ -283,6 +233,7 @@ func L2SS(L *LState) []string {
 	if n == 0 {
 		return nil
 	}
+
 	var ssv []string
 	for i := 1; i <= n; i++ {
 		lv := L.Get(i)
@@ -296,11 +247,6 @@ func L2SS(L *LState) []string {
 		ssv = append(ssv, v)
 	}
 	return ssv
-}
-
-func FileSuffix(path string) string {
-	suffix := filepath.Ext(path)
-	return strings.TrimSuffix(path, suffix)
 }
 
 func NewFunction(gn LGFunction) *LFunction {

@@ -79,85 +79,92 @@ func (fsm *CallFrameFSM) Meta(hook func(*LState, LValue) LValue) bool {
 }
 
 func HijackTable(fsm *CallFrameFSM) bool {
+
 	switch fsm.op {
 	case OP_SELF:
 		base := fsm.co.currentFrame.LocalBase
-		data := fsm.co.reg.Get(base + int(fsm.inst&0x1ff))
-		if v, ok := data.(IndexType); ok {
-			return fsm.Index(v.Index)
-		}
-
-		if v, ok := data.(Getter); ok {
+		v, data := Unwrap(fsm.co.reg.Get(base + int(fsm.inst&0x1ff)))
+		switch dat := data.(type) {
+		case IndexType:
+			return fsm.Index(dat.Index)
+		case Getter:
 			return fsm.Index(func(_ *LState, key string) LValue {
-				ret := v.Getter(key)
-				return ToLValue(ret)
+				return ReflectTo(dat.Getter(key))
 			})
+		default:
+			if da, ok := v.(IndexOfType); ok {
+				return fsm.Index(da.IndexOf)
+			}
+			return v.Hijack(fsm)
 		}
-
-		return data.Hijack(fsm)
 
 	case OP_GETTABLEKS:
 		base := fsm.co.currentFrame.LocalBase
-		data := fsm.co.reg.Get(base + int(fsm.inst&0x1ff))
-
-		if v, ok := data.(IndexType); ok {
-			return fsm.Index(v.Index)
-		}
-
-		if v, ok := data.(Getter); ok {
+		v, data := Unwrap(fsm.co.reg.Get(base + int(fsm.inst&0x1ff)))
+		switch dat := data.(type) {
+		case IndexType:
+			return fsm.Index(dat.Index)
+		case Getter:
 			return fsm.Index(func(_ *LState, key string) LValue {
-				ret := v.Getter(key)
-				return ToLValue(ret)
+				return ReflectTo(dat.Getter(key))
 			})
+		default:
+			if da, ok := v.(IndexOfType); ok {
+				return fsm.Index(da.IndexOf)
+			}
+			return v.Hijack(fsm)
 		}
-
-		return data.Hijack(fsm)
 
 	case OP_GETTABLE:
 		base := fsm.co.currentFrame.LocalBase
-		data := fsm.co.Get(base + int(fsm.inst&0x1ff))
-		if v, ok := data.(MetaType); ok {
-			return fsm.Meta(v.Meta)
-		}
-
-		if v, ok := data.(Getter); ok {
-			return fsm.Meta(func(_ *LState, value LValue) LValue {
-				ret := v.Getter(value.String())
-				return ToLValue(ret)
-
+		v, data := Unwrap(fsm.co.Get(base + int(fsm.inst&0x1ff)))
+		switch dat := data.(type) {
+		case MetaType:
+			return fsm.Meta(dat.Meta)
+		case Getter:
+			return fsm.Meta(func(_ *LState, k LValue) LValue {
+				return ReflectTo(k.String())
 			})
+		default:
+			if da, ok := v.(MetaOfType); ok {
+				return fsm.Meta(da.MetaOf)
+			}
+			return v.Hijack(fsm)
 		}
-
-		return data.Hijack(fsm)
 
 	case OP_SETTABLEKS:
 		base := fsm.co.currentFrame.LocalBase
-		data := fsm.co.reg.Get(base + (int(fsm.inst>>18) & 0xff))
-		if v, ok := data.(NewIndexType); ok {
-			return fsm.NewIndex(v.NewIndex)
-		}
-
-		if v, ok := data.(Setter); ok {
-			return fsm.NewIndex(func(_ *LState, key string, val LValue) {
-				v.Setter(key, val)
+		v, data := Unwrap(fsm.co.reg.Get(base + (int(fsm.inst>>18) & 0xff)))
+		switch dat := data.(type) {
+		case NewIndexType:
+			return fsm.NewIndex(dat.NewIndex)
+		case Setter:
+			return fsm.NewIndex(func(_ *LState, k string, v LValue) {
+				dat.Setter(k, v)
 			})
+		default:
+			if da, ok := v.(NewIndexOfType); ok {
+				return fsm.NewIndex(da.NewIndexOf)
+			}
+			return v.Hijack(fsm)
 		}
-		return data.Hijack(fsm)
 
 	case OP_SETTABLE:
 		base := fsm.co.currentFrame.LocalBase
-		data := fsm.co.reg.Get(base + int(fsm.inst>>18)&0xff)
-		if v, ok := data.(NewMetaType); ok {
-			return fsm.NewMeta(v.NewMeta)
-		}
-
-		if v, ok := data.(Setter); ok {
-			return fsm.NewMeta(func(_ *LState, key LValue, val LValue) {
-				v.Setter(key.String(), val)
+		v, data := Unwrap(fsm.co.reg.Get(base + int(fsm.inst>>18)&0xff))
+		switch dat := data.(type) {
+		case NewMetaType:
+			return fsm.NewMeta(dat.NewMeta)
+		case Setter:
+			return fsm.NewMeta(func(_ *LState, k LValue, v LValue) {
+				dat.Setter(k.String(), v)
 			})
+		default:
+			if da, ok := v.(NewMetaOfType); ok {
+				return fsm.NewMeta(da.NewMetaOf)
+			}
+			return v.Hijack(fsm)
 		}
-
-		return data.Hijack(fsm)
 
 	default:
 		return false

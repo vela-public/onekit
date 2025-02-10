@@ -8,3 +8,20 @@ local hello  = wasm.load("hello.wasm")
 local number = hello.add(1,1)
 print(number)
 
+local a = vela.struct[[
+	string   name,
+	int      age,
+	[]struct   {
+		int    a,
+		int    b
+	}
+]]
+
+a.call = function(v)
+	print(v)
+end
+
+
+print(a.name)
+print(a.age)
+

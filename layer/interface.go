@@ -38,6 +38,7 @@ type RouterType interface {
 	Then(func(*fasthttp.RequestCtx) error) func(*fasthttp.RequestCtx)
 	Cli() http.Client
 	Call(url string, v interface{}) (*http.Response, error)
+	HandleL(co *lua.LState, method string) lua.LValue
 }
 
 type LoggerType interface {

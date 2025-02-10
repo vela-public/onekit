@@ -18,8 +18,8 @@ func (ls *LState) CheckObject(n int) LValue {
 	return lv
 }
 
-func (ls *LState) PushAny(v interface{}) {
-	ls.Push(ToLValue(v))
+func (ls *LState) PushTo(v interface{}) {
+	ls.Push(ReflectTo(v))
 }
 
 func (ls *LState) Pushf(format string, v ...interface{}) {
@@ -163,6 +163,10 @@ func (ls *LState) Keepalive(co *LState) {
 	co.Exdata = nil
 	co.SetTop(0)
 	ls.private.Pool.Put(co)
+}
+
+func (ls *LState) PanicErr(e error) {
+	ls.RaiseError("%v", e)
 }
 
 func (ls *LState) Name() string {
