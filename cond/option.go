@@ -122,8 +122,8 @@ func (opt *option) NewPeek(v interface{}) bool {
 	case fmt.Stringer:
 		opt.field = String(item.String())
 		return true
-	case lua.WrapType:
-		return opt.NewPeek(item.UnwrapData())
+	case lua.PackType:
+		return opt.NewPeek(item.Unpack())
 	}
 
 	return false

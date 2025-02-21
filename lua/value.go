@@ -246,10 +246,9 @@ type LState struct {
 	mainLoop     func(*LState, *callFrame)
 	ctx          context.Context
 	ctxCancelFn  context.CancelFunc
-	Exdata       interface{}
 	private      struct {
-		Payload interface{}
-		Pool    *sync.Pool
+		Exdata interface{}
+		Pool   *sync.Pool
 	}
 }
 

@@ -1,4 +1,4 @@
-package taskit
+package treekit
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"os"
 )
 
-type Config struct {
+type MicoServiceConfig struct {
 	// task ID
 	ID int64
 
@@ -36,20 +36,20 @@ type Config struct {
 	Path string
 }
 
-func (c *Config) NewReader() io.Reader {
-	return bytes.NewReader(c.Source)
+func (msc *MicoServiceConfig) NewReader() io.Reader {
+	return bytes.NewReader(msc.Source)
 }
 
-func (c *Config) verify() error {
-	if e := CheckName(c.Key); e != nil {
+func (msc *MicoServiceConfig) verify() error {
+	if e := CheckName(msc.Key); e != nil {
 		return e
 	}
 
-	if c.ID == 0 {
+	if msc.ID == 0 {
 		return fmt.Errorf("task.id must be greater than 0")
 	}
 
-	if len(c.Source) == 0 {
+	if len(msc.Source) == 0 {
 		return fmt.Errorf("empty document")
 	}
 
@@ -57,8 +57,8 @@ func (c *Config) verify() error {
 
 }
 
-func NewFile(key string, path string) (*Config, error) {
-	cfg := &Config{
+func NewFile(key string, path string) (*MicoServiceConfig, error) {
+	cfg := &MicoServiceConfig{
 		ID:      int64(crc32.ChecksumIEEE(cast.S2B(key))),
 		Key:     key,
 		Path:    path,
@@ -85,8 +85,8 @@ func NewFile(key string, path string) (*Config, error) {
 	return cfg, cfg.verify()
 }
 
-func NewConfig(key string, options ...func(config *Config)) (*Config, error) {
-	cfg := &Config{
+func NewConfig(key string, options ...func(config *MicoServiceConfig)) (*MicoServiceConfig, error) {
+	cfg := &MicoServiceConfig{
 		Key:     key,
 		Dialect: false,
 	}

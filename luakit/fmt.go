@@ -81,11 +81,11 @@ func Format(L *lua.LState, seek int) string {
 			case lua.LTObject:
 				args = append(args, lv)
 			case lua.LTGeneric:
-				args = append(args, lv.(lua.WrapType).UnwrapData())
+				args = append(args, lv.(lua.PackType).Unpack())
 			case lua.LTService:
-				em, ok := lv.(lua.WrapType)
+				em, ok := lv.(lua.PackType)
 				if ok {
-					args = append(args, em.UnwrapData())
+					args = append(args, em.Unpack())
 				}
 
 			default:

@@ -11,5 +11,5 @@ func Unwrap(v LValue) (LValue, any) {
 	if v.Type() != LTGeneric {
 		return v, v
 	}
-	return v, v.(GenericType).UnwrapData()
+	return v, v.(GenericType).Unpack()
 }

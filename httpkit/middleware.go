@@ -185,7 +185,7 @@ func parseRequestBody(c *Client, r *Request) error {
 			if err := handleMultipart(c, r); err != nil {
 				return err
 			}
-		case len(c.FormData) > 0 || len(r.FormData) > 0: // Handling Form Payload
+		case len(c.FormData) > 0 || len(r.FormData) > 0: // Handling Form Exdata
 			handleFormData(c, r)
 		case r.Body != nil: // Handling Request body
 			handleContentType(c, r)

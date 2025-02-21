@@ -169,7 +169,7 @@ func (h *Handler[T]) InvokerFunc(v any) {
 	case *lua.LUserData:
 		h.InvokerFunc(elem.Value)
 	case lua.GenericType:
-		h.InvokerFunc(elem.UnwrapData())
+		h.InvokerFunc(elem.Unpack())
 	case lua.Invoker:
 		h.invoke = func(a *Context[T]) error {
 			return h.SafeCall(func(v T) error { return elem(v) }, a)

@@ -47,7 +47,7 @@ func TypeFor(L *lua.LState) string {
 	case lua.LTObject:
 		s = fmt.Sprintf("lua:object go:%T value:%v", v, v)
 	case lua.LTGeneric:
-		s = fmt.Sprintf("lua:generic go:%T value:%v", v.(lua.GenericType).UnwrapData(), v)
+		s = fmt.Sprintf("lua:generic go:%T value:%v", v.(lua.GenericType).Unpack(), v)
 	default:
 		s = fmt.Sprintf("lua:object go:%T value:%v", v, v)
 	}

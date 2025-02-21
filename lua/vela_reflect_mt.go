@@ -56,6 +56,7 @@ func (r *Reflect[T]) NoKey() bool {
 func (r *Reflect[T]) UnwrapLua() LValue {
 	vt := r.t
 	vo := r.v
+
 	switch vt.Kind() {
 	case reflect.Invalid:
 		return LNil
@@ -82,7 +83,6 @@ func (r *Reflect[T]) UnwrapLua() LValue {
 	case reflect.Uint64:
 		return LUint64(vo.Uint())
 	//case reflect.Uintptr:
-
 	case reflect.Float32:
 		return LNumber(vo.Float())
 	case reflect.Float64:
@@ -161,7 +161,7 @@ func (r *Reflect[T]) Call(L *LState) int {
 	return 1
 }
 
-func (r *Reflect[T]) Index(L *LState, key string) (lv LValue) {
+func (r *Reflect[T]) IndexOf(L *LState, key string) (lv LValue) {
 
 	switch d := any(r.inner.d).(type) {
 	case IndexType:
@@ -188,6 +188,56 @@ func (r *Reflect[T]) Index(L *LState, key string) (lv LValue) {
 	}
 
 	return LNil
+}
+func (r *Reflect[T]) MetaOf(L *LState, key LValue) (lv LValue) {
+	if r.t.Kind() != reflect.Array && r.t.Kind() != reflect.Slice {
+		return LNil
+	}
+
+	if mt, ok := any(r.inner.d).(MetaOfType); ok {
+		lv = mt.MetaOf(L, key)
+	}
+
+	if lv != nil && lv.Type() != LTNil {
+		return lv
+	}
+
+	var idx int
+	switch key.Type() {
+	case LTString:
+		return r.IndexOf(L, key.String())
+	case LTNumber, LTInt, LTInt64, LTUint, LTUint64:
+		f, ok := key.AssertFloat64()
+		if !ok {
+			return LNil
+		}
+		idx = int(f)
+	default:
+		L.RaiseError("meta key must be number or string, got %s", key.Type().String())
+		return LNil
+	}
+
+	if idx <= 0 {
+		return LNil
+	}
+
+	if r.t.Kind() == reflect.Array && r.t.Len() < idx {
+		return LNil
+	}
+
+	dat := r.v.Index(idx - 1).Interface()
+	return NewReflect(dat).UnwrapLua()
+}
+
+func (r *Reflect[T]) MustBe(kind []reflect.Kind) bool {
+
+	for _, k := range kind {
+		if r.t.Kind() == k {
+			return true
+		}
+	}
+	return false
+
 }
 
 func (r *Reflect[T]) Method(key string) (reflect.Value, bool) {

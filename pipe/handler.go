@@ -151,13 +151,13 @@ func InvokerFunc(h *Handler, v any) {
 		InvokerFunc(h, elem.Value)
 
 	case lua.GenericType:
-		InvokerFunc(h, elem.UnwrapData())
+		InvokerFunc(h, elem.Unpack())
 	case lua.Invoker:
 		h.invoke = func(a *Context) error {
 			return h.SafeCall(func(v any) error { return elem(v) }, a)
 		}
-	case lua.WrapType:
-		InvokerFunc(h, elem.UnwrapData())
+	case lua.PackType:
+		InvokerFunc(h, elem.Unpack())
 	default:
 		h.info = fmt.Errorf("not compatible %T", v)
 	}

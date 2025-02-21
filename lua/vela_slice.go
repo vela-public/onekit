@@ -7,6 +7,10 @@ import (
 	"github.com/vela-public/onekit/cast"
 )
 
+const (
+	SliceLibName = "slice"
+)
+
 var (
 	OverflowE = errors.New("Index over flow")
 	TooSmallE = errors.New("Index too small")
@@ -78,7 +82,7 @@ func (s *Slice[T]) NewMeta(L *LState, key LValue, val LValue) {
 		idx = int(i) - 1
 	}
 
-	_ = s.Set(idx, val)
+	_ = s.Set(idx, Check[T](L, val))
 }
 
 func (s *Slice[T]) Len() int {
@@ -101,33 +105,26 @@ func (s *Slice[T]) Get(idx int) (t T, ok bool) {
 	return a[idx], true
 }
 
-func (s *Slice[T]) Set(idx int, val LValue) error {
+func (s *Slice[T]) Set(idx int, v T) error {
 	a := *s
 	n := len(a)
 	if idx < 0 {
-		return OverflowE
+		return TooSmallE
 	}
 
 	if idx < n {
-		if v, ok := val.(T); ok {
-			a[idx] = v
-			*s = a
-			return nil
-		}
-		return InvalidE
+		a[idx] = v
+		*s = a
+		return nil
 	}
 
-	switch val.Type() {
-	case LTNil:
-		return InvalidE
-	default:
-		if v, ok := val.(T); ok {
-			a = append(a, v)
-			*s = a
-			return nil
-		}
-		return InvalidE
+	if idx == n {
+		a = append(a, v)
+		*s = a
+		return nil
 	}
+
+	return OverflowE
 }
 
 // concatL is a lua function that concatenates the slice
@@ -152,16 +149,41 @@ func (s *Slice[T]) concatL(L *LState) int {
 	return 1
 }
 
-func NewSliceL(L *LState) int { // luakit.slice{"123" , "123"}
-	n := L.GetTop()
-	s := NewSlice[LValue](n)
-	if n == 0 {
-		L.Push(s)
-		return 1
+func NewSliceStringL(L *LState) int {
+	top := L.GetTop()
+	s := NewSlice[string](top)
+	for i := 1; i <= top; i++ {
+		_ = s.Set(i-1, Check[string](L, L.Get(i)))
 	}
+	L.Push(s)
+	return 1
+}
 
-	for i := 1; i <= n; i++ {
-		_ = s.Set(i-1, L.Get(i))
+func NewSliceIntL(L *LState) int {
+	top := L.GetTop()
+	s := NewSlice[int](top)
+	for i := 1; i <= top; i++ {
+		_ = s.Set(i-1, Check[int](L, L.Get(i)))
+	}
+	L.Push(s)
+	return 1
+}
+
+func NewSliceBoolL(L *LState) int {
+	top := L.GetTop()
+	s := NewSlice[bool](top)
+	for i := 1; i <= top; i++ {
+		_ = s.Set(i-1, Check[bool](L, L.Get(i)))
+	}
+	L.Push(s)
+	return 1
+}
+
+func NewSliceFloatL(L *LState) int {
+	top := L.GetTop()
+	s := NewSlice[float64](top)
+	for i := 1; i <= top; i++ {
+		_ = s.Set(i-1, Check[float64](L, L.Get(i)))
 	}
 	L.Push(s)
 	return 1
@@ -180,4 +202,51 @@ func SliceTo[T any](arr []T) *Slice[T] {
 	s := new(Slice[T])
 	*s = arr
 	return s
+}
+
+func NewSliceL(L *LState) int { // luakit.slice{"123" , "123"}
+	n := L.GetTop()
+	s := NewSlice[LValue](n)
+	if n == 0 {
+		L.Push(s)
+		return 1
+	}
+
+	for i := 1; i <= n; i++ {
+		_ = s.Set(i-1, L.Get(i))
+	}
+	L.Push(s)
+	return 1
+}
+
+func SliceIndex(L *LState, key string) LValue {
+	switch key {
+	case "s":
+		return NewFunction(NewSliceStringL)
+	case "d":
+		return NewFunction(NewSliceIntL)
+	case "f":
+		return NewFunction(NewSliceFloatL)
+	case "b":
+		return NewFunction(NewSliceBoolL)
+	}
+
+	return LNil
+}
+
+/*
+	local s = slice.s("v" , "e" , 'l' , 'a')
+	local n = slice.d(1,12)
+	local b = slice.b(true, false)
+	print(s.sz)
+	print(s[1])
+	print(n[2])
+	print(b[2]
+*/
+
+func OpenSliceLib(L *LState) int {
+	mod := NewExport("lua.slice.export", WithFunc(NewSliceL), WithIndex(SliceIndex))
+	L.SetGlobal("slice", mod)
+	L.Push(mod)
+	return 1
 }

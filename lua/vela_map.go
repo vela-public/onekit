@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 )
 
+const (
+	MapLibName = "map"
+)
+
 type Map[K comparable, V any] map[K]V
 
 func (m Map[K, V]) Type() LValueType                   { return LTMap }
@@ -78,10 +82,17 @@ func NewMapL(L *LState) int {
 	tab.ForEach(func(key LValue, value LValue) {
 		m.Set(key, value)
 	})
-	L.Push(NewGeneric[Map[LValue, LValue]](m))
+	L.Push(m)
 	return 1
 }
 
 func MapTo[K comparable, V any](m map[K]V) Map[K, V] {
 	return m
+}
+
+func OpenMapLib(L *LState) int {
+	mod := NewExport("lua.map.export", WithFunc(NewMapL))
+	L.SetGlobal("map", mod)
+	L.Push(mod)
+	return 1
 }

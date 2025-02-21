@@ -185,7 +185,7 @@ func MustBe[T any](L *LState, idx int) T {
 	return vt
 }
 
-func UnPack[T any](L *LState) []T {
+func Unpack[T any](L *LState) []T {
 	n := L.GetTop()
 	if n == 0 {
 		return nil
@@ -211,6 +211,14 @@ func UnpackGo(L *LState) []any {
 			rc = append(rc, lv.String())
 		case LTNumber:
 			rc = append(rc, float64(lv.(LNumber)))
+		case LTInt:
+			rc = append(rc, int(lv.(LInt)))
+		case LTInt64:
+			rc = append(rc, int64(lv.(LInt64)))
+		case LTUint:
+			rc = append(rc, uint(lv.(LUint)))
+		case LTUint64:
+			rc = append(rc, uint(lv.(LUint64)))
 		case LTBool:
 			if lv.(LBool) == true {
 				rc = append(rc, true)
@@ -221,6 +229,8 @@ func UnpackGo(L *LState) []any {
 			rc = append(rc, nil)
 		case LTFunction:
 			rc = append(rc, lv.(*LFunction))
+		case LTGeneric:
+			rc = append(rc, lv.(GenericType).Unpack())
 		default:
 			rc = append(rc, lv)
 		}
@@ -306,4 +316,208 @@ func CloneTable(v *LTable) *LTable {
 	}
 
 	return tab
+}
+
+func Exdata[T any](L *LState) (t T, ok bool) {
+	if L == nil {
+		return
+	}
+
+	t, ok = L.private.Exdata.(T)
+	return
+}
+
+func Check[T any](L *LState, lv LValue) (t T) {
+	to := func(v any) T {
+		return v.(T)
+	}
+
+	switch any(t).(type) {
+	case []byte:
+		return to(S2B(lv.String()))
+	case string:
+		return to(lv.String())
+	case bool:
+		if lv.Type() == LTBool {
+			if lv.(LBool) == true {
+				to(true)
+			} else {
+				to(false)
+			}
+		}
+		return to(false)
+	case int8:
+		switch lv.Type() {
+		case LTNumber:
+			n := lv.(LNumber)
+			return to(int8(n))
+		case LTInt:
+			return to(int8(lv.(LInt)))
+		case LTInt64:
+			return to(int8(lv.(LInt64)))
+		case LTUint:
+			return to(int8(lv.(LUint)))
+		case LTUint64:
+			return to(int8(lv.(LUint)))
+		default:
+			return to(int8(0))
+		}
+	case int16:
+		switch lv.Type() {
+		case LTNumber:
+			n := lv.(LNumber)
+			return to(int16(n))
+		case LTInt:
+			return to(int16(lv.(LInt)))
+		case LTInt64:
+			return to(int16(lv.(LInt64)))
+		case LTUint:
+			return to(int16(lv.(LUint)))
+		case LTUint64:
+			return to(int16(lv.(LUint)))
+		default:
+			return to(int16(0))
+		}
+	case int32:
+		switch lv.Type() {
+		case LTNumber:
+			n := lv.(LNumber)
+			return to(int32(n))
+		case LTInt:
+			return to(int32(lv.(LInt)))
+		case LTInt64:
+			return to(int32(lv.(LInt64)))
+		case LTUint:
+			return to(int32(lv.(LUint)))
+		case LTUint64:
+			return to(int32(lv.(LUint)))
+		default:
+			return to(int32(0))
+		}
+	case int:
+		switch lv.Type() {
+		case LTNumber:
+			n := lv.(LNumber)
+			return to(int(n))
+		case LTInt:
+			return to(int(lv.(LInt)))
+		case LTInt64:
+			return to(int(lv.(LInt64)))
+		case LTUint:
+			return to(int(lv.(LUint)))
+		case LTUint64:
+			return to(int(lv.(LUint)))
+		default:
+			return to(int(0))
+		}
+	case int64:
+		switch lv.Type() {
+		case LTNumber:
+			n := lv.(LNumber)
+			return to(int64(n))
+		case LTInt:
+			return to(int64(lv.(LInt)))
+		case LTInt64:
+			return to(int64(lv.(LInt64)))
+		case LTUint:
+			return to(int64(lv.(LUint)))
+		case LTUint64:
+			return to(int64(lv.(LUint)))
+		default:
+			return to(int64(0))
+		}
+	case uint8:
+		switch lv.Type() {
+		case LTNumber:
+			n := lv.(LNumber)
+			return to(uint8(n))
+		case LTInt:
+			return to(uint8(lv.(LInt)))
+		case LTInt64:
+			return to(uint8(lv.(LInt64)))
+		case LTUint:
+			return to(uint8(lv.(LUint)))
+		case LTUint64:
+			return to(uint8(lv.(LUint)))
+		default:
+			return to(uint8(0))
+		}
+	case uint16:
+		switch lv.Type() {
+		case LTNumber:
+			n := lv.(LNumber)
+			return to(uint16(n))
+		case LTInt:
+			return to(uint16(lv.(LInt)))
+		case LTInt64:
+			return to(uint16(lv.(LInt64)))
+		case LTUint:
+			return to(uint16(lv.(LUint)))
+		case LTUint64:
+			return to(uint16(lv.(LUint)))
+		default:
+			return to(uint16(0))
+		}
+	case uint32:
+		switch lv.Type() {
+		case LTNumber:
+			n := lv.(LNumber)
+			return to(uint32(n))
+		case LTInt:
+			return to(uint32(lv.(LInt)))
+		case LTInt64:
+			return to(uint32(lv.(LInt64)))
+		case LTUint:
+			return to(uint32(lv.(LUint)))
+		case LTUint64:
+			return to(uint32(lv.(LUint)))
+		default:
+			return to(uint32(0))
+		}
+	case uint:
+		switch lv.Type() {
+		case LTNumber:
+			n := lv.(LNumber)
+			return to(uint(n))
+		case LTInt:
+			return to(uint(lv.(LInt)))
+		case LTInt64:
+			return to(uint(lv.(LInt64)))
+		case LTUint:
+			return to(uint(lv.(LUint)))
+		case LTUint64:
+			return to(uint(lv.(LUint)))
+		default:
+			return to(uint(0))
+		}
+	case uint64:
+		switch lv.Type() {
+		case LTNumber:
+			n := lv.(LNumber)
+			return to(uint64(n))
+		case LTInt:
+			return to(uint64(lv.(LInt)))
+		case LTInt64:
+			return to(uint64(lv.(LInt64)))
+		case LTUint:
+			return to(uint64(lv.(LUint)))
+		case LTUint64:
+			return to(uint64(lv.(LUint)))
+		default:
+			return to(uint64(0))
+		}
+	default:
+		vt, ok := lv.(T)
+		if ok {
+			return vt
+		}
+
+		dat, ok := lv.(*Generic[T])
+		if ok {
+			return dat.Unwrap()
+		}
+
+		L.RaiseError("must be %T, got %s", t, lv.Type().String())
+		return
+	}
 }

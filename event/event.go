@@ -16,7 +16,7 @@ const (
 	NOTICE   string = "普通"
 )
 
-type Metadata map[string]string
+type Metadata map[string]any
 
 func (m Metadata) Text() string {
 	text, _ := json.Marshal(m)
@@ -34,11 +34,26 @@ type Event struct {
 	Alert    bool      `json:"alert"`
 	Level    string    `json:"level"`
 	Metadata Metadata  `json:"metadata"` /* user , auth , remote_addr , remote_port , local_addr , local_port , region etc */
+
+	//内部变量
+	private struct {
+		Env layer.Environment
+	}
 }
 
 func (e *Event) Byte() []byte {
 	bytes, _ := json.Marshal(e)
 	return bytes
+}
+
+func (e *Event) Set(key string, val any) {
+	if e.Metadata == nil {
+		e.Metadata = Metadata{
+			key: val,
+		}
+		return
+	}
+	e.Metadata[key] = val
 }
 
 func (e *Event) Text() string {
@@ -55,13 +70,19 @@ func (e *Event) Text() string {
 	return text
 }
 
-func (e *Event) Error(logger layer.LoggerType) *Event {
-	logger.Error(e.Text())
+func (e *Event) Error() *Event {
+	if e.private.Env == nil {
+		return e
+	}
+	e.private.Env.Logger().Error(e.Text())
 	return e
 }
 
-func (e *Event) Debug(logger layer.LoggerType) *Event {
-	logger.Debug(e.Text())
+func (e *Event) Debug() *Event {
+	if e.private.Env == nil {
+		return e
+	}
+	e.private.Env.Logger().Debug(e.Text())
 	return e
 }
 
@@ -70,19 +91,30 @@ func (e *Event) Info(logger layer.LoggerType) *Event {
 	return e
 }
 
-func (e *Event) Put(transport layer.Transport) *Event {
-	_ = transport.Push("/api/v1/broker/audit/event", e)
+func (e *Event) Report() *Event {
+	if e.private.Env == nil {
+		return e
+	}
+
+	err := e.private.Env.Transport().Push("/api/v1/broker/audit/event", e)
+	if err != nil {
+		e.private.Env.Logger().Error(err)
+	}
+
 	return e
 }
 
 func NewEvent(xEnv layer.Environment, typeof string) *Event {
-	return &Event{
+	ev := &Event{
 		MinionID: xEnv.ID(),
 		INet:     xEnv.IP(),
 		Time:     time.Now(),
 		Level:    NOTICE,
 		TypeOf:   typeof,
+		Metadata: Metadata{},
 	}
+	ev.private.Env = xEnv
+	return ev
 }
 
 func Error(xEnv layer.Environment, format string, v ...interface{}) *Event {
@@ -95,6 +127,13 @@ func Error(xEnv layer.Environment, format string, v ...interface{}) *Event {
 func Debug(xEnv layer.Environment, format string, v ...interface{}) *Event {
 	ev := NewEvent(xEnv, "logger")
 	ev.Subject = "调试信息"
+	ev.Message = fmt.Sprintf(format, v...)
+	return ev
+}
+
+func Trace(xEnv layer.Environment, format string, v ...interface{}) *Event {
+	ev := NewEvent(xEnv, "logger")
+	ev.Subject = "提示信息"
 	ev.Message = fmt.Sprintf(format, v...)
 	return ev
 }

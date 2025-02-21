@@ -6,7 +6,7 @@ import (
 	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/luakit"
-	"github.com/vela-public/onekit/taskit"
+	"github.com/vela-public/onekit/treekit"
 	"github.com/vela-public/onekit/tunnel"
 	"github.com/vela-public/onekit/zapkit"
 	"go.etcd.io/bbolt"
@@ -24,7 +24,8 @@ type Application struct {
 		Cancel     context.CancelFunc
 		Executable string
 		WorkingDir string
-		Tree       *taskit.Tree
+		ServTree   *treekit.MsTree
+		TaskTree   *treekit.TaskTree
 		Transport  *tunnel.Transport
 		Luakit     *luakit.Kit
 		Logger     *zapkit.Logger
@@ -42,6 +43,10 @@ type Application struct {
 	}
 }
 
+func (app *Application) ServiceTree() layer.ServiceTreeType {
+	return app.private.ServTree
+}
+
 func (app *Application) init() {
 	//init executable path
 	exe, err := os.Executable()
@@ -56,24 +61,41 @@ func (app *Application) init() {
 	app.private.WorkingDir = dir
 }
 
-func (app *Application) NewTree() {
-	tree := taskit.NewTree(app.Context(), app.private.Luakit,
-		//report
-		taskit.Report(func(v *taskit.Tree) {
-			dat := v.View()
-			_ = app.Transport().Push("/api/v1/broker/task/status", dat)
-		}),
+func (app *Application) NewServTree() {
+	ms := treekit.NewMicoServiceOption()
+	ms.Protect(true)
+	ms.Error(func(e error) {
+		app.Error(e)
+	})
+	ms.Report(func(v *treekit.MsTree) {
+		dat := v.View()
+		_ = app.Transport().Push("/api/v1/broker/task/status", dat)
+	})
 
-		//panic protect
-		taskit.Protect(app.config.Protect),
-
-		//error handle
-		taskit.OnError(func(e error) {
-			app.Error(e)
-		}))
-
+	tree := treekit.NewMicoSrvTree(app.Context(), app.private.Luakit, ms)
 	tree.Define(app.Transport().R())
-	app.private.Tree = tree
+	app.private.ServTree = tree
+}
+
+func (app *Application) NewTaskTree() {
+
+	option := treekit.NewTaskTreeOption()
+	option.Protect(true)
+	option.Error(func(err error) {
+		app.Error(err)
+	})
+
+	option.Report(func(task *treekit.Task) {
+		dat := task.Reply()
+		err := app.Transport().Push("/api/v1/broker/task/report", dat)
+		if err != nil {
+			app.Error(err)
+		}
+	})
+
+	tree := treekit.NewTaskTree(app.Context(), app.private.Luakit, option)
+	tree.Define(app.Transport().R())
+	app.private.TaskTree = tree
 }
 
 func (app *Application) Kill(signal os.Signal) {

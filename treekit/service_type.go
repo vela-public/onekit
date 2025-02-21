@@ -1,4 +1,4 @@
-package taskit
+package treekit
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ type ReloadType interface {
 	Reload() error
 }
 
-type TaskEntry struct {
+type ServiceEntry struct {
 	ID      int64  `json:"id"`
 	Dialect bool   `json:"dialect"`
 	Name    string `json:"name"`
@@ -20,9 +20,9 @@ type TaskEntry struct {
 	Hash    string `json:"hash"`
 }
 
-type TaskDiffInfo struct {
-	Removes []int64      `json:"removes"`
-	Updates []*TaskEntry `json:"updates"`
+type ServiceDiffInfo struct {
+	Removes []int64         `json:"removes"`
+	Updates []*ServiceEntry `json:"updates"`
 }
 
 type Runner struct {
@@ -35,7 +35,7 @@ type Runner struct {
 	Metadata libkit.DataKV[string, any] `json:"metadata"`
 }
 
-type TaskView struct {
+type ServiceView struct {
 	ID      int64     `json:"id"`
 	Dialect bool      `json:"dialect"`
 	Name    string    `json:"name"`
@@ -50,7 +50,7 @@ type TaskView struct {
 }
 
 type TreeView struct {
-	Tasks []*TaskView `json:"tasks"`
+	Services []*ServiceView `json:"tasks"`
 }
 
 func (tv *TreeView) Text() []byte {

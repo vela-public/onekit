@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/vela-public/onekit/cast"
-	"reflect"
 )
 
 type (
@@ -94,14 +93,13 @@ type FieldType interface {
 	Field(string) string
 }
 
-type WrapType interface {
-	UnwrapData() any
+type PackType interface {
+	Unpack() any
 }
 
 type GenericType interface {
 	LValue
-	UnwrapData() any
-	LValue() (LValue, bool)
+	Unpack() any
 	GobEncode() ([]byte, error)
 	GobDecode(data []byte) error
 	MarshalJSON() ([]byte, error)
@@ -109,12 +107,8 @@ type GenericType interface {
 }
 
 type Generic[T any] struct {
-	Data  T
-	flag  bool
-	cache struct {
-		Type  reflect.Type
-		Value reflect.Value
-	}
+	Data T
+	flag bool
 }
 
 func (gen *Generic[T]) GobEncode() ([]byte, error) {
@@ -133,10 +127,6 @@ func (gen *Generic[T]) UnmarshalJSON(bytes []byte) error {
 
 func (gen *Generic[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(gen.Data)
-}
-
-func (gen *Generic[T]) LValue() (LValue, bool) {
-	return TypeFor(gen.Data)
 }
 
 func (gen *Generic[T]) String() string {
@@ -207,10 +197,22 @@ func (gen *Generic[T]) IndexOf(L *LState, key string) LValue {
 		return LNil
 	}
 	r := NewReflect(gen.Data)
-	return r.Index(L, key)
+	return r.IndexOf(L, key)
 }
 
-func (gen *Generic[T]) UnwrapData() any {
+func (gen *Generic[T]) MetaOf(L *LState, key LValue) LValue {
+	if !gen.flag {
+		return LNil
+	}
+	r := NewReflect(gen.Data)
+	return r.MetaOf(L, key)
+}
+
+func (gen *Generic[T]) Unpack() any {
+	return gen.Data
+}
+
+func (gen *Generic[T]) Unwrap() T {
 	return gen.Data
 }
 

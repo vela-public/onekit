@@ -6,7 +6,7 @@ import (
 	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/pipekit"
-	"github.com/vela-public/onekit/taskit"
+	"github.com/vela-public/onekit/treekit"
 	"github.com/vela-public/onekit/webkit"
 	"path/filepath"
 	"reflect"
@@ -84,22 +84,18 @@ func (lh *LHandle) SetURI(path string) {
 
 func (lh *LHandle) NewSRV(L *lua.LState) lua.LValue {
 	uri := L.CheckString(1)
-	tas := taskit.CheckTaskEx(L, L.PanicErr)
-	if tas == nil {
-		return lua.LNil
-	}
 
 	lh.SetURI(uri)
-	srv := taskit.NCreate(L, lh.Name(), typeof)
-	if srv.Nil() {
-		srv.Set(lh)
+	pro := treekit.LazyCreate(L, lh.Name(), typeof)
+	if pro.Nil() {
+		pro.Set(lh)
 	} else {
-		_ = srv.Close()
-		srv.Set(lh)
+		_ = pro.Close()
+		pro.Set(lh)
 	}
 
-	tas.Do(lh, L.PanicErr)
-	return srv
+	treekit.Start(L, lh, L.PanicErr)
+	return pro
 }
 
 func (rr *Router) HandleL(L *lua.LState, method string) lua.LValue {

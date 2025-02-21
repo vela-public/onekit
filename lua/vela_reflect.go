@@ -73,6 +73,14 @@ func NewCallE3(fn CallE3) *LFunction {
 	})
 }
 
+func Some(v any) LValue {
+	lv, ok := TypeFor(v)
+	if ok {
+		return lv
+	}
+	return LNil
+}
+
 func TypeFor(v any) (LValue, bool) {
 	switch vt := v.(type) {
 	case nil:
@@ -239,6 +247,11 @@ func TypeFor(v any) (LValue, bool) {
 		return NewCallE3(vt), true
 	case reflect.Value:
 		return NewReflect(vt).UnwrapLua(), true
+	case error:
+		if vt == nil {
+			return LNil, true
+		}
+		return S2L(vt.Error()), true
 	default:
 		return LNil, false
 	}

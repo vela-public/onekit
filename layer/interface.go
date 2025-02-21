@@ -96,6 +96,13 @@ type Transport interface {
 	Attachment(name string) (Attachment, error)
 }
 
+type ServiceTreeType interface {
+	Lookup(L *lua.LState) int
+	Length() int
+	Protect() bool
+	UnwrapErr() error
+}
+
 type Environment interface {
 	Register(Closer)                //注册关闭器
 	Name() string                   //当前环境的名称
@@ -112,4 +119,5 @@ type Environment interface {
 	Logger() LoggerType             //日志接口
 	Node() NodeType                 //节点信息
 	Transport() Transport           //网络接口
+	ServiceTree() ServiceTreeType   //服务树
 }

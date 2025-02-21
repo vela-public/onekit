@@ -1,4 +1,4 @@
-package taskit
+package treekit
 
 func IsInt(ch byte) bool {
 	if ch >= '0' && ch <= '9' {

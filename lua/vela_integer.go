@@ -5,6 +5,10 @@ import (
 	"strconv"
 )
 
+const (
+	IntegerLibName = "int"
+)
+
 type LInt int
 type LUint uint
 type LInt64 int64
@@ -37,3 +41,43 @@ func (ui LUint64) AssertFloat64() (float64, bool)     { return float64(ui), true
 func (ui LUint64) AssertString() (string, bool)       { return "", false }
 func (ui LUint64) AssertFunction() (*LFunction, bool) { return nil, false }
 func (ui LUint64) Hijack(*CallFrameFSM) bool          { return false }
+
+func OpenIntegerLib(L *LState) int {
+	L.SetGlobal("int", NewFunction(func(c *LState) int {
+		lv := L.Get(1)
+		switch lv.Type() {
+		case LTNumber:
+			L.Push(LInt(lv.(LNumber)))
+		case LTInt:
+			L.Push(LInt(lv.(LInt)))
+		case LTInt64:
+			L.Push(LInt(lv.(LInt64)))
+		case LTUint:
+			L.Push(LInt(lv.(LUint)))
+		case LTUint64:
+			L.Push(LInt(lv.(LUint64)))
+		default:
+			L.Push(LInt(0))
+		}
+		return 1
+	}))
+	L.SetGlobal("int64", NewFunction(func(c *LState) int {
+		lv := L.Get(1)
+		switch lv.Type() {
+		case LTNumber:
+			L.Push(LInt64(lv.(LNumber)))
+		case LTInt:
+			L.Push(LInt64(lv.(LInt)))
+		case LTInt64:
+			L.Push(LInt64(lv.(LInt64)))
+		case LTUint:
+			L.Push(LInt64(lv.(LUint)))
+		case LTUint64:
+			L.Push(LInt64(lv.(LUint64)))
+		default:
+			L.Push(LInt64(0))
+		}
+		return 1
+	}))
+	return 0
+}

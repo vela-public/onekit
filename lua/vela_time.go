@@ -196,7 +196,7 @@ func NewTimeL(L *LState) int {
 			L.Push(S2L("not time object fail"))
 			return 2
 		}
-		L.Push(Time(t))
+		L.Push(t)
 		return 1
 	default:
 		L.Push(Time(time.Now()))
@@ -239,7 +239,7 @@ func TimeIndexL(L *LState, key string) LValue {
 	return LNil
 }
 
-func OpenTime(L *LState) int {
+func OpenTimeLib(L *LState) int {
 	mod := NewExport("lua.time.export", WithFunc(NewTimeL), WithIndex(TimeIndexL))
 	L.SetGlobal("time", mod)
 	L.Push(mod)

@@ -1,4 +1,4 @@
-package taskit
+package treekit
 
 import "bytes"
 

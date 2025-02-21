@@ -4,7 +4,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/lua"
-	"github.com/vela-public/onekit/taskit"
+	"github.com/vela-public/onekit/treekit"
 	"reflect"
 	"strings"
 )
@@ -79,11 +79,11 @@ func (u *Upstream) Index(L *lua.LState, key string) lua.LValue {
 func NewProxyUpstream(L *lua.LState) int {
 	name := L.CheckString(1)
 	ups := &Upstream{name: name}
-	srv := taskit.Create(L, name, ups.TypeOf())
+	srv := treekit.Create(L, name, ups.TypeOf())
 	if srv.Nil() {
 		srv.Set(ups)
 	} else {
-		srv.Call(func(dat taskit.ServiceType) {
+		srv.Call(func(dat treekit.ProcessType) {
 			ups = dat.(*Upstream)
 			ups.reset()
 		})
@@ -97,7 +97,7 @@ func NewProxyUpstream(L *lua.LState) int {
 		ups.peers = peers
 	})
 
-	taskit.Start(L, ups, func(e error) {
+	treekit.Start(L, ups, func(e error) {
 		L.RaiseError("%v", e)
 	})
 	L.Push(srv)

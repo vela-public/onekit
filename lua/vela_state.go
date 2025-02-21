@@ -107,8 +107,8 @@ func (ls *LState) StackTrace(level int) string {
 	return ls.stackTrace(level)
 }
 
-func (ls *LState) Payload() any {
-	return ls.private.Payload
+func (ls *LState) Exdata() any {
+	return ls.private.Exdata
 }
 
 func (ls *LState) NewThreadEx() *LState {
@@ -160,7 +160,6 @@ func (ls *LState) Keepalive(co *LState) {
 	if ls.private.Pool == nil {
 		return
 	}
-	co.Exdata = nil
 	co.SetTop(0)
 	ls.private.Pool.Put(co)
 }
@@ -205,6 +204,6 @@ func NewStateEx(name string, fns ...func(*Options)) *LState {
 		co.OpenLibs()
 	}
 	co.name = name
-	co.private.Payload = opt.Payload
+	co.private.Exdata = opt.Payload
 	return co
 }
