@@ -86,7 +86,7 @@ func (lh *LHandle) NewSRV(L *lua.LState) lua.LValue {
 	uri := L.CheckString(1)
 
 	lh.SetURI(uri)
-	pro := treekit.LazyCreate(L, lh.Name(), typeof)
+	pro := treekit.Lazy().Create(L, lh.Name(), typeof)
 	if pro.Nil() {
 		pro.Set(lh)
 	} else {

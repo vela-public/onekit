@@ -5,7 +5,5 @@ import (
 )
 
 func builtin(kv lua.UserKV) {
-	kv.Set("pretty", lua.NewFunction(PrettyJsonL))
 	kv.Set("fmt", lua.NewFunction(NewFmtL))
-	kv.Set("pretty", lua.NewFunction(PrettyJsonL))
 }

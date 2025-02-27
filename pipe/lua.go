@@ -4,6 +4,12 @@ import (
 	"github.com/vela-public/onekit/lua"
 )
 
+/*
+	1
+	pipe.seek(1) func(p1 , p2)
+	pipe.Lua(L , pipe.LState(L) , pipe.Seek(1)))
+*/
+
 func Lua(L *lua.LState, options ...func(*HandleEnv)) *Chain {
 	env := NewEnv(options...)
 	c := &Chain{}

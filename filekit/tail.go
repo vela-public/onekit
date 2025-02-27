@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/panjf2000/ants/v2"
 	"github.com/valyala/fastjson"
-	"github.com/vela-public/onekit/bucket"
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/cond"
 	"github.com/vela-public/onekit/jsonkit"
@@ -26,6 +25,11 @@ import (
 	tail.pipe( kfk , syslog , http )
 	tail.start()
 */
+
+type Seeker interface {
+	Find(file string) int64
+	Save(file string, offset int64, expire int64) error
+}
 
 type FileTail struct {
 	logger  Logger
@@ -49,6 +53,7 @@ type FileTail struct {
 		DB       *bbolt.DB
 		Drop     *cond.Ignore
 		SkipFile []func(string) bool
+		Seeker   Seeker
 	}
 }
 
@@ -99,9 +104,13 @@ func (ft *FileTail) Wait() {
 }
 
 func (ft *FileTail) Tell(file string, offset int64) {
-	db := bucket.Pack[int64](ft.private.DB, ft.setting.Bucket...)
+	//db := bucket.Pack[int64](ft.private.DB, ft.setting.Bucket...)
 
-	err := db.Set(file, offset, 0)
+	if ft.private.Seeker == nil {
+		return
+	}
+
+	err := ft.private.Seeker.Save(file, offset, 0)
 	if err != nil {
 		ft.logger.Errorf("%s tail save seek fail %v", file, err)
 		return
@@ -111,11 +120,15 @@ func (ft *FileTail) Tell(file string, offset int64) {
 }
 
 func (ft *FileTail) SeekTo(name string) int64 {
-	db := bucket.Pack[int64](ft.private.DB, ft.setting.Bucket...)
-	seek, err := db.Get(name).Unwrap()
-	if err != nil {
-		ft.logger.Errorf("%s tail seek fail %v", name, err)
+	if ft.private.Seeker == nil {
+		return 0
 	}
+	seek := ft.private.Seeker.Find(name)
+	//db := bucket.Pack[int64](ft.private.DB, ft.setting.Bucket...)
+	//seek, err := db.Get(name).Unwrap()
+	//if err != nil {
+	//	ft.logger.Errorf("%s tail seek fail %v", name, err)
+	//}
 	return seek
 }
 

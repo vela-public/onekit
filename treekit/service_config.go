@@ -41,7 +41,7 @@ func (msc *MicoServiceConfig) NewReader() io.Reader {
 }
 
 func (msc *MicoServiceConfig) verify() error {
-	if e := CheckName(msc.Key); e != nil {
+	if e := Lazy().Name(msc.Key); e != nil {
 		return e
 	}
 

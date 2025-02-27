@@ -1,7 +1,6 @@
 package pipe
 
 import (
-	"github.com/vela-public/onekit/deflect"
 	"github.com/vela-public/onekit/lua"
 )
 
@@ -28,7 +27,7 @@ func (he *HandleEnv) PCall(fn *lua.LFunction, ctx *Context) error {
 	param := make([]lua.LValue, sz)
 	for i := 0; i < sz; i++ {
 		item := ctx.data[i]
-		param[i] = deflect.ToLValueL(co, item)
+		param[i] = lua.ReflectTo(item)
 	}
 
 	err := co.CallByParam(cp, param...)

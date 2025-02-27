@@ -1,7 +1,6 @@
 package lua
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -110,37 +109,41 @@ func (ls *LState) StackTrace(level int) string {
 func (ls *LState) Exdata() any {
 	return ls.private.Exdata
 }
-
 func (ls *LState) NewThreadEx() *LState {
-	ctx, cancel := context.WithCancel(ls.Context())
-	al := newAllocator(32)
-	co := &LState{
-		name:    ls.name,
-		G:       ls.G,
-		Env:     ls.Env,
-		Parent:  nil,
-		Panic:   ls.Panic,
-		Dead:    ls.Dead,
-		Options: ls.Options,
+	co, _ := ls.NewThread()
+	return co
 
-		stop:         0,
-		alloc:        al,
-		currentFrame: nil,
-		wrapped:      false,
-		uvcache:      nil,
-		hasErrorFunc: false,
-		mainLoop:     mainLoop,
-		ctx:          ctx,
-		ctxCancelFn:  cancel,
-		private:      ls.private,
-	}
-	if co.Options.MinimizeStackMemory {
-		co.stack = newAutoGrowingCallFrameStack(64)
-	} else {
-		co.stack = newFixedCallFrameStack(64)
-	}
-	co.reg = newRegistry(ls, ls.Options.RegistrySize, ls.Options.RegistryGrowStep, ls.Options.RegistryMaxSize, al)
-	return ls
+	/*
+		ctx, cancel := context.WithCancel(ls.Context())
+		al := newAllocator(32)
+		co := &LState{
+			name:    ls.name,
+			G:       ls.G,
+			Env:     ls.Env,
+			Parent:  ls,
+			Panic:   ls.Panic,
+			Dead:    ls.Dead,
+			Options: ls.Options,
+
+			stop:         0,
+			alloc:        al,
+			currentFrame: nil,
+			wrapped:      false,
+			uvcache:      nil,
+			hasErrorFunc: false,
+			mainLoop:     ls.mainLoop,
+			ctx:          ctx,
+			ctxCancelFn:  cancel,
+			private:      ls.private,
+		}
+		if co.Options.MinimizeStackMemory {
+			co.stack = newAutoGrowingCallFrameStack(ls.Options.CallStackSize)
+		} else {
+			co.stack = newFixedCallFrameStack(ls.Options.CallStackSize)
+		}
+		co.reg = newRegistry(ls, ls.Options.RegistrySize, ls.Options.RegistryGrowStep, ls.Options.RegistryMaxSize, al)
+		return ls
+	*/
 }
 
 func (ls *LState) Coroutine() *LState {

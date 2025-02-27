@@ -2,7 +2,6 @@ package luakit
 
 import (
 	"fmt"
-	"github.com/tidwall/pretty"
 	"github.com/vela-public/onekit/lua"
 	"reflect"
 	"unsafe"
@@ -27,16 +26,6 @@ func S2L(s string) lua.LString {
 
 func B2L(b []byte) lua.LString {
 	return *(*lua.LString)(unsafe.Pointer(&b))
-}
-
-func PrettyJson(lv lua.LValue) []byte {
-	chunk := S2B(lv.String())
-	return pretty.PrettyOptions(chunk, nil)
-}
-
-func PrettyJsonL(L *lua.LState) int {
-	L.Push(B2L(PrettyJson(L.Get(1))))
-	return 1
 }
 
 func Format(L *lua.LState, seek int) string {
