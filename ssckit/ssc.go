@@ -209,6 +209,7 @@ func (app *Application) Preload(v ...func(preloader lua.Preloader)) {
 	for _, set := range v {
 		set(app.private.Luakit)
 	}
+
 }
 
 func (app *Application) Luakit(v ...func(lua.Preloader)) {

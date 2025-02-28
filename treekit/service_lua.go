@@ -37,7 +37,7 @@ func (ms *MicroService) Index(L *lua.LState, key string) lua.LValue {
 		return lua.NewFunction(ms.setLevel)
 	case "error":
 		return lua.NewFunction(ms.NewServiceErrorL)
-	case "trace":
+	case "debug":
 		return lua.NewFunction(ms.NewServiceDebugL)
 	case "keepalive":
 		return lua.NewFunction(ms.keepaliveL)

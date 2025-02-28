@@ -8,7 +8,7 @@ import (
 	"github.com/vela-public/onekit/cond"
 	"github.com/vela-public/onekit/jsonkit"
 	"github.com/vela-public/onekit/noop"
-	"github.com/vela-public/onekit/pipe"
+	"github.com/vela-public/onekit/pipekit"
 	"go.etcd.io/bbolt"
 	"os"
 	"path/filepath"
@@ -25,11 +25,6 @@ import (
 	tail.pipe( kfk , syslog , http )
 	tail.start()
 */
-
-type Seeker interface {
-	Find(file string) int64
-	Save(file string, offset int64, expire int64) error
-}
 
 type FileTail struct {
 	logger  Logger
@@ -48,8 +43,8 @@ type FileTail struct {
 		cancel   context.CancelFunc
 		parser   *fastjson.ParserPool
 		pool     *ants.Pool
-		Chain    *pipe.Chain
-		Switch   *pipe.Switch
+		Chain    *pipekit.Chain[*Line]
+		Switch   *pipekit.Switch[*Line]
 		DB       *bbolt.DB
 		Drop     *cond.Ignore
 		SkipFile []func(string) bool
@@ -104,13 +99,11 @@ func (ft *FileTail) Wait() {
 }
 
 func (ft *FileTail) Tell(file string, offset int64) {
-	//db := bucket.Pack[int64](ft.private.DB, ft.setting.Bucket...)
-
 	if ft.private.Seeker == nil {
 		return
 	}
 
-	err := ft.private.Seeker.Save(file, offset, 0)
+	err := ft.private.Seeker.Save(file, offset)
 	if err != nil {
 		ft.logger.Errorf("%s tail save seek fail %v", file, err)
 		return
@@ -123,12 +116,10 @@ func (ft *FileTail) SeekTo(name string) int64 {
 	if ft.private.Seeker == nil {
 		return 0
 	}
-	seek := ft.private.Seeker.Find(name)
-	//db := bucket.Pack[int64](ft.private.DB, ft.setting.Bucket...)
-	//seek, err := db.Get(name).Unwrap()
-	//if err != nil {
-	//	ft.logger.Errorf("%s tail seek fail %v", name, err)
-	//}
+	seek, err := ft.private.Seeker.Find(name)
+	if err != nil {
+		ft.logger.Errorf("%s tail seek fail %v", name, err)
+	}
 	return seek
 }
 
@@ -310,11 +301,11 @@ func (ft *FileTail) Close() error {
 	return nil
 }
 
-func (ft *FileTail) Switch() *pipe.Switch {
+func (ft *FileTail) Switch() *pipekit.Switch[*Line] {
 	return ft.private.Switch
 }
 
-func (ft *FileTail) Chain() *pipe.Chain {
+func (ft *FileTail) Chain() *pipekit.Chain[*Line] {
 	return ft.private.Chain
 }
 
@@ -338,8 +329,8 @@ func NewTail(name string, opts ...FileTailFunc) *FileTail {
 		fn(ft)
 	}
 
-	ft.private.Chain = pipe.NewChain()
-	ft.private.Switch = pipe.NewSwitch()
+	ft.private.Chain = pipekit.NewChain[*Line]()
+	ft.private.Switch = pipekit.NewSwitch[*Line]()
 	ft.private.Drop = cond.NewIgnore()
 	return ft
 }

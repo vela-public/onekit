@@ -15,6 +15,10 @@ var (
 	InvalidPort   = errors.New("expect check socket err: port <1 or port > 65535")
 )
 
+type Number interface {
+	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | float32 | float64
+}
+
 func IsString(v LValue) string {
 	d, ok := v.AssertString()
 	if ok {
@@ -174,6 +178,24 @@ func B2L(b []byte) LString {
 	return *(*LString)(unsafe.Pointer(&b))
 }
 
+func MustBeNumber[T Number](L *LState, lv LValue) (vt T) {
+	switch lv.Type() {
+	case LTNumber:
+		return T(lv.(LNumber))
+	case LTInt:
+		return T(lv.(LInt))
+	case LTInt64:
+		return T(lv.(LInt64))
+	case LTUint:
+		return T(lv.(LUint))
+	case LTUint64:
+		return T(lv.(LUint64))
+	default:
+		L.RaiseError("must be %T , got %s", vt, lv.Type().String())
+		return
+	}
+}
+
 func MustBe[T any](L *LState, idx int) T {
 	lv := L.Get(idx)
 	vt, ok := lv.(T)
@@ -181,8 +203,62 @@ func MustBe[T any](L *LState, idx int) T {
 		return vt
 	}
 
-	L.RaiseError("must be %T , got %s", vt, lv.Type().String())
-	return vt
+	switch any(vt).(type) {
+	case string:
+		v := lv.String()
+		return *(*T)(unsafe.Pointer(&v))
+	case []byte:
+		v := S2B(lv.String())
+		return *(*T)(unsafe.Pointer(&v))
+	case float64:
+		n := MustBeNumber[float64](L, lv)
+		return any(n).(T)
+	case float32:
+		n := MustBeNumber[float32](L, lv)
+		return any(n).(T)
+	case int:
+		n := MustBeNumber[int](L, lv)
+		return any(n).(T)
+	case int8:
+		n := MustBeNumber[int8](L, lv)
+		return any(n).(T)
+	case int16:
+		n := MustBeNumber[int16](L, lv)
+		return any(n).(T)
+	case int32:
+		n := MustBeNumber[int32](L, lv)
+		return any(n).(T)
+	case int64:
+		n := MustBeNumber[int64](L, lv)
+		return any(n).(T)
+	case uint:
+		n := MustBeNumber[uint](L, lv)
+		return any(n).(T)
+	case uint8:
+		n := MustBeNumber[uint8](L, lv)
+		return any(n).(T)
+	case uint16:
+		n := MustBeNumber[uint16](L, lv)
+		return any(n).(T)
+	case uint32:
+		n := MustBeNumber[uint32](L, lv)
+		return any(n).(T)
+	case uint64:
+		n := MustBeNumber[uint64](L, lv)
+		return any(n).(T)
+	case bool:
+		if lv.Type() != LTBool {
+			L.RaiseError("must be %T , got %s", vt, lv.Type().String())
+			return vt
+		}
+		if lv.(LBool) == LTrue {
+			return any(true).(T)
+		}
+		return any(false).(T)
+	default:
+		L.RaiseError("must be %T , got %s", vt, lv.Type().String())
+		return vt
+	}
 }
 
 func Unpack[T any](L *LState) []T {
