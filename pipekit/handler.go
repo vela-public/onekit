@@ -173,6 +173,10 @@ func (h *Handler[T]) InvokerFunc(v any) {
 		h.invoke = func(a *Context[T]) error {
 			return h.SafeCall(func(v T) error { return elem(v) }, a)
 		}
+	case lua.InvokerOf[T]:
+		h.invoke = func(a *Context[T]) error {
+			return h.SafeCall(func(v T) error { return elem(v) }, a)
+		}
 	case func(any):
 		h.invoke = func(a *Context[T]) error {
 			return h.SafeCall(func(v T) error { elem(v); return nil }, a)

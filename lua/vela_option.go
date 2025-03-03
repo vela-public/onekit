@@ -1,35 +1,23 @@
 package lua
 
-type OptionEx struct {
-	State    *LState
-	OnAfter  func() error
-	OnBefore func() error
+type Options2[T any] struct {
+	CallStackSize       int
+	RegistrySize        int
+	SkipOpenLibs        bool
+	MinimizeStackMemory bool
+	RegistryGrowStep    int
+	RegistryMaxSize     int
+	Exdata              T
 }
 
-type OptionFunc func(*OptionEx)
-
-func NewOption(v ...OptionFunc) *OptionEx {
-	opt := &OptionEx{}
-
-	for _, fn := range v {
-		fn(opt)
-	}
-	return opt
-}
-
-func WithState(co *LState) OptionFunc {
-	return func(opt *OptionEx) {
-		opt.State = co
-	}
-}
-
-func After(fn func() error) OptionFunc {
-	return func(opt *OptionEx) {
-		opt.OnAfter = fn
-	}
-}
-func Before(fn func() error) OptionFunc {
-	return func(opt *OptionEx) {
-		opt.OnBefore = fn
+func (opt *Options2[T]) Unwrap() *Options {
+	return &Options{
+		CallStackSize:       opt.CallStackSize,
+		RegistrySize:        opt.RegistrySize,
+		SkipOpenLibs:        opt.SkipOpenLibs,
+		MinimizeStackMemory: opt.MinimizeStackMemory,
+		RegistryGrowStep:    opt.RegistryGrowStep,
+		RegistryMaxSize:     opt.RegistryMaxSize,
+		Exdata:              opt.Exdata,
 	}
 }

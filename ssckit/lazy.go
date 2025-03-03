@@ -2,7 +2,6 @@ package ssckit
 
 import (
 	"context"
-	"fmt"
 	"github.com/vela-public/onekit/layer"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/luakit"
@@ -29,8 +28,7 @@ func (l *LazySSOC) Context() context.Context {
 func (l *LazySSOC) stdio(p lua.Preloader) {
 	p.SetGlobal("print", lua.NewFunction(func(co *lua.LState) int {
 		text := luakit.Format(co, 0)
-		fmt.Println(text)
-		//l.app.Logger().Debug(text)
+		l.app.Logger().Debug(text)
 		return 0
 	}))
 }

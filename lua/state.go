@@ -110,7 +110,7 @@ type Options struct {
 	// `CallStackSize` in order to minimize memory usage. This does incur a slight performance penalty.
 	MinimizeStackMemory bool
 	//private data object
-	Payload interface{}
+	Exdata any
 }
 
 /* }}} */

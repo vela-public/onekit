@@ -226,7 +226,7 @@ func (t *Task) do() error {
 	kit := tree.NewKit() // 功能的注入 lua 虚拟机
 	t.Preload(kit)
 	t.private.LState = kit.NewState(ctx, t.Key(), func(option *lua.Options) {
-		option.Payload = t
+		option.Exdata = t
 	})
 
 	tree.Submit(t)

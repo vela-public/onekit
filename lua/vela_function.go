@@ -46,3 +46,12 @@ func (i Invoker) AssertFloat64() (float64, bool)     { return 0, false }
 func (i Invoker) AssertString() (string, bool)       { return "", false }
 func (i Invoker) AssertFunction() (*LFunction, bool) { return nil, false }
 func (i Invoker) Hijack(*CallFrameFSM) bool          { return false }
+
+type InvokerOf[T any] func(T) error
+
+func (i InvokerOf[T]) String() string                     { return fmt.Sprintf("invoker function int : %p", i) }
+func (i InvokerOf[T]) Type() LValueType                   { return LTInvoker }
+func (i InvokerOf[T]) AssertFloat64() (float64, bool)     { return 0, false }
+func (i InvokerOf[T]) AssertString() (string, bool)       { return "", false }
+func (i InvokerOf[T]) AssertFunction() (*LFunction, bool) { return nil, false }
+func (i InvokerOf[T]) Hijack(*CallFrameFSM) bool          { return false }

@@ -247,8 +247,9 @@ type LState struct {
 	ctx          context.Context
 	ctxCancelFn  context.CancelFunc
 	private      struct {
-		Exdata interface{}
-		Pool   *sync.Pool
+		Exdata  interface{}
+		Exdata2 interface{}
+		Pool    *sync.Pool
 	}
 }
 

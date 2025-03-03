@@ -53,12 +53,12 @@ func (app *Application) init() {
 	if err != nil {
 		exe = os.Args[0]
 	}
-	dir, err := filepath.Abs(exe)
+	abs, err := filepath.Abs(exe)
 	if err != nil {
 		panic(err)
 	}
 	app.private.Executable = exe
-	app.private.WorkingDir = dir
+	app.private.WorkingDir = filepath.Dir(abs)
 }
 
 func (app *Application) NewServTree() {

@@ -5,7 +5,6 @@ import (
 )
 
 type Setting struct {
-	Mode   string   `lua:"mode"`
 	Name   string   `lua:"name"`
 	Limit  int      `lua:"limit"`
 	Thread int      `lua:"thread"`
@@ -22,14 +21,13 @@ type Setting struct {
 
 func Default(name string) *Setting {
 	return &Setting{
-		Mode:   "history",
 		Name:   name,
 		Limit:  0,
 		Delim:  '\n',
-		Wait:   30, // 30s
+		Wait:   10, // 10s
 		Thread: 64,
 		Follow: true,
-		Poll:   10,
+		Poll:   3,
 		//Bucket: []string{"SHM_FILE_RECORD", strings.ToUpper(name)},
 	}
 }

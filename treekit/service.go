@@ -114,7 +114,7 @@ func (ms *MicroService) build() {
 	kit := ms.root.LuaKit() // 功能的注入 lua 虚拟机
 	ms.Preload(kit)
 	ms.private.LState = kit.NewState(ctx, ms.Key(), func(option *lua.Options) {
-		option.Payload = ms
+		option.Exdata = ms
 	})
 
 	ms.set(Register)

@@ -2,10 +2,11 @@ package filekit
 
 import (
 	"context"
-	"github.com/panjf2000/ants/v2"
+	"fmt"
 	"github.com/valyala/fastjson"
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/cond"
+	"github.com/vela-public/onekit/gopool"
 	"github.com/vela-public/onekit/jsonkit"
 	"github.com/vela-public/onekit/noop"
 	"github.com/vela-public/onekit/pipekit"
@@ -42,18 +43,15 @@ type FileTail struct {
 		context  context.Context
 		cancel   context.CancelFunc
 		parser   *fastjson.ParserPool
-		pool     *ants.Pool
+		pool     gopool.Pool
 		Chain    *pipekit.Chain[*Line]
 		Switch   *pipekit.Switch[*Line]
+		Debug    *pipekit.Chain[string]
 		DB       *bbolt.DB
 		Drop     *cond.Ignore
 		SkipFile []func(string) bool
 		Seeker   Seeker
 	}
-}
-
-func (ft *FileTail) E(format string, v ...interface{}) {
-	ft.logger.Errorf(format, v...)
 }
 
 func (ft *FileTail) Name() string {
@@ -64,6 +62,16 @@ func (ft *FileTail) Decode(line *Line) {
 	f := &jsonkit.FastJSON{}
 	f.ParseText(cast.B2S(line.Text))
 	line.Json = f
+}
+
+func (ft *FileTail) Debugf(format string, v ...interface{}) {
+	if ft.private.Debug.Len() == 0 {
+		return
+	}
+	ft.private.Debug.Invoke(fmt.Sprintf(format, v...))
+}
+func (ft *FileTail) Errorf(format string, v ...interface{}) {
+	ft.logger.Errorf(format, v...)
 }
 
 func (ft *FileTail) DataLog() (read, done int64) {
@@ -81,15 +89,11 @@ func (ft *FileTail) Input(line *Line) {
 		return
 	}
 
-	e := ft.private.pool.Submit(func() {
+	ft.private.pool.CtxGo(ft.private.context, func() {
 		ft.private.Chain.Invoke(line)
 		ft.private.Switch.Invoke(line)
 		atomic.AddInt64(&ft.datalog.done, 1)
 	})
-
-	if e != nil {
-		ft.logger.Errorf("input submit fail %v", e)
-	}
 }
 
 func (ft *FileTail) Wait() {
@@ -105,11 +109,11 @@ func (ft *FileTail) Tell(file string, offset int64) {
 
 	err := ft.private.Seeker.Save(file, offset)
 	if err != nil {
-		ft.logger.Errorf("%s tail save seek fail %v", file, err)
+		ft.Errorf("%s tail save seek fail %v", file, err)
 		return
 	}
 
-	ft.logger.Errorf("%s tail save seek:%d", file, offset)
+	ft.Debugf("%s tail save seek:%d", file, offset)
 }
 
 func (ft *FileTail) SeekTo(name string) int64 {
@@ -118,7 +122,7 @@ func (ft *FileTail) SeekTo(name string) int64 {
 	}
 	seek, err := ft.private.Seeker.Find(name)
 	if err != nil {
-		ft.logger.Errorf("%s tail seek fail %v", name, err)
+		ft.Errorf("%s tail seek fail %v", name, err)
 	}
 	return seek
 }
@@ -146,7 +150,7 @@ func (ft *FileTail) WaitFor(callback func() (stop bool)) {
 				return
 			}
 		case <-ft.Done():
-			ft.logger.Errorf("%s wait exit", ft.Name())
+			ft.Errorf("%s wait exit", ft.Name())
 			return
 		}
 	}
@@ -159,12 +163,19 @@ func (ft *FileTail) Prepare(parent context.Context) {
 		ft.private.cancel = context.WithCancel(parent)
 
 	ft.private.limit = NewLimit(ft.private.context, ft.setting.Limit)
-	ft.private.pool, _ = ants.NewPool(ft.setting.Thread, ants.WithPanicHandler(func(v interface{}) {
-		ft.logger.Errorf("pool panic %v", v)
-	}))
-
 	ft.private.history = make(map[string]*Section)
 	ft.private.parser = new(fastjson.ParserPool)
+
+	//new pool
+	ft.private.pool = gopool.NewPool(ft.Name(), int32(ft.setting.Thread), gopool.NewConfig())
+
+	ft.private.pool.SetErrorHandler(func(err error) {
+		ft.Errorf("%v", err)
+	})
+
+	ft.private.pool.SetPanicHandler(func(ctx context.Context, err any) {
+		ft.Errorf("%v", err)
+	})
 }
 
 func (ft *FileTail) clean(data map[string]*Section) {
@@ -176,7 +187,7 @@ func (ft *FileTail) clean(data map[string]*Section) {
 
 		s.close()
 		s.flag = Cleaned
-		ft.logger.Errorf("clean %s", s.path)
+		ft.Errorf("clean %s", s.path)
 	}
 }
 
@@ -221,13 +232,13 @@ func (ft *FileTail) Upsert() {
 func (ft *FileTail) Detect(history map[string]*Section, file string) {
 	filename, err := filepath.Abs(file)
 	if err != nil {
-		ft.logger.Errorf("detect %s fail %v", filename, err)
+		ft.Errorf("detect %s fail %v", filename, err)
 		return
 	}
 
 	stat, err := os.Stat(filename)
 	if err != nil {
-		ft.logger.Errorf("read stat %s fail %v", filename, err)
+		ft.Errorf("read stat %s fail %v", filename, err)
 		return
 	}
 
@@ -259,10 +270,10 @@ func (ft *FileTail) observer() {
 	for {
 		select {
 		case <-ft.Done():
-			ft.logger.Errorf("%s watch exit", ft.Name())
+			ft.Errorf("%s watch exit", ft.Name())
 			return
 		case <-tk.C:
-			ft.Upsert()
+			ft.private.pool.Go(ft.Upsert)
 		}
 	}
 }
@@ -296,7 +307,6 @@ func (ft *FileTail) Cancel() {
 }
 
 func (ft *FileTail) Close() error {
-	ft.private.pool.Release()
 	ft.Cancel()
 	return nil
 }
@@ -331,6 +341,7 @@ func NewTail(name string, opts ...FileTailFunc) *FileTail {
 
 	ft.private.Chain = pipekit.NewChain[*Line]()
 	ft.private.Switch = pipekit.NewSwitch[*Line]()
+	ft.private.Debug = pipekit.NewChain[string]()
 	ft.private.Drop = cond.NewIgnore()
 	return ft
 }

@@ -23,6 +23,11 @@ func LazyTail(ctx context.Context, pattern ...string) *LazyFileTail {
 		pattern: pattern,
 		tail:    NewTail(name),
 	}
+	tail.Mem()
+	tail.SeekEnd()
+	tail.Follow(true)
+	tail.Thread(100)
+	tail.Poll(3)
 	tail.Target(pattern...)
 	return tail
 }
@@ -77,6 +82,11 @@ func (l *LazyFileTail) Mem() *LazyFileTail {
 	return l
 }
 
+func (l *LazyFileTail) Poll(n int) *LazyFileTail {
+	l.tail.setting.Poll = n
+	return l
+}
+
 func (l *LazyFileTail) SkipFile(fn func(string) bool) *LazyFileTail {
 	l.tail.private.SkipFile = append(l.tail.private.SkipFile, fn)
 	return l
@@ -88,7 +98,6 @@ func (l *LazyFileTail) WaitFor(n int) *LazyFileTail {
 }
 
 func (l *LazyFileTail) Location(offset int64, whence int) *LazyFileTail {
-	l.tail.setting.Mode = "location"
 	l.tail.setting.Location.Offset = offset
 	l.tail.setting.Location.Whence = whence
 	return l

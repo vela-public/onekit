@@ -116,7 +116,6 @@ func TypeFor(v any) (LValue, bool) {
 		return LNumber(vt), true
 	case []byte:
 		return B2L(vt), true
-
 	case string:
 		return S2L(vt), true
 	case time.Time:
@@ -153,7 +152,6 @@ func TypeFor(v any) (LValue, bool) {
 		return SliceTo[bool](vt), true
 	case []LValue:
 		return SliceTo[LValue](vt), true
-
 	case map[string]string:
 		return MapTo[string, string](vt), true
 	case map[string]int:
@@ -190,7 +188,6 @@ func TypeFor(v any) (LValue, bool) {
 		return MapTo[string, []byte](vt), true
 	case map[string]any:
 		return MapTo[string, any](vt), true
-
 	case map[int]string:
 		return MapTo[int, string](vt), true
 	case map[int][]byte:

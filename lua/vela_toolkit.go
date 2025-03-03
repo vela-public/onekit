@@ -403,6 +403,21 @@ func Exdata[T any](L *LState) (t T, ok bool) {
 	return
 }
 
+func Exdata2[T any](L *LState) (t T, ok bool) {
+	if L == nil {
+		return
+	}
+	t, ok = L.private.Exdata2.(T)
+	return
+}
+
+func SetExdata2[T any](L *LState, t T) {
+	if L == nil {
+		return
+	}
+	L.private.Exdata2 = t
+}
+
 func Check[T any](L *LState, lv LValue) (t T) {
 	to := func(v any) T {
 		return v.(T)

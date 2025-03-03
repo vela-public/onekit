@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"io"
 	"os"
-	"path/filepath"
 	"runtime"
 	"time"
 )
@@ -15,15 +14,15 @@ type SeekInfo struct {
 }
 
 type Section struct {
-	flag     ErrNo
-	info     error
-	tail     *FileTail
-	path     string
-	seek     int64
-	location SeekInfo
-	file     *os.File
-	buff     *bufio.Reader
-	time     time.Time //start time
+	again bool
+	flag  ErrNo
+	info  error
+	tail  *FileTail
+	path  string
+	seek  int64
+	file  *os.File
+	buff  *bufio.Reader
+	time  time.Time //start time
 }
 
 func (s *Section) open() (stop bool) {
@@ -38,11 +37,19 @@ func (s *Section) open() (stop bool) {
 		return !os.IsNotExist(err)
 	}
 
-	ret, err := file.Seek(s.seek, io.SeekStart)
-	if err != nil {
-		s.tail.E("%s seek fail %v", s.path, err)
+	var ret int64
+	if !s.again && s.tail.setting.Location.Whence != 0 {
+		ret, err = file.Seek(s.tail.setting.Location.Offset, s.tail.setting.Location.Whence)
 	} else {
-		s.tail.E("%s seek follow %d", s.path, ret)
+		ret, err = file.Seek(s.seek, io.SeekStart)
+	}
+
+	s.again = true
+
+	if err != nil {
+		s.tail.Errorf("%s seek fail %v", s.path, err)
+	} else {
+		s.tail.Debugf("%s seek follow %d", s.path, ret)
 	}
 
 	s.file = file
@@ -59,7 +66,7 @@ func (s *Section) follow() bool {
 	if err != nil {
 		s.flag = Paused
 		s.info = err
-		s.tail.E("%s stat fail %v", s.path, err)
+		s.tail.Errorf("%s stat fail %v", s.path, err)
 		return false
 	}
 
@@ -68,11 +75,11 @@ func (s *Section) follow() bool {
 		s.flag = Paused
 		s.info = io.EOF
 		s.seek = size
-		s.tail.logger.Infof("%s not change offset:%d size:%d", s.path, seek, size)
+		s.tail.Debugf("%s not change offset:%d size:%d", s.path, seek, size)
 		return false
 	}
 
-	s.tail.E("%s record offset:%d size:%d", s.path, seek, size)
+	s.tail.Debugf("%s record offset:%d size:%d", s.path, seek, size)
 	if seek > size {
 		s.seek = 0
 	} else {
@@ -105,13 +112,13 @@ func (s *Section) Handle(raw []byte) {
 func (s *Section) close() {
 
 	if s.file == nil {
-		s.tail.E("%s not file handle", s.path)
+		s.tail.Errorf("%s not file handle", s.path)
 		return
 	}
 
 	seek, e := s.file.Seek(0, io.SeekCurrent)
 	if e != nil {
-		s.tail.E("%s current seek error %v", s.path, e)
+		s.tail.Errorf("%s current seek error %v", s.path, e)
 		return
 	}
 
@@ -119,11 +126,11 @@ func (s *Section) close() {
 
 	err := s.file.Close()
 	if err != nil {
-		s.tail.E("%s fd close fail %v", s.path, err)
+		s.tail.Errorf("%s fd close fail %v", s.path, err)
 		return
 	}
 
-	s.tail.E("Tx %s fd close succeed", s.path)
+	s.tail.Debugf("Tx %s fd close succeed", s.path)
 }
 
 func (s *Section) detect() {
@@ -165,55 +172,53 @@ func (s *Section) line() {
 			s.flag = Paused
 			buff := make([]byte, 1024*32)
 			runtime.Stack(buff, false)
-			s.tail.E("file:%s error:%v stack:\n%s", s.path, r, string(buff))
+			s.tail.Errorf("file:%s error:%v stack:\n%s", s.path, r, string(buff))
 		}
 		s.close()
 	}()
+
+	fsm := &LineFSM{
+		tail: s.tail,
+		buff: s.buff,
+		next: false,
+	}
 
 	for {
 
 		select {
 		case <-s.tail.Done():
 			s.flag = Done
-			s.tail.E("%s readline exit", s.path)
+			s.tail.Errorf("%s readline exit", s.path)
 			return
 
 		default:
-			s.tail.Wait()
+			fsm.Read()
+			if fsm.err == nil && fsm.next {
+				continue
+			}
 
-			raw, err := s.buff.ReadBytes(s.tail.setting.Delim)
+			err := fsm.UnwrapErr()
 			if err == nil {
-				s.Handle(raw)
+				s.Handle(fsm.Text())
 				continue
 			}
 
 			switch err.Error() {
 			case io.EOF.Error():
 				s.flag = Paused
-				s.Handle(raw)
+				s.Handle(fsm.Text())
 				return
 
 			case os.ErrClosed.Error():
 				s.flag = Paused
-				s.Handle(raw)
+				s.Handle(fsm.Text())
 				return
 			default:
 				s.flag = Paused
 				s.info = err
-				s.tail.E("%s read line error %v", s.path, err)
+				s.tail.Errorf("%s read line error %v", s.path, err)
 				return
 			}
 		}
-	}
-}
-
-func (ft *FileTail) Section(path string) *Section {
-	path, err := filepath.Abs(filepath.Clean(path))
-	if err != nil {
-		path = filepath.Clean(path)
-	}
-
-	return &Section{
-		path: path,
 	}
 }

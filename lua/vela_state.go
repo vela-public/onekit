@@ -1,6 +1,7 @@
 package lua
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -109,44 +110,51 @@ func (ls *LState) StackTrace(level int) string {
 func (ls *LState) Exdata() any {
 	return ls.private.Exdata
 }
-func (ls *LState) NewThreadEx() *LState {
-	co, _ := ls.NewThread()
-	return co
 
-	/*
-		ctx, cancel := context.WithCancel(ls.Context())
-		al := newAllocator(32)
-		co := &LState{
-			name:    ls.name,
-			G:       ls.G,
-			Env:     ls.Env,
-			Parent:  ls,
-			Panic:   ls.Panic,
-			Dead:    ls.Dead,
-			Options: ls.Options,
-
-			stop:         0,
-			alloc:        al,
-			currentFrame: nil,
-			wrapped:      false,
-			uvcache:      nil,
-			hasErrorFunc: false,
-			mainLoop:     ls.mainLoop,
-			ctx:          ctx,
-			ctxCancelFn:  cancel,
-			private:      ls.private,
-		}
-		if co.Options.MinimizeStackMemory {
-			co.stack = newAutoGrowingCallFrameStack(ls.Options.CallStackSize)
-		} else {
-			co.stack = newFixedCallFrameStack(ls.Options.CallStackSize)
-		}
-		co.reg = newRegistry(ls, ls.Options.RegistrySize, ls.Options.RegistryGrowStep, ls.Options.RegistryMaxSize, al)
-		return ls
-	*/
+func (ls *LState) Exdata2() any {
+	return ls.private.Exdata2
 }
 
-func (ls *LState) Coroutine() *LState {
+func (ls *LState) NewThreadEx() *LState {
+	options := ls.Options
+	al := newAllocator(32)
+	co := &LState{
+		name:         ls.name,
+		G:            ls.G,
+		Env:          ls.Env,
+		Parent:       nil,
+		Panic:        panicWithTraceback,
+		Dead:         false,
+		Options:      options,
+		stop:         0,
+		alloc:        al,
+		currentFrame: nil,
+		wrapped:      false,
+		uvcache:      nil,
+		hasErrorFunc: false,
+		mainLoop:     mainLoop,
+		ctx:          nil,
+		private:      ls.private,
+	}
+
+	if options.MinimizeStackMemory {
+		co.stack = newAutoGrowingCallFrameStack(options.CallStackSize)
+	} else {
+		co.stack = newFixedCallFrameStack(options.CallStackSize)
+	}
+
+	co.reg = newRegistry(co, options.RegistrySize, options.RegistryGrowStep, options.RegistryMaxSize, al)
+	if ls.ctx != nil {
+		co.mainLoop = mainLoopWithContext
+		ctx, cancel := context.WithCancel(ls.ctx)
+		co.ctx = ctx
+		co.ctxCancelFn = cancel
+	}
+
+	return co
+}
+
+func (ls *LState) pool() *sync.Pool {
 	if ls.private.Pool == nil {
 		ls.private.Pool = &sync.Pool{
 			New: func() interface{} {
@@ -154,17 +162,17 @@ func (ls *LState) Coroutine() *LState {
 			},
 		}
 	}
+	return ls.private.Pool
+}
 
-	co := ls.private.Pool.Get().(*LState)
+func (ls *LState) Coroutine() *LState {
+	co := ls.pool().Get().(*LState)
 	return co
 }
 
 func (ls *LState) Keepalive(co *LState) {
-	if ls.private.Pool == nil {
-		return
-	}
 	co.SetTop(0)
-	ls.private.Pool.Put(co)
+	ls.pool().Put(co)
 }
 
 func (ls *LState) PanicErr(e error) {
@@ -180,7 +188,6 @@ func NewStateEx(name string, fns ...func(*Options)) *LState {
 		CallStackSize: 128,
 		RegistrySize:  128,
 	}
-
 	for _, fn := range fns {
 		fn(opt)
 	}
@@ -206,7 +213,8 @@ func NewStateEx(name string, fns ...func(*Options)) *LState {
 	if !opt.SkipOpenLibs {
 		co.OpenLibs()
 	}
+
 	co.name = name
-	co.private.Exdata = opt.Payload
+	co.private.Exdata = opt.Exdata
 	return co
 }

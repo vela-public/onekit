@@ -8,14 +8,14 @@ import (
 func (app *Application) startup() {
 	r := app.Transport().R()
 	_ = r.POST("/api/v1/agent/startup", r.Then(func(ctx *fasthttp.RequestCtx) error {
-		cfg := &Config{}
+		cfg := Config{}
 		dat := ctx.Request.Body()
-		err := json.Unmarshal(dat, cfg)
+		err := json.Unmarshal(dat, &cfg)
 		if err != nil {
 			return err
 		}
 		app.private.Logger.Apply(cfg.Logger)
-		app.config = cfg
+		app.config = &cfg
 		return nil
 	}))
 }
