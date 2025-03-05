@@ -22,10 +22,17 @@ func (s *Switch) InvokeL(L *lua.LState) int {
 	return 0
 }
 
-func (s *Switch) CaseL(L *lua.LState) int {
+func (s *Switch) CaseTextL(L *lua.LState) int {
 	cnd := cond.CheckMany(L, cond.Seek(0))
 	c := s.Case(Cnd(cnd))
-	L.Push(lua.NewGeneric[*Case](c))
+	L.Push(c)
+	return 1
+}
+
+func (s *Switch) CaseCEL(L *lua.LState) int {
+	cnd := cond.CheckMany(L, cond.Seek(0))
+	c := s.Case(Cnd(cnd))
+	L.Push(c)
 	return 1
 }
 
@@ -51,7 +58,9 @@ func (s *Switch) AfterL(L *lua.LState) int {
 func (s *Switch) Index(L *lua.LState, key string) lua.LValue {
 	switch key {
 	case "case":
-		return lua.NewFunction(s.CaseL)
+		return lua.NewFunction(s.CaseTextL)
+	case "case_cel":
+		return lua.NewFunction(s.CaseCEL)
 	case "one":
 		return lua.NewFunction(s.OneL)
 	case "before":

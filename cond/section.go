@@ -19,8 +19,8 @@ type Section struct {
 	data      []string
 	regex     []*regexp.Regexp
 	subnet    []*net.IPNet
-	execFn    func(...any) (error, bool)
 	partition int
+	invoke    func(any, ...OptionFunc) bool
 }
 
 func (s *Section) Partition(part int) {
@@ -122,16 +122,25 @@ func (s *Section) withB(offset *int, n int) {
 			*offset = sep + 2
 			return
 		}
-		s.method = Eq
 		*offset = sep + 1
 		return
 
 	case '>':
+		if sep+1 < len(s.raw) && s.raw[sep+1] == '=' {
+			*offset = sep + 2
+			s.method = Ge
+			return
+		}
 		s.method = Gt
 		*offset = sep + 1
 		return
 
 	case '<':
+		if sep+1 < len(s.raw) && s.raw[sep+1] == '=' {
+			*offset = sep + 2
+			s.method = Le
+			return
+		}
 		s.method = Lt
 		*offset = sep + 1
 		return
@@ -486,10 +495,14 @@ func (s *Section) Call(ov *option) (bool, error) {
 	}
 
 	switch {
-	case s.method == Fn:
-		return false, nil
 	case s.method == Pass:
 		return true, nil
+	case s.method == Fn:
+		if s.invoke == nil {
+			return false, nil
+		}
+		return s.invoke(ov.value), nil
+
 	case s.method == Unary && len(s.keys) > 0: //!key , true , false 这类单目运算
 		return s.pure(ov)
 	case s.method == Unary && len(s.data) > 0: // 单目运算全局匹配

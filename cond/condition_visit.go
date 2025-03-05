@@ -29,9 +29,47 @@ func (cnd *Cond) CheckMany(L *lua.LState, opt ...OptionFunc) {
 			switch lv.Type() {
 			case lua.LTFunction:
 				sec.method = Fn
+				sec.invoke = func(v any, options ...OptionFunc) bool {
+					np := lua.P{
+						Fn:      lv.(*lua.LFunction),
+						Protect: true,
+						NRet:    1,
+					}
+					co := L.Coroutine()
+					defer func() {
+						L.Keepalive(co)
+					}()
+
+					err := co.CallByParam(np, lua.ReflectTo(v))
+					if err != nil {
+						return false
+					}
+					return lua.IsTrue(co.Get(-1))
+				}
+			case lua.LTGoCond:
+				sec.method = Fn
+				sec.invoke = func(v any, options ...OptionFunc) bool {
+					return lv.(lua.GoCond[any])(v)
+				}
+
 			case lua.LTGoFuncErr:
+				sec.method = Fn
+				sec.invoke = func(v any, options ...OptionFunc) bool {
+					err := lv.(lua.GoFuncErr)(v)
+					return err == nil
+				}
 			case lua.LTGoFuncStr:
+				sec.method = Fn
+				sec.invoke = func(v any, options ...OptionFunc) bool {
+					str := lv.(lua.GoFuncStr)(v)
+					return str == ""
+				}
 			case lua.LTGoFuncInt:
+				sec.method = Fn
+				sec.invoke = func(v any, options ...OptionFunc) bool {
+					va := lv.(lua.GoFuncInt)(v)
+					return va == 0
+				}
 
 			default:
 				if item := lua.IsString(lv); len(item) > 0 {

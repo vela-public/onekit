@@ -55,3 +55,12 @@ func (i InvokerOf[T]) AssertFloat64() (float64, bool)     { return 0, false }
 func (i InvokerOf[T]) AssertString() (string, bool)       { return "", false }
 func (i InvokerOf[T]) AssertFunction() (*LFunction, bool) { return nil, false }
 func (i InvokerOf[T]) Hijack(*CallFrameFSM) bool          { return false }
+
+type GoCond[T any] func(T) bool
+
+func (gc GoCond[T]) String() string                     { return fmt.Sprintf("function: %T", gc) }
+func (gc GoCond[T]) Type() LValueType                   { return LTGoCond }
+func (gc GoCond[T]) AssertFloat64() (float64, bool)     { return 0, false }
+func (gc GoCond[T]) AssertString() (string, bool)       { return "", false }
+func (gc GoCond[T]) AssertFunction() (*LFunction, bool) { return nil, false }
+func (gc GoCond[T]) Hijack(*CallFrameFSM) bool          { return false }

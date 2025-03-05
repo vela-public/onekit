@@ -260,5 +260,7 @@ func ReflectTo[T any](t T) LValue {
 		return v
 	}
 
-	return NewReflect(t).UnwrapLua()
+	return NewGenericR[T](t)
+
+	//return NewReflect(t).UnwrapLua()
 }
