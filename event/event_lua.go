@@ -3,6 +3,7 @@ package event
 import (
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/lua"
+	"go.uber.org/zap/zapcore"
 	"time"
 )
 
@@ -12,6 +13,13 @@ func (e *Event) AssertFloat64() (float64, bool)         { return float64(len(e.M
 func (e *Event) AssertString() (string, bool)           { return "", false }
 func (e *Event) AssertFunction() (*lua.LFunction, bool) { return nil, false }
 func (e *Event) Hijack(fsm *lua.CallFrameFSM) bool      { return false }
+
+func (e *Event) setL(L *lua.LState) int {
+	key := L.CheckString(1)
+	val := L.Get(2)
+	e.Set(key, val)
+	return 0
+}
 
 func (e *Event) NewIndex(L *lua.LState, key string, val lua.LValue) {
 	switch key {
@@ -38,11 +46,13 @@ func (e *Event) NewIndex(L *lua.LState, key string, val lua.LValue) {
 func (e *Event) Index(L *lua.LState, key string) lua.LValue {
 	switch key {
 	case "error":
-		e.Error()
+		e.Save(zapcore.ErrorLevel)
 	case "debug":
-		e.Debug()
+		e.Save(zapcore.DebugLevel)
 	case "report":
 		e.Report()
+	case "set":
+		return lua.NewFunction(e.setL)
 	}
 
 	return e

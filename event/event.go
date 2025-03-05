@@ -6,6 +6,7 @@ import (
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/layer"
 	"github.com/vela-public/onekit/todo"
+	"go.uber.org/zap/zapcore"
 	"time"
 )
 
@@ -78,16 +79,19 @@ func (e *Event) Error() *Event {
 	return e
 }
 
-func (e *Event) Debug() *Event {
+func (e *Event) Env() layer.Environment {
+	return e.private.Env
+}
+
+func (e *Event) Logger() layer.LoggerType {
+	return e.Env().Logger()
+}
+
+func (e *Event) Save(level zapcore.Level) *Event {
 	if e.private.Env == nil {
 		return e
 	}
-	e.private.Env.Logger().Debug(e.Text())
-	return e
-}
-
-func (e *Event) Info(logger layer.LoggerType) *Event {
-	logger.Info(e.Text())
+	e.Logger().Save(level, e.Text())
 	return e
 }
 

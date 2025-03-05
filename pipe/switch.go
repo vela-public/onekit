@@ -1,5 +1,9 @@
 package pipe
 
+import (
+	"github.com/vela-public/onekit/lua"
+)
+
 type Switch struct {
 	Debug   bool
 	Break   bool
@@ -8,6 +12,13 @@ type Switch struct {
 	Before  *Chain
 	After   *Chain
 }
+
+func (s *Switch) String() string                         { return "switch" }
+func (s *Switch) Type() lua.LValueType                   { return lua.LTObject }
+func (s *Switch) AssertFloat64() (float64, bool)         { return float64(len(s.Cases)), true }
+func (s *Switch) AssertString() (string, bool)           { return s.String(), true }
+func (s *Switch) AssertFunction() (*lua.LFunction, bool) { return lua.NewFunction(s.InvokeL), true }
+func (s *Switch) Hijack(fsm *lua.CallFrameFSM) bool      { return false }
 
 func More(ctx *Context, more ...func(*Context)) {
 	sz := len(more)

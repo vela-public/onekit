@@ -17,7 +17,7 @@ func (ms *MicroService) NewServiceTraceL(L *lua.LState) int {
 	line := L.Where(1)
 	text := "[" + line[:len(line)-1] + "]" + luakit.Format(L, 0)
 
-	ms.LazyEvent().Trace(text).Report()
+	ms.LazyEvent().Trace(text).Save(zapcore.InfoLevel).Report()
 	return 0
 }
 
@@ -25,7 +25,7 @@ func (ms *MicroService) NewServiceErrorL(L *lua.LState) int {
 	line := L.Where(1)
 	text := "[" + line[:len(line)-1] + "]" + luakit.Format(L, 0)
 
-	ms.LazyEvent().Error(text).Report()
+	ms.LazyEvent().Error(text).Save(zapcore.ErrorLevel).Report()
 	return 0
 }
 
@@ -40,7 +40,7 @@ func (ms *MicroService) NewServiceDebugL(L *lua.LState) int {
 	line := L.Where(1)
 	text := "[" + line[:len(line)-1] + "]" + luakit.Format(L, 0)
 
-	ev := ms.LazyEvent().Debug(text).Debug()
+	ev := ms.LazyEvent().Debug(text).Save(zapcore.DebugLevel)
 	if ms.Enable(zapcore.DebugLevel) {
 		ev.Report()
 	}

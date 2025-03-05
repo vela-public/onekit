@@ -9,20 +9,24 @@ import (
 	"strings"
 )
 
+type UpstreamConfig struct {
+	Name  string            `lua:"name"`
+	Peers map[string]Weight `lua:"peers"`
+}
+
 type Upstream struct {
-	name  string
-	peers map[string]Weight
-	srv   *ReverseProxy
+	config *UpstreamConfig
+	srv    *ReverseProxy
 }
 
 func (u *Upstream) Metadata() libkit.DataKV[string, any] {
 	return nil
 }
-func (u *Upstream) Name() string   { return u.name }
+func (u *Upstream) Name() string   { return u.config.Name }
 func (u *Upstream) TypeOf() string { return reflect.TypeOf(u).String() }
 func (u *Upstream) Close() error   { return nil }
 func (u *Upstream) Start() error {
-	srv, err := NewReverseProxyWith(WithBalancer(u.peers))
+	srv, err := NewReverseProxyWith(WithBalancer(u.config.Peers))
 	if err != nil {
 		return err
 	}
@@ -36,7 +40,7 @@ func (u *Upstream) reset() {
 	}
 	old := u.srv
 	defer old.Close()
-	u.peers = nil
+	u.config.Peers = nil
 	u.srv = nil
 }
 
@@ -57,7 +61,7 @@ func (u *Upstream) OnErrorL(L *lua.LState) int {
 
 	u.srv.OnError = func(r *fasthttp.Request, res *fasthttp.Response, err error) {
 		text := err.Error()
-		for k, _ := range u.peers {
+		for k, _ := range u.config.Peers {
 			text = strings.ReplaceAll(text, k, "******:*")
 		}
 
@@ -76,30 +80,27 @@ func (u *Upstream) Index(L *lua.LState, key string) lua.LValue {
 	return lua.LNil
 }
 
+func (u *Upstream) Build(v *UpstreamConfig) error {
+	u.config = v
+	return nil
+}
+
+func (u *Upstream) Update(v *UpstreamConfig) error {
+	return nil
+}
+
 func NewProxyUpstream(L *lua.LState) int {
-	name := L.CheckString(1)
-	ups := &Upstream{name: name}
-	srv := treekit.Create(L, name, ups.TypeOf())
-	if srv.Nil() {
-		srv.Set(ups)
-	} else {
-		srv.Call(func(dat treekit.ProcessType) {
-			ups = dat.(*Upstream)
-			ups.reset()
-		})
-		srv.Reload()
-	}
-
-	tab := L.CheckTable(2)
-	tab.Range(func(peer string, w lua.LValue) {
-		peers := make(map[string]Weight)
-		peers[peer] = Weight(lua.CheckInt(L, w))
-		ups.peers = peers
+	pro := treekit.Lazy[Upstream, UpstreamConfig](L, 1)
+	pro.Build(func(conf *UpstreamConfig) *Upstream {
+		return &Upstream{config: conf}
 	})
 
-	treekit.Start(L, ups, func(e error) {
-		L.RaiseError("%v", e)
+	pro.Rebuild(func(conf *UpstreamConfig, u *Upstream) {
+		u.config = conf
+		u.reset()
 	})
-	L.Push(srv)
+
+	pro.Start()
+	L.Push(pro.Unwrap())
 	return 1
 }

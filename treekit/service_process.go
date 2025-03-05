@@ -10,7 +10,6 @@ type ProcessType interface {
 	Name() string
 	Start() error
 	Close() error
-	TypeOf() string
 	Metadata() libkit.DataKV[string, any]
 }
 
@@ -19,8 +18,13 @@ type Process struct {
 	flag    ErrNo //0: init 1: running 2: stop 3: error
 	info    error
 	from    string
+	typeof  string
 	private bool
 	data    ProcessType
+}
+
+func (pro *Process) Name() string {
+	return pro.data.Name()
 }
 
 func (pro *Process) Nil() bool {
@@ -95,6 +99,13 @@ func (pro *Process) set(op ErrNo) {
 
 func (pro *Process) Reload() {
 	pro.flag = Reload
+}
+
+func (pro *Process) Update(fn func(p ProcessType)) {
+	if fn == nil {
+		return
+	}
+	fn(pro.data)
 }
 
 func (pro *Process) Call(fn func(p ProcessType)) {

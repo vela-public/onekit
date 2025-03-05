@@ -6,7 +6,7 @@ import (
 )
 
 func (pro *Process) String() string                         { return fmt.Sprintf("%p", pro) }
-func (pro *Process) Type() lua.LValueType                   { return lua.LTService }
+func (pro *Process) Type() lua.LValueType                   { return lua.LTObject }
 func (pro *Process) AssertFloat64() (float64, bool)         { return 0, false }
 func (pro *Process) AssertString() (string, bool)           { return "", false }
 func (pro *Process) AssertFunction() (*lua.LFunction, bool) { return nil, false }
@@ -30,7 +30,7 @@ func (pro *Process) Private(L *lua.LState) {
 	switch dat := data.(type) {
 	case *MicroService:
 		if dat.Key() != pro.from {
-			L.RaiseError("current.task=%s processes.from=%s with %s not allow", dat.Key(), pro.from, pro.name)
+			L.RaiseError("%s processes.from=%s with %s not allow", dat.Key(), pro.from, pro.name)
 			return
 		}
 		pro.private = true

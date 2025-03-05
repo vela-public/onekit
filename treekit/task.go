@@ -130,14 +130,14 @@ func (t *Task) Startup(v ProcessType, x func(error)) {
 	name := v.Name()
 	pro, exist := t.have(name)
 	if !exist {
-		err := fmt.Errorf("current.task=%s not found %s", key, name)
+		err := fmt.Errorf("%s not found %s", key, name)
 		x(err)
 		return
 	}
 
 	from := pro.From()
 	if key != from {
-		err := fmt.Errorf("current.task=%s processes.from=%s with %s not allow", key, pro.from, pro.name)
+		err := fmt.Errorf("%s processes.from=%s with %s not allow", key, pro.from, pro.name)
 		x(err)
 		return
 	}

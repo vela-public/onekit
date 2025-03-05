@@ -53,7 +53,7 @@ func (ms *MicroService) View() *ServiceView {
 	for _, pro := range ms.processes.data {
 		r := &Runner{
 			Name:     pro.name,
-			Type:     pro.data.TypeOf(),
+			Type:     pro.typeof,
 			Status:   pro.Status(),
 			CodeVM:   pro.From(),
 			Private:  pro.private,

@@ -71,12 +71,6 @@ func Format(L *lua.LState, seek int) string {
 				args = append(args, lv)
 			case lua.LTGeneric:
 				args = append(args, lv.(lua.PackType).Unpack())
-			case lua.LTService:
-				em, ok := lv.(lua.PackType)
-				if ok {
-					args = append(args, em.Unpack())
-				}
-
 			default:
 				args = append(args, lv)
 			}

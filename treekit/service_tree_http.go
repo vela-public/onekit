@@ -26,34 +26,6 @@ func (te *Server) Handler() http.Handler {
 		}
 	})
 
-	/*
-		mux.HandleFunc("/load", func(w http.ResponseWriter, r *http.Request) {
-			key := r.URL.Query().Get("key")
-			if key == "" {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			path := r.URL.Query().Get("path")
-			text, err := os.ReadFile(path)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			err = te.tree.Register(key, text)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			te.tree.Wakeup()
-			w.WriteHeader(http.StatusOK)
-			w.Write(te.tree.Doc())
-
-		})
-
-	*/
 	return mux
 }
 

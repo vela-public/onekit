@@ -1,5 +1,15 @@
 package zapkit
 
+import "go.uber.org/zap/zapcore"
+
+func (l *Logger) Save(level zapcore.Level, v ...interface{}) {
+	l.sugar.Log(level, v...)
+}
+
+func (l *Logger) Savef(level zapcore.Level, format string, v ...interface{}) {
+	l.sugar.Logf(level, format, v...)
+}
+
 func (l *Logger) Debug(i ...interface{}) {
 	if l.sugar == nil {
 		return

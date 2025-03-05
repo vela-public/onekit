@@ -22,10 +22,6 @@ func (s *Switch) InvokeL(L *lua.LState) int {
 	return 0
 }
 
-func (s *Switch) AssertFunction() (*lua.LFunction, bool) {
-	return lua.NewFunction(s.InvokeL), true
-}
-
 func (s *Switch) CaseL(L *lua.LState) int {
 	cnd := cond.CheckMany(L, cond.Seek(0))
 	c := s.Case(Cnd(cnd))

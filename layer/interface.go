@@ -7,6 +7,7 @@ import (
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/problem"
 	"go.etcd.io/bbolt"
+	"go.uber.org/zap/zapcore"
 	"io"
 	"net"
 	"net/http"
@@ -42,6 +43,7 @@ type RouterType interface {
 }
 
 type LoggerType interface {
+	Save(zapcore.Level, ...interface{})
 	Debug(...interface{})
 	Info(...interface{})
 	Warn(...interface{})
@@ -56,6 +58,7 @@ type LoggerType interface {
 	Panicf(string, ...interface{})
 	Fatalf(string, ...interface{})
 	Tracef(string, ...interface{})
+	Savef(zapcore.Level, string, ...interface{})
 	Skip(n int) LoggerType
 }
 

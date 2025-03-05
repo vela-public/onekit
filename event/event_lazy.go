@@ -24,23 +24,27 @@ func (le *LazyEvent) apply(ev *Event) {
 func (le *LazyEvent) Error(format string, v ...interface{}) *Event {
 	ev := Error(le.xEnv, format, v...)
 	le.apply(ev)
+	le.xEnv.Logger().Error(ev.Text())
 	return ev
 }
 
 func (le *LazyEvent) Debug(format string, v ...interface{}) *Event {
 	ev := Debug(le.xEnv, format, v...)
 	le.apply(ev)
+	le.xEnv.Logger().Error(ev.Text())
 	return ev
 }
 
 func (le *LazyEvent) Trace(format string, v ...interface{}) *Event {
 	ev := Trace(le.xEnv, format, v...)
 	le.apply(ev)
+	le.xEnv.Logger().Error(ev.Text())
 	return ev
 }
 
 func (le *LazyEvent) Create(typeof string) *Event {
 	ev := NewEvent(le.xEnv, typeof)
 	le.apply(ev)
+	le.xEnv.Logger().Error(ev.Text())
 	return ev
 }

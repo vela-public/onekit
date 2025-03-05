@@ -307,6 +307,8 @@ func UnpackGo(L *LState) []any {
 			rc = append(rc, lv.(*LFunction))
 		case LTGeneric:
 			rc = append(rc, lv.(GenericType).Unpack())
+		case LTUserData:
+			rc = append(rc, lv.(*LUserData).Value)
 		default:
 			rc = append(rc, lv)
 		}

@@ -162,9 +162,9 @@ func (ms *MicroService) clean() {
 		}
 
 		if _ = p.Close(); p.info != nil {
-			errs.Try(key, fmt.Errorf("%s  fail %v", p.name, p.info))
+			errs.Try(key, fmt.Errorf("%s  fail %v", p.Name(), p.info))
 		} else {
-			errs.Try(key, fmt.Errorf("%s succeed", p.name))
+			errs.Try(key, fmt.Errorf("%s succeed", p.Name()))
 		}
 	}
 
@@ -240,24 +240,24 @@ func (ms *MicroService) ID() int64 {
 }
 
 func (ms *MicroService) Startup(s ProcessType, x func(error)) {
-	key := ms.Key()
+	srvName := ms.Key()
 	name := s.Name()
 	pro, exist := ms.have(name)
 	if !exist {
-		err := fmt.Errorf("current.task=%s not found %s", key, name)
+		err := fmt.Errorf("%s not found %s", srvName, name)
 		x(err)
 		return
 	}
 
 	from := pro.From()
-	if key != from {
-		err := fmt.Errorf("current.task=%s processes.from=%s with %s not allow", key, pro.from, pro.name)
+	if srvName != from {
+		err := fmt.Errorf("%s processes.from=%s with %s not allow", srvName, pro.from, pro.Name())
 		x(err)
 		return
 	}
 
 	if ms.has(Disable) {
-		err := fmt.Errorf("current.task=%s processes.from=%s disable", key, from)
+		err := fmt.Errorf("%s processes.from=%s disable", srvName, from)
 		x(err)
 		return
 	}
@@ -278,7 +278,7 @@ func (ms *MicroService) Startup(s ProcessType, x func(error)) {
 		}
 
 		if err := pro.Close(); err != nil {
-			pro.info = fmt.Errorf("%s close fail error %v", pro.name, err)
+			pro.info = fmt.Errorf("%s close fail error %v", pro.Name(), err)
 			pro.set(Failed)
 			x(pro.info)
 			return
@@ -288,7 +288,7 @@ func (ms *MicroService) Startup(s ProcessType, x func(error)) {
 		}
 
 		if err := pro.data.Start(); err != nil {
-			pro.info = fmt.Errorf("%s open fail error %v", pro.name, err)
+			pro.info = fmt.Errorf("%s open fail error %v", pro.Name(), err)
 			pro.set(Failed)
 			x(pro.info)
 		} else {
@@ -298,7 +298,7 @@ func (ms *MicroService) Startup(s ProcessType, x func(error)) {
 
 	default:
 		if err := pro.data.Start(); err != nil {
-			pro.info = fmt.Errorf("%s open fail error %v", pro.name, err)
+			pro.info = fmt.Errorf("%s open fail error %v", pro.Name(), err)
 			pro.set(Failed)
 			x(pro.info)
 		} else {
@@ -322,14 +322,15 @@ func (ms *MicroService) verify(L *lua.LState) error {
 	return nil
 }
 
-func (ms *MicroService) define(name string) *Process {
+func (ms *MicroService) define(name string, typeof string) *Process {
 	ms.processes.mutex.Lock()
 	defer ms.processes.mutex.Unlock()
 
 	pro := &Process{
-		name: name,
-		flag: defined,
-		from: ms.Key(),
+		name:   name,
+		flag:   defined,
+		from:   ms.Key(),
+		typeof: typeof,
 	}
 
 	ms.processes.data = append(ms.processes.data, pro)
@@ -343,9 +344,9 @@ func (ms *MicroService) have(name string) (*Process, bool) {
 	sz := len(ms.processes.data)
 	var pro *Process
 	for i := 0; i < sz; i++ {
-		if pro = ms.processes.data[i]; pro.name == name {
+		pro = ms.processes.data[i]
+		if pro.name == name {
 			return pro, true
-
 		}
 	}
 	return nil, false
@@ -364,7 +365,7 @@ func (ms *MicroService) Create(L *lua.LState, name string, typeof string) *Proce
 	}
 
 	if pro == nil {
-		return ms.define(name)
+		return ms.define(name, typeof)
 	}
 
 	if typ := reflect.TypeOf(pro.data).String(); typ != typeof {

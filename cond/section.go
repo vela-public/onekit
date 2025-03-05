@@ -118,6 +118,11 @@ func (s *Section) withB(offset *int, n int) {
 		return
 	case '=':
 		s.method = Eq
+		if sep+1 < len(s.raw) && s.raw[sep+1] == '=' {
+			*offset = sep + 2
+			return
+		}
+		s.method = Eq
 		*offset = sep + 1
 		return
 
@@ -556,7 +561,7 @@ func (s *Section) parse() {
 
 func Compile(raw string) (section *Section) {
 	section = &Section{
-		raw:    raw,
+		raw:    strings.TrimSpace(raw),
 		method: Oop,
 	}
 

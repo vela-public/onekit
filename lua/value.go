@@ -34,10 +34,9 @@ const (
 	LTGoFuncInt
 	LTGeneric
 	LTInvoker
-	LTService
 )
 
-var lValueNames = [...]string{"nil", "boolean", "number", "int", "uint", "int64", "uint64", "string", "function", "userdata", "thread", "table", "channel", "slice", "map", "kv", "safe_kv", "object", "GoFunction", "GoFuncErr", "GoFuncStr", "GoFuncInt", "generic", "invoker", "service"}
+var lValueNames = [...]string{"nil", "boolean", "number", "int", "uint", "int64", "uint64", "string", "function", "userdata", "thread", "table", "channel", "slice", "map", "kv", "safe_kv", "object", "GoFunction", "GoFuncErr", "GoFuncStr", "GoFuncInt", "generic", "invoker"}
 
 func (vt LValueType) String() string {
 	return lValueNames[int(vt)]

@@ -1,7 +1,9 @@
 package pipe
 
 import (
+	"fmt"
 	"github.com/vela-public/onekit/cond"
+	"github.com/vela-public/onekit/lua"
 )
 
 type Case struct {
@@ -12,13 +14,12 @@ type Case struct {
 	Debug  *Chain
 }
 
-func (c *Case) Field(key string) string {
-	switch key {
-	case "raw":
-		return c.Cnd.String()
-	}
-	return ""
-}
+func (c *Case) String() string                         { return fmt.Sprintf("switch.case(%s)", c.Cnd) }
+func (c *Case) Type() lua.LValueType                   { return lua.LTObject }
+func (c *Case) AssertFloat64() (float64, bool)         { return 0, false }
+func (c *Case) AssertString() (string, bool)           { return c.Cnd.String(), true }
+func (c *Case) AssertFunction() (*lua.LFunction, bool) { return nil, false }
+func (c *Case) Hijack(fsm *lua.CallFrameFSM) bool      { return false }
 
 func (c *Case) Match(idx int, v any) (*Context, bool) {
 	if c.Cnd == nil {

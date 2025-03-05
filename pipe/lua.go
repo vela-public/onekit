@@ -43,12 +43,13 @@ func ChainL(L *lua.LState) int {
 }
 
 func SwitchL(L *lua.LState) int {
-	v := lua.NewGeneric[*Switch](NewSwitch())
+	v := NewSwitch()
 	L.Push(v)
 	return 1
 }
 
 func Preload(v lua.Preloader) {
-	v.Set("pipe", lua.NewExport("lua.pipe.export", lua.WithFunc(ChainL)))
-	v.Set("switch", lua.NewExport("lua.switch.export", lua.WithFunc(SwitchL)))
+	kv := lua.NewUserKV()
+	kv.Set("switch", lua.NewFunction(SwitchL))
+	v.SetGlobal("pipe", lua.NewExport("lua.pipe.export", lua.WithFunc(ChainL), lua.WithTable(kv)))
 }

@@ -19,14 +19,29 @@ type config struct {
 	uri     string
 	method  string
 	recycle bool
-}
-
-type LHandle struct {
-	cfg     config
-	trr     *Router
 	co      *lua.LState
 	webctx  *webkit.HttpContext
 	handle  *pipekit.Chain[*webkit.WebContext]
+	router  *Router
+}
+
+func (cfg *config) Name() string {
+	return fmt.Sprintf("%s %s", cfg.method, cfg.uri)
+}
+
+func (cfg *config) SetURI(path string) {
+	var uri string
+	if !strings.HasPrefix(path, "/api/v1/arr/lua/") {
+		uri = filepath.Join("/api/v1/arr/lua/", cfg.co.Name(), path)
+	} else {
+		uri = filepath.Join("/", cfg.co.Name(), path)
+	}
+	cfg.uri = filepath.ToSlash(uri)
+}
+
+type LHandle struct {
+	cfg     *config
+	trr     *Router
 	private struct {
 		Count   int64 //请求次数
 		Failed  int64 //失败次数
@@ -35,11 +50,7 @@ type LHandle struct {
 }
 
 func (lh *LHandle) Name() string {
-	return fmt.Sprintf("%s %s", lh.cfg.method, lh.cfg.uri)
-}
-
-func (lh *LHandle) TypeOf() string {
-	return typeof
+	return lh.cfg.Name()
 }
 
 func (lh *LHandle) Metadata() libkit.DataKV[string, any] {
@@ -52,11 +63,11 @@ func (lh *LHandle) Metadata() libkit.DataKV[string, any] {
 
 func (lh *LHandle) HandleFunc(ctx *fasthttp.RequestCtx) {
 	webctx := &webkit.WebContext{Request: ctx}
-	lh.handle.Invoke(webctx)
+	lh.cfg.handle.Invoke(webctx)
 }
 
 func (lh *LHandle) Start() error {
-	if lh.handle == nil {
+	if lh.cfg.handle == nil {
 		return fmt.Errorf("router start fail not found handle")
 	}
 	return lh.trr.Handle(lh.cfg.method, lh.cfg.uri, lh.HandleFunc)
@@ -72,42 +83,25 @@ func (lh *LHandle) Close() error {
 	return nil
 }
 
-func (lh *LHandle) SetURI(path string) {
-	var uri string
-	if !strings.HasPrefix(path, "/api/v1/arr/lua/") {
-		uri = filepath.Join("/api/v1/arr/lua/", lh.co.Name(), path)
-	} else {
-		uri = filepath.Join("/", lh.co.Name(), path)
-	}
-	lh.cfg.uri = filepath.ToSlash(uri)
-}
-
-func (lh *LHandle) NewSRV(L *lua.LState) lua.LValue {
-	uri := L.CheckString(1)
-
-	lh.SetURI(uri)
-	pro := treekit.Lazy().Create(L, lh.Name(), typeof)
-	if pro.Nil() {
-		pro.Set(lh)
-	} else {
-		_ = pro.Close()
-		pro.Set(lh)
-	}
-
-	treekit.Start(L, lh, L.PanicErr)
-	return pro
-}
-
-func (rr *Router) HandleL(L *lua.LState, method string) lua.LValue {
+func NewHandleL(L *lua.LState, rr *Router, method string) lua.LValue {
+	path := L.CheckString(1)
 	chain := pipekit.Lua[*webkit.WebContext](L, pipekit.LState(L), pipekit.Protect(true), pipekit.Seek(2))
-	h := &LHandle{
-		webctx: webkit.NewContext(),
-		cfg: config{
-			method: method,
-		},
-		trr:    rr,
-		co:     L.Coroutine(),
+
+	cfg := &config{
+		method: method,
 		handle: chain,
+		router: rr,
 	}
-	return h.NewSRV(L)
+	cfg.SetURI(path)
+
+	pro := treekit.LazyConfig[LHandle, config](L, cfg)
+	pro.Upsert(func(*config) *LHandle {
+		return &LHandle{
+			cfg: cfg,
+			trr: rr,
+		}
+	})
+	pro.Start()
+
+	return pro.Unwrap()
 }

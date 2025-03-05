@@ -5,12 +5,12 @@ import (
 )
 
 func (c *Case) push(L *lua.LState) int {
-	L.Push(lua.NewGeneric[*Case](c))
+	L.Push(c)
 	return 1
 }
 
 func (c *Case) invokeL(L *lua.LState) int {
-	happy := Lua(L, LState(L))
+	happy := Lua(L, LState(L), Seek(1))
 	c.Happy = happy
 	return c.push(L)
 }
@@ -28,7 +28,7 @@ func (c *Case) debugL(L *lua.LState) int {
 
 func (c *Case) Index(L *lua.LState, key string) lua.LValue {
 	switch key {
-	case "invoke":
+	case "invoke", "pipe", "do":
 		return lua.NewFunction(c.invokeL)
 	case "one":
 		return lua.NewFunction(c.breakL)
