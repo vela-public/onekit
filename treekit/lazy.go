@@ -5,6 +5,7 @@ import (
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/luakit"
 	"reflect"
+	"strconv"
 )
 
 type BuildOf[T any, K any] interface {
@@ -12,6 +13,10 @@ type BuildOf[T any, K any] interface {
 }
 type ReBuildOf[T any, K any] interface {
 	ReBuild(*K, *T) error
+}
+
+type NameOf interface {
+	Name() string
 }
 
 type LazyProcess[T any, K any] struct {
@@ -47,7 +52,7 @@ func Lazy[T any, K any](L *lua.LState, idx int) *LazyProcess[T, K] {
 	return l
 }
 
-func LazyConfig[T any, K any](L *lua.LState, conf *K) *LazyProcess[T, K] {
+func LazyCNF[T any, K any](L *lua.LState, conf *K) *LazyProcess[T, K] {
 	l := &LazyProcess[T, K]{
 		co:     L,
 		conf:   conf,
@@ -79,16 +84,45 @@ func (l *LazyProcess[T, K]) Name() string {
 		goto done
 	}
 
-	if c, ok := any(l.conf).(interface{ Name() string }); ok {
-		l.name = c.Name()
+	switch cnf := any(l.conf).(type) {
+	case NameOf:
+		l.name = cnf.Name()
 		goto done
+	case *string:
+		return *cnf
+	case *[]byte:
+		return string(*cnf)
+	case *int:
+		return strconv.Itoa(*cnf)
+	case *int64:
+		return strconv.FormatInt(*cnf, 10)
+	case *int32:
+		return strconv.FormatInt(int64(*cnf), 10)
+	case *int16:
+		return strconv.FormatInt(int64(*cnf), 10)
+	case *int8:
+		return strconv.FormatInt(int64(*cnf), 10)
+	case *uint:
+		return strconv.FormatUint(uint64(*cnf), 10)
+	case *uint64:
+		return strconv.FormatUint(*cnf, 10)
+	case *uint32:
+		return strconv.FormatUint(uint64(*cnf), 10)
+	case *uint16:
+		return strconv.FormatUint(uint64(*cnf), 10)
+	case *uint8:
+		return strconv.FormatUint(uint64(*cnf), 10)
+	case *float32:
+		return strconv.FormatFloat(float64(*cnf), 'f', -1, 32)
+	case *float64:
+		return strconv.FormatFloat(*cnf, 'f', -1, 64)
+	default:
+		if f, ok := lua.NewReflect[*K](l.conf).IndexOf(l.co, "name").(lua.LString); ok {
+			l.name = f.String()
+			goto done
+		}
+		l.co.RaiseError("%s name not found", l.conf)
 	}
-
-	if f, ok := lua.NewReflect[*K](l.conf).IndexOf(l.co, "name").(lua.LString); ok {
-		l.name = f.String()
-		goto done
-	}
-	l.co.RaiseError("%s name not found", l.conf)
 
 done:
 	return l.name

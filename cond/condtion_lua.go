@@ -53,16 +53,14 @@ func (lc *LCond) Index(L *lua.LState, key string) lua.LValue {
 }
 
 func NewL(L *lua.LState) *LCond {
+	cnd := New()
+	cnd.CheckMany(L, Seek(0))
 	return &LCond{
-		cnd: CheckMany(L, Seek(0)),
+		cnd: cnd,
 	}
 }
 
 func NewCondL(L *lua.LState) int {
 	L.Push(NewL(L))
 	return 1
-}
-
-func Preload(v lua.Preloader) {
-	v.Set("cnd", lua.NewExport("lua.cnd.export", lua.WithFunc(NewCondL)))
 }

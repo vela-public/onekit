@@ -72,7 +72,7 @@ func (s *Switch[T]) Break(flag bool) func(c *Case[T]) {
 }
 
 func (s *Switch[T]) CndText(text ...string) func(c *Case[T]) {
-	return func(c *Case[T]) { c.Cnd = cond.New(text...) }
+	return func(c *Case[T]) { c.Cnd = cond.NewText(text...) }
 }
 func (s *Switch[T]) Cnd(cnd *cond.Cond) func(c *Case[T]) {
 	return func(c *Case[T]) { c.Cnd = cnd }

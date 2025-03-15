@@ -261,6 +261,18 @@ func MustBe[T any](L *LState, idx int) T {
 	}
 }
 
+func UnpackSeek[T any](L *LState, seek int) []T {
+	n := L.GetTop()
+	if n == 0 {
+		return nil
+	}
+	var rc []T
+	for i := seek; i <= n; i++ {
+		rc = append(rc, MustBe[T](L, i))
+	}
+	return rc
+}
+
 func Unpack[T any](L *LState) []T {
 	n := L.GetTop()
 	if n == 0 {

@@ -21,7 +21,7 @@ func (c *Case) breakL(L *lua.LState) int {
 }
 
 func (c *Case) debugL(L *lua.LState) int {
-	debug := Lua(L, LState(L))
+	debug := Lua(L, LState(L), Seek(1))
 	c.Debug = debug
 	return c.push(L)
 }

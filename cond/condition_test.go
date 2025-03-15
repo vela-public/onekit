@@ -25,7 +25,7 @@ func (ev *Event) Field(key string) string {
 }
 
 func TestExp(t *testing.T) {
-	cnd := New("value ~ (.*)")
+	cnd := NewText("value ~ (.*)")
 	ev := &Event{
 		Type:  "typeof",
 		Value: 456,
@@ -39,7 +39,7 @@ func TestExp(t *testing.T) {
 }
 
 func TestUnary(t *testing.T) {
-	cnd := New("type = typeof")
+	cnd := NewText("type = typeof")
 	ev := &Event{
 		Type:  "typeof",
 		Value: 456,
@@ -61,7 +61,7 @@ func TestString(t *testing.T) {
 }
 func TestRegex(t *testing.T) {
 	val := "10.10.239.11"
-	cnd := New("[0,13] ~ \\.(.*)\\.(.*)\\.(.*)")
+	cnd := NewText("[0,13] ~ \\.(.*)\\.(.*)\\.(.*)")
 
 	pay := func(id int, ret string) {
 		t.Logf("%d %v", id, ret)

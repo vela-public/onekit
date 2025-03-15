@@ -56,7 +56,7 @@ func Break(flag bool) func(c *Case) {
 }
 
 func CndText(text ...string) func(c *Case) {
-	return func(c *Case) { c.Cnd = cond.New(text...) }
+	return func(c *Case) { c.Cnd = cond.NewText(text...) }
 }
 func Cnd(cnd *cond.Cond) func(c *Case) {
 	return func(c *Case) { c.Cnd = cnd }

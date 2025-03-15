@@ -3,6 +3,7 @@ package treekit
 import (
 	"fmt"
 	"github.com/vela-public/onekit/lua"
+	"strings"
 )
 
 func number(ch byte) bool {
@@ -33,8 +34,23 @@ func Name(v string) error {
 		return fmt.Errorf("first char must be a-z or A-Z got:%v", string(v[0]))
 	}
 
-	n := len(v)
-	for i := 1; i < n; i++ {
+	if strings.HasPrefix(v, "GET /") ||
+		strings.HasPrefix(v, "POST /") ||
+		strings.HasPrefix(v, "PUT /") ||
+		strings.HasPrefix(v, "DELETE /") ||
+		strings.HasPrefix(v, "HEAD /") ||
+		strings.HasPrefix(v, "PATCH /") ||
+		strings.HasPrefix(v, "OPTIONS /") {
+
+		if offset := strings.IndexFunc(v, func(r rune) bool {
+			return r == '/'
+		}); offset != -1 {
+			v = v[offset:]
+		}
+	}
+
+	sz := len(v)
+	for i := 1; i < sz; i++ {
 		ch := v[i]
 		switch {
 		case alphabet(ch), number(ch):

@@ -94,7 +94,7 @@ func NewHandleL(L *lua.LState, rr *Router, method string) lua.LValue {
 	}
 	cfg.SetURI(path)
 
-	pro := treekit.LazyConfig[LHandle, config](L, cfg)
+	pro := treekit.LazyCNF[LHandle, config](L, cfg)
 	pro.Upsert(func(*config) *LHandle {
 		return &LHandle{
 			cfg: cfg,

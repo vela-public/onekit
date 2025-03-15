@@ -10,22 +10,15 @@ import (
 type OptionFunc func(*option)
 
 type option struct {
-	unary     bool
 	seek      int
 	value     interface{}
-	logic     Logic
-	field     FuncType
+	logic     CndMode
+	field     Lookup
 	errs      *errkit.JoinError
 	compare   func(string, string, Method) bool
 	co        *lua.LState
 	partition []int
 	payload   func(int, string)
-}
-
-func WithUnary(v bool) OptionFunc {
-	return func(o *option) {
-		o.unary = v
-	}
 }
 
 func Seek(i int) OptionFunc {
@@ -34,7 +27,7 @@ func Seek(i int) OptionFunc {
 	}
 }
 
-func WithLogic(v Logic) OptionFunc {
+func Mode(v CndMode) OptionFunc {
 	return func(o *option) {
 		o.logic = v
 	}
@@ -67,12 +60,8 @@ func (opt *option) Pay(i int, v string) {
 
 func (opt *option) NewPeek(v interface{}) bool {
 	switch item := v.(type) {
-	case FuncType:
+	case Lookup:
 		opt.field = item
-		return true
-
-	case FieldType:
-		opt.field = item.Field
 		return true
 
 	case CompareEx:

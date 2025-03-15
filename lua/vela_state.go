@@ -134,7 +134,6 @@ func (ls *LState) NewThreadEx() *LState {
 		hasErrorFunc: false,
 		mainLoop:     mainLoop,
 		ctx:          nil,
-		private:      ls.private,
 	}
 
 	if options.MinimizeStackMemory {
@@ -151,6 +150,8 @@ func (ls *LState) NewThreadEx() *LState {
 		co.ctxCancelFn = cancel
 	}
 
+	co.private.Exdata = ls.private.Exdata
+	co.private.Pool = ls.private.Pool
 	return co
 }
 
@@ -172,6 +173,7 @@ func (ls *LState) Coroutine() *LState {
 
 func (ls *LState) Keepalive(co *LState) {
 	co.SetTop(0)
+	co.private.Exdata2 = nil
 	ls.pool().Put(co)
 }
 

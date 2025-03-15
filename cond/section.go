@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/grep"
+	"github.com/vela-public/onekit/lua"
 	"net"
 	"regexp"
 	"strings"
@@ -71,7 +72,7 @@ func (s *Section) Ok() bool {
 	return s.err == nil
 }
 
-func (s *Section) withA(offset *int, n int) {
+func (s *Section) withA(offset *int, n int) { //"name , key , text =  vela,123,456"
 	s.trim(offset, n)
 	sep := *offset
 
@@ -176,10 +177,6 @@ func (s *Section) withB(offset *int, n int) {
 		s.method = Gt
 		*offset = sep + 2
 		return
-
-	case "fn":
-		s.method = Fn
-
 	case "le", "<=":
 		s.method = Le
 		*offset = sep + 2
@@ -245,33 +242,29 @@ func (s *Section) withC(offset *int, n int) {
 			item = s.raw[sep:i]
 		}
 
-		if s.method == Regex {
-			s.Regex(item)
-		} else {
-			s.Value(item)
-		}
+		s.Value(item)
 		sep = i
 	}
 
 	//single value
 	if sep == *offset {
-		s.data = append(s.data, s.raw[sep:])
+		s.Value(s.raw[sep:])
 		return
 	}
 
 	//last value
 	if sep != n-1 {
-		s.data = append(s.data, s.raw[sep+1:])
+		s.Value(s.raw[sep+1:])
 	}
 }
 
-func (s *Section) verify() {
-	if len(s.data) == 0 {
-		s.err = fmt.Errorf("not found data")
+func (s *Section) re2() {
+	if s.method != Regex {
 		return
 	}
 
-	if s.method != Regex {
+	if len(s.data) == 0 {
+		s.err = fmt.Errorf("not found data")
 		return
 	}
 
@@ -513,13 +506,98 @@ func (s *Section) Call(ov *option) (bool, error) {
 
 }
 
+func (s *Section) is3(offset int, a, b, c byte) bool {
+	if offset-1 < 0 {
+		return false
+	}
+
+	if offset+1 >= len(s.raw) {
+		return false
+	}
+
+	if s.raw[offset-1] != a {
+		return false
+	}
+	if s.raw[offset] != b {
+		return false
+	}
+	if s.raw[offset+1] != c {
+		return false
+	}
+	return true
+}
+
 // Compile
 // aaa eq abc,eee,fff => Section{not:false , keys: []string{aaa} , method: eq , data: []string{abc , eee , ff}}
 // aaa !eq abc,eee,fff => Section{not:true, keys: []string{aaa} , method: eq , data: []string{abc , eee , ff}}
 func (s *Section) isUnary() bool {
+	sz := len(s.raw)
+	for i := 0; i < sz; i++ {
+		ch := s.raw[i]
+		switch ch {
+		case '=', '>', '<', '~':
+			return false
+		case 'e':
+			if s.is3(i, ' ', 'e', 'q') {
+				return false
+			}
+			if s.is3(i, '!', 'e', 'q') {
+				return false
+			}
+
+		case 'i':
+			if s.is3(i, ' ', 'i', 'n') {
+				return false
+			}
+			if s.is3(i, '!', 'i', 'n') {
+				return false
+			}
+		case 'c':
+			if s.is3(i, ' ', 'c', 'n') {
+				return false
+			}
+
+			if s.is3(i, '!', 'c', 'n') {
+				return false
+			}
+		case 'l':
+			if s.is3(i, ' ', 'l', 't') {
+				return false
+			}
+			if s.is3(i, '!', 'l', 't') {
+				return false
+			}
+			if s.is3(i, ' ', 'l', 'e') {
+				return false
+			}
+			if s.is3(i, '!', 'l', 'e') {
+				return false
+			}
+		case 'g':
+			if s.is3(i, ' ', 'g', 't') {
+				return false
+			}
+			if s.is3(i, '!', 'g', 't') {
+				return false
+			}
+
+		case 'r':
+			if s.is3(i, ' ', 'r', 'e') {
+				return false
+			}
+
+			if s.is3(i, '!', 'r', 'e') {
+				return false
+			}
+		}
+
+	}
+
 	if strings.IndexFunc(s.raw, func(r rune) bool {
 		switch r {
 		case '=':
+			return true
+		case '>':
 			return true
 		case ',':
 			return true
@@ -558,7 +636,7 @@ func (s *Section) isPassMatch() bool {
 	return false
 }
 
-func (s *Section) parse() {
+func (s *Section) compile() {
 	n := len(s.raw)
 	if n < 6 {
 		s.err = fmt.Errorf("too short")
@@ -569,13 +647,14 @@ func (s *Section) parse() {
 	s.withA(&offset, n)
 	s.withB(&offset, n)
 	s.withC(&offset, n)
-	s.verify()
+	s.re2()
 }
 
-func Compile(raw string) (section *Section) {
+func NewSectionText(raw string) (section *Section) {
 	section = &Section{
-		raw:    strings.TrimSpace(raw),
-		method: Oop,
+		raw:       strings.ToLower(strings.TrimSpace(raw)),
+		method:    Oop,
+		partition: -1,
 	}
 
 	if section.isPassMatch() {
@@ -586,13 +665,55 @@ func Compile(raw string) (section *Section) {
 		return
 	}
 
-	section.parse()
+	section.compile()
 	return
 }
 
-func NewSection() *Section {
-	return &Section{
+func NewSectionGoFunc(L *lua.LState, invoke func(interface{}, ...OptionFunc) bool) (section *Section) {
+	section = &Section{
+		raw:       strings.ToLower(strings.TrimSpace(L.String())),
+		method:    Fn,
+		partition: -1,
+	}
+	section.invoke = invoke
+	return
+}
+
+func NewSectionLFunc(L *lua.LState, fn *lua.LFunction) (section *Section) {
+	section = &Section{
+		raw:       strings.ToLower(fn.String()),
+		method:    Fn,
 		partition: -1,
 	}
 
+	section.invoke = func(v interface{}, optionFunc ...OptionFunc) bool {
+		np := lua.P{
+			Fn:      fn,
+			Protect: true,
+			NRet:    1,
+		}
+
+		co := L.Coroutine()
+		defer func() {
+			L.Keepalive(co)
+		}()
+
+		err := co.CallByParam(np, lua.ReflectTo(v))
+		if err != nil {
+			return false
+		}
+		return lua.IsTrue(co.Get(-1))
+
+	}
+	return
+}
+
+func NewSectionUnary(data ...string) (section *Section) {
+	section = &Section{
+		method:    Unary,
+		partition: -1,
+	}
+
+	section.data = append(section.data, data...)
+	return
 }

@@ -10,105 +10,72 @@ func (cnd *Cond) append(s *Section) {
 	cnd.data = append(cnd.data, s)
 }
 
+func (cnd *Cond) Mode(L *lua.LState, idx int) (CndMode, bool) {
+	v := L.Get(idx)
+	if v.Type() != lua.LTObject {
+		return AND, false
+	}
+
+	cm, ok := v.(CndMode)
+	if !ok {
+		return AND, false
+	}
+	return cm, true
+}
+
 func (cnd *Cond) CheckMany(L *lua.LState, opt ...OptionFunc) {
-	ov := &option{co: L}
+	ov := &option{co: L, seek: 0}
 	for _, fn := range opt {
 		fn(ov)
 	}
 
-	n := L.GetTop()
-	offset := n - ov.seek
-	if offset < 0 {
+	top := L.GetTop()
+	if top-ov.seek <= 0 {
 		return
 	}
 
-	if ov.unary {
-		sec := &Section{method: Unary}
-		for idx := ov.seek + 1; idx <= n; idx++ {
-			lv := L.Get(idx)
-			switch lv.Type() {
-			case lua.LTFunction:
-				sec.method = Fn
-				sec.invoke = func(v any, options ...OptionFunc) bool {
-					np := lua.P{
-						Fn:      lv.(*lua.LFunction),
-						Protect: true,
-						NRet:    1,
-					}
-					co := L.Coroutine()
-					defer func() {
-						L.Keepalive(co)
-					}()
-
-					err := co.CallByParam(np, lua.ReflectTo(v))
-					if err != nil {
-						return false
-					}
-					return lua.IsTrue(co.Get(-1))
-				}
-			case lua.LTGoCond:
-				sec.method = Fn
-				sec.invoke = func(v any, options ...OptionFunc) bool {
-					return lv.(lua.GoCond[any])(v)
-				}
-
-			case lua.LTGoFuncErr:
-				sec.method = Fn
-				sec.invoke = func(v any, options ...OptionFunc) bool {
-					err := lv.(lua.GoFuncErr)(v)
-					return err == nil
-				}
-			case lua.LTGoFuncStr:
-				sec.method = Fn
-				sec.invoke = func(v any, options ...OptionFunc) bool {
-					str := lv.(lua.GoFuncStr)(v)
-					return str == ""
-				}
-			case lua.LTGoFuncInt:
-				sec.method = Fn
-				sec.invoke = func(v any, options ...OptionFunc) bool {
-					va := lv.(lua.GoFuncInt)(v)
-					return va == 0
-				}
-
-			default:
-				if item := lua.IsString(lv); len(item) > 0 {
-					sec.data = append(sec.data, item)
-				}
-			}
-		}
-
-		if len(sec.data) == 0 {
-			L.RaiseError("condition compile fail not found data")
+	cm, ok := cnd.Mode(L, ov.seek+1)
+	if ok {
+		cnd.mode.put(cm)
+		ov.seek++
+		if top-ov.seek <= 0 {
 			return
 		}
+	}
 
+	for idx := ov.seek + 1; idx <= top; idx++ {
+		val := L.Get(idx)
+		var sec *Section
+		switch val.Type() {
+		case lua.LTFunction:
+			sec = NewSectionLFunc(L, val.(*lua.LFunction))
+		case lua.LTGoCond:
+			sec = NewSectionGoFunc(L, func(v any, optionFunc ...OptionFunc) bool {
+				return val.(lua.GoCond[any])(v)
+			})
+		case lua.LTGoFuncErr:
+			sec = NewSectionGoFunc(L, func(v interface{}, optionFunc ...OptionFunc) bool {
+				err := val.(lua.GoFuncErr)(v)
+				return err == nil
+			})
+		case lua.LTGoFuncStr:
+			sec = NewSectionGoFunc(L, func(v any, optionFunc ...OptionFunc) bool {
+				str := val.(lua.GoFuncStr)(v)
+				return str == ""
+			})
+		case lua.LTGoFuncInt:
+			sec = NewSectionGoFunc(L, func(v any, optionFunc ...OptionFunc) bool {
+				num := val.(lua.GoFuncInt)(v)
+				return num == 0
+			})
+		default:
+			sec = NewSectionText(L.IsString(idx))
+			if !sec.Ok() {
+				L.RaiseError("condition compile fail %v", sec.err)
+			}
+		}
 		cnd.append(sec)
-		return
 	}
-
-	switch offset {
-	case 0:
-		return
-	case 1:
-		sec := Compile(L.IsString(ov.seek + 1))
-		if sec.Ok() {
-			cnd.append(sec)
-			return
-		}
-		L.RaiseError("condition compile fail %v", sec.err)
-
-	default:
-		for idx := ov.seek + 1; idx <= n; idx++ {
-			sec := Compile(L.IsString(idx))
-			if sec.Ok() {
-				cnd.append(sec)
-				continue
-			}
-			L.RaiseError("condition compile fail %v", sec.err)
-		}
-	}
-
 	return
 }
 
@@ -171,8 +138,8 @@ func (cnd *Cond) matchAnd(ov *option, n int) bool {
 
 func (cnd *Cond) with(v interface{}, opt ...OptionFunc) *option {
 	ov := &option{
-		logic: AND,
 		value: v,
+		logic: AND,
 		errs:  errkit.Errors(),
 	}
 	for _, fn := range opt {

@@ -7,7 +7,7 @@ import (
 type HandleEnv struct {
 	Protect bool
 	Seek    int
-	Mode    HandleType
+	Error   func(*Context, error)
 	Parent  *lua.LState
 }
 
