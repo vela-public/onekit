@@ -23,6 +23,13 @@ func New(numItems int, falsePositiveRate float64) *Filter {
 	}
 }
 
+func (bf *Filter) Sizeof() int {
+	sz := 0
+	sz = sz + 8*int(bf.Bitset.Length)
+	sz = sz + 8*3
+	return sz
+}
+
 func (bf *Filter) Upsert(item string) bool {
 	if bf.Contains(item) {
 		return true
