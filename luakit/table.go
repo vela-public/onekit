@@ -84,7 +84,7 @@ func Copier(L *lua.LState, field reflect.Value, val lua.LValue) error {
 		}
 		return nil
 
-	case reflect.Float32:
+	case reflect.Float32, reflect.Float64:
 		switch val.Type() {
 		case lua.LTNumber:
 			field.SetFloat(float64(val.(lua.LNumber)))
