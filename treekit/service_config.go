@@ -34,6 +34,9 @@ type MicoServiceConfig struct {
 
 	//filepath
 	Path string
+
+	//modify time
+	MTime int64
 }
 
 func (msc *MicoServiceConfig) NewReader() io.Reader {
@@ -68,6 +71,11 @@ func NewFile(key string, path string) (*MicoServiceConfig, error) {
 	fd, err := os.Open(path)
 	if err != nil {
 		return cfg, err
+	}
+
+	st, err := fd.Stat()
+	if err == nil {
+		cfg.MTime = st.ModTime().Unix()
 	}
 
 	m5 := md5.New()

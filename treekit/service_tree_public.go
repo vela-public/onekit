@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/vela-public/onekit/errkit"
 	"github.com/vela-public/onekit/libkit"
+	"os"
 )
 
 func (mt *MsTree) UnwrapErr() error {
@@ -77,6 +78,40 @@ func (mt *MsTree) DoServiceFile(key string, path string) error {
 		return err
 	}
 	return tas.wakeup()
+}
+
+func (mt *MsTree) Reload(filter func(name string) bool) error {
+	mt.cache.mutex.Lock()
+	defer mt.cache.mutex.Unlock()
+
+	sz := len(mt.cache.data)
+	if sz == 0 {
+		return nil
+	}
+
+	errs := &errkit.JoinError{}
+	for i := 0; i < sz; i++ {
+		tas := mt.cache.data[i]
+		if filter != nil && !filter(tas.Key()) {
+			continue
+		}
+
+		st, err := os.Stat(tas.config.Path)
+		if err != nil {
+			errs.Try(tas.Key(), fmt.Errorf("file not found %s", tas.config.Path))
+			continue
+		}
+
+		cnf := tas.config
+		if cnf.MTime == 0 {
+			continue
+		}
+
+		if st.ModTime().Unix() != cnf.MTime {
+			errs.Try(tas.Key(), mt.DoServiceFile(tas.config.Key, tas.config.Path))
+		}
+	}
+	return errs.Wrap()
 }
 
 func (mt *MsTree) Register(key string, body []byte, options ...func(*MicoServiceConfig)) error {
