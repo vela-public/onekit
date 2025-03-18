@@ -7,54 +7,25 @@ import (
 type Server struct {
 	tree *MsTree
 	bind string
+	mux  *http.ServeMux
 }
 
-func (te *Server) Handler() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/view", func(w http.ResponseWriter, r *http.Request) {
-		buf := te.tree.Doc()
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write(buf)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	})
-
-	mux.HandleFunc("/load", func(w http.ResponseWriter, r *http.Request) {
-		name := r.URL.Query().Get("name")
-		path := r.URL.Query().Get("path")
-		err := te.tree.DoServiceFile(name, path)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		buf := te.tree.Doc()
-		_, err = w.Write(buf)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-	})
-
-	return mux
+func (srv *Server) NewHandler(path string, fn func(tree *MsTree) http.HandlerFunc) {
+	srv.mux.HandleFunc(path, fn(srv.tree))
 }
 
-func (te *Server) Listen() error {
-	return http.ListenAndServe(te.bind, te.Handler())
+func (srv *Server) Listen(x func(error)) {
+	go func() {
+		err := http.ListenAndServe(srv.bind, srv.mux)
+		x(err)
+	}()
 }
 
-func (mt *MsTree) Web(bind string, x func(e error)) {
+func (mt *MsTree) LazyWeb(bind string) *Server {
 	te := &Server{
+		mux:  http.NewServeMux(),
 		tree: mt,
 		bind: bind,
 	}
-
-	go func() {
-		err := te.Listen()
-		x(err)
-	}()
+	return te
 }

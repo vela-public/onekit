@@ -201,7 +201,7 @@ func (l *LazyProcess[T, K]) Upsert(fn func(*K) *T) {
 }
 
 func (l *LazyProcess[T, K]) Rebuild(fn func(*K, *T)) {
-	if !l.Unwrap().Nil() {
+	if l.Unwrap().Nil() {
 		return
 	}
 	fn(l.conf, l.Data())
