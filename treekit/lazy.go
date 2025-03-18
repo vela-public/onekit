@@ -32,6 +32,7 @@ type LazyProcess[T any, K any] struct {
 	}
 
 	private struct {
+		Ready  bool
 		ExData *Process
 		Info   error
 	}
@@ -168,19 +169,34 @@ func (l *LazyProcess[T, K]) MustBe(v any) ProcessType {
 	return pt
 }
 
+func (l *LazyProcess[T, K]) Ready() bool {
+	return l.private.Ready
+}
+func (l *LazyProcess[T, K]) readyTo(v bool) {
+	l.private.Ready = v
+}
+
 func (l *LazyProcess[T, K]) Build(fn func(*K) *T) {
+	if l.Ready() {
+		return
+	}
+
 	if pro := l.Unwrap(); pro.Nil() {
 		dat := fn(l.conf)
 
 		if dat == nil {
 			l.co.RaiseError("build %s process data is nil", l.typeof)
 		}
-
 		pro.data = any(dat).(ProcessType)
+		l.readyTo(true)
 	}
 }
 
 func (l *LazyProcess[T, K]) Upsert(fn func(*K) *T) {
+	if l.Ready() {
+		return
+	}
+
 	pro := l.Unwrap()
 	if pro.Nil() {
 		dat := fn(l.conf)
@@ -189,6 +205,7 @@ func (l *LazyProcess[T, K]) Upsert(fn func(*K) *T) {
 			return
 		}
 		pro.data = any(dat).(ProcessType)
+		l.readyTo(true)
 		return
 	}
 
@@ -198,13 +215,19 @@ func (l *LazyProcess[T, K]) Upsert(fn func(*K) *T) {
 	}
 
 	pro.data = any(fn(l.conf)).(ProcessType)
+	l.readyTo(true)
 }
 
 func (l *LazyProcess[T, K]) Rebuild(fn func(*K, *T)) {
+	if l.Ready() {
+		return
+	}
+
 	if l.Unwrap().Nil() {
 		return
 	}
 	fn(l.conf, l.Data())
+	l.readyTo(true)
 }
 
 func (l *LazyProcess[T, K]) Close() error {
