@@ -30,6 +30,10 @@ func (bf *Filter) Sizeof() int {
 	return sz
 }
 
+func (bf *Filter) BitsetText(v string) {
+
+}
+
 func (bf *Filter) Upsert(item string) bool {
 	if bf.Contains(item) {
 		return true
