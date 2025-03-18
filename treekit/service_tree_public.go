@@ -81,9 +81,6 @@ func (mt *MsTree) DoServiceFile(key string, path string) error {
 }
 
 func (mt *MsTree) Reload(filter func(name string) bool) error {
-	mt.cache.mutex.Lock()
-	defer mt.cache.mutex.Unlock()
-
 	sz := len(mt.cache.data)
 	if sz == 0 {
 		return nil
