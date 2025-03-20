@@ -196,6 +196,10 @@ func (ls *LState) Coroutine() *LState {
 		stack.segments[0] = newCallFrameStackSegment()
 	}
 
+	sz := len(ls.reg.array)
+	for i := 0; i < sz; i++ {
+		co.reg.array[i] = LNil
+	}
 	return co
 }
 
