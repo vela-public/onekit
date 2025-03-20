@@ -127,6 +127,7 @@ func (ls *LState) Terminated() {
 		return
 	}
 	ls.private.Terminated <- struct{}{}
+	ls.RemoveCallerFrame()
 }
 
 func (ls *LState) NewThreadEx() *LState {
@@ -185,10 +186,6 @@ func (ls *LState) Coroutine() *LState {
 	co.private.Exdata2 = ls.private.Exdata2
 	co.private.Pool = ls.private.Pool
 	co.private.Terminated = make(chan struct{}, 1)
-	co.reg.top = 0
-	for i := 0; i < len(co.reg.array); i++ {
-		co.reg.array[i] = nil
-	}
 	return co
 }
 
