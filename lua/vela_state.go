@@ -115,6 +115,20 @@ func (ls *LState) Exdata2() any {
 	return ls.private.Exdata2
 }
 
+func (ls *LState) Cancel() {
+	if ls.ctxCancelFn != nil {
+		ls.ctxCancelFn()
+	}
+	return
+}
+
+func (ls *LState) Terminated() {
+	if ls.private.Terminated == nil {
+		return
+	}
+	ls.private.Terminated <- struct{}{}
+}
+
 func (ls *LState) NewThreadEx() *LState {
 	options := ls.Options
 	al := newAllocator(32)
@@ -151,7 +165,9 @@ func (ls *LState) NewThreadEx() *LState {
 	}
 
 	co.private.Exdata = ls.private.Exdata
+	co.private.Exdata2 = ls.private.Exdata2
 	co.private.Pool = ls.private.Pool
+	co.private.Terminated = make(chan struct{}, 1)
 	return co
 }
 
@@ -176,6 +192,7 @@ func (ls *LState) Keepalive(co *LState) {
 	co.ctx = nil
 	co.ctxCancelFn = nil
 	co.private.Exdata2 = nil
+	co.private.Terminated = nil
 	ls.pool().Put(co)
 }
 
@@ -220,5 +237,6 @@ func NewStateEx(name string, fns ...func(*Options)) *LState {
 
 	co.name = name
 	co.private.Exdata = opt.Exdata
+	co.private.Terminated = make(chan struct{}, 1)
 	return co
 }

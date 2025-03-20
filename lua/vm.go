@@ -56,13 +56,16 @@ func mainLoopWithContext(L *LState, baseframe *callFrame) {
 		return
 	}
 
+	term := L.terminate()
+
 	for {
 		cf = L.currentFrame
 		inst = cf.Fn.Proto.Code[cf.Pc]
 		cf.Pc++
 		select {
+		case <-term:
+			return
 		case <-L.ctx.Done():
-			L.RaiseError(L.ctx.Err().Error())
 			return
 		default:
 			op = int(inst >> 26)

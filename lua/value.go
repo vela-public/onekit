@@ -247,10 +247,18 @@ type LState struct {
 	ctx          context.Context
 	ctxCancelFn  context.CancelFunc
 	private      struct {
-		Exdata  interface{}
-		Exdata2 interface{}
-		Pool    *sync.Pool
+		Terminated chan struct{}
+		Exdata     interface{}
+		Exdata2    interface{}
+		Pool       *sync.Pool
 	}
+}
+
+func (ls *LState) terminate() chan struct{} {
+	if ls.private.Terminated == nil {
+		return make(chan struct{})
+	}
+	return ls.private.Terminated
 }
 
 func (ls *LState) String() string                     { return fmt.Sprintf("thread: %p", ls) }
