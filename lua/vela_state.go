@@ -189,8 +189,6 @@ func (ls *LState) Coroutine() *LState {
 
 func (ls *LState) Keepalive(co *LState) {
 	co.SetTop(0)
-	co.ctx = nil
-	co.ctxCancelFn = nil
 	co.private.Exdata2 = nil
 	co.private.Terminated = nil
 	ls.pool().Put(co)
