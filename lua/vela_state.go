@@ -126,6 +126,7 @@ func (ls *LState) Terminated() {
 	if ls.private.Terminated == nil {
 		return
 	}
+
 	ls.private.Terminated <- struct{}{}
 	ls.RemoveCallerFrame()
 }
