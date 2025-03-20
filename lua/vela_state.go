@@ -128,7 +128,6 @@ func (ls *LState) Terminated() {
 	}
 
 	ls.private.Terminated <- struct{}{}
-	ls.RemoveCallerFrame()
 }
 
 func (ls *LState) NewThreadEx() *LState {
@@ -187,6 +186,16 @@ func (ls *LState) Coroutine() *LState {
 	co.private.Exdata2 = ls.private.Exdata2
 	co.private.Pool = ls.private.Pool
 	co.private.Terminated = make(chan struct{}, 1)
+
+	co.reg.top = 0
+	switch stack := co.stack.(type) {
+	case *fixedCallFrameStack:
+		stack.sp = 0
+	case *autoGrowingCallFrameStack:
+		stack.segIdx = 0
+		stack.segments[0] = newCallFrameStackSegment()
+	}
+
 	return co
 }
 
