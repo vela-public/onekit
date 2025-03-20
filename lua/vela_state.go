@@ -192,6 +192,10 @@ func (ls *LState) Keepalive(co *LState) {
 	co.SetTop(0)
 	co.private.Exdata2 = nil
 	co.private.Terminated = nil
+	if co.reg.IsFull() {
+		return
+	}
+
 	ls.pool().Put(co)
 }
 

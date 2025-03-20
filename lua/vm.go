@@ -64,10 +64,8 @@ func mainLoopWithContext(L *LState, baseframe *callFrame) {
 		cf.Pc++
 		select {
 		case <-term:
-			L.SetTop(0)
 			return
 		case <-L.ctx.Done():
-			L.SetTop(0)
 			return
 		default:
 			op = int(inst >> 26)
