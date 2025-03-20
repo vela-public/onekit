@@ -198,8 +198,9 @@ func (ls *LState) Coroutine() *LState {
 
 	sz := len(ls.reg.array)
 	for i := 0; i < sz; i++ {
-		co.reg.array[i] = LNil
+		co.reg.array[i] = nil
 	}
+
 	return co
 }
 
