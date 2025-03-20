@@ -157,17 +157,6 @@ func (ls *LState) NewThreadEx() *LState {
 	}
 
 	co.reg = newRegistry(co, options.RegistrySize, options.RegistryGrowStep, options.RegistryMaxSize, al)
-	if ls.ctx != nil {
-		co.mainLoop = mainLoopWithContext
-		ctx, cancel := context.WithCancel(ls.ctx)
-		co.ctx = ctx
-		co.ctxCancelFn = cancel
-	}
-
-	co.private.Exdata = ls.private.Exdata
-	co.private.Exdata2 = ls.private.Exdata2
-	co.private.Pool = ls.private.Pool
-	co.private.Terminated = make(chan struct{}, 1)
 	return co
 }
 
@@ -184,6 +173,18 @@ func (ls *LState) pool() *sync.Pool {
 
 func (ls *LState) Coroutine() *LState {
 	co := ls.pool().Get().(*LState)
+
+	if ls.ctx != nil {
+		co.mainLoop = mainLoopWithContext
+		ctx, cancel := context.WithCancel(ls.ctx)
+		co.ctx = ctx
+		co.ctxCancelFn = cancel
+	}
+
+	co.private.Exdata = ls.private.Exdata
+	co.private.Exdata2 = ls.private.Exdata2
+	co.private.Pool = ls.private.Pool
+	co.private.Terminated = make(chan struct{}, 1)
 	return co
 }
 
