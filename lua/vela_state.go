@@ -126,8 +126,6 @@ func (ls *LState) Terminated() {
 	if ls.private.Terminated == nil {
 		return
 	}
-	ls.SetTop(0)
-	ls.RemoveCallerFrame()
 	ls.private.Terminated <- struct{}{}
 }
 
@@ -187,12 +185,14 @@ func (ls *LState) Coroutine() *LState {
 	co.private.Exdata2 = ls.private.Exdata2
 	co.private.Pool = ls.private.Pool
 	co.private.Terminated = make(chan struct{}, 1)
-	ls.Panic(ls)
+	co.reg.top = 0
+	for i := 0; i < len(co.reg.array); i++ {
+		co.reg.array[i] = nil
+	}
 	return co
 }
 
 func (ls *LState) Keepalive(co *LState) {
-	co.SetTop(0)
 	co.private.Exdata2 = nil
 	co.private.Terminated = nil
 	ls.pool().Put(co)
