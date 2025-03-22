@@ -21,6 +21,9 @@ func (fsm *LineFSM) UnwrapErr() error {
 }
 
 func (fsm *LineFSM) Reset() {
+	if sz := len(fsm.parts); sz > 0 {
+		return
+	}
 	fsm.parts = fsm.parts[:0]
 	fsm.err = nil
 	fsm.next = false
@@ -39,6 +42,8 @@ func (fsm *LineFSM) Read() {
 	fsm.next = next
 
 	if len(data) > 0 {
-		fsm.parts = append(fsm.parts, data)
+		dst := make([]byte, len(data))
+		copy(dst, data)
+		fsm.parts = append(fsm.parts, dst)
 	}
 }

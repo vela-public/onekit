@@ -28,6 +28,7 @@ func Default(name string) *Setting {
 		Thread: 64,
 		Follow: true,
 		Poll:   3,
+		Buffer: 4096,
 		//Bucket: []string{"SHM_FILE_RECORD", strings.ToUpper(name)},
 	}
 }
