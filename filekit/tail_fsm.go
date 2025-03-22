@@ -22,9 +22,10 @@ func (fsm *LineFSM) UnwrapErr() error {
 
 func (fsm *LineFSM) Reset() {
 	if sz := len(fsm.parts); sz > 0 {
+		fsm.parts = fsm.parts[:0]
 		return
 	}
-	fsm.parts = fsm.parts[:0]
+
 	fsm.err = nil
 	fsm.next = false
 }
