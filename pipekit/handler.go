@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/vela-public/onekit/errkit"
 	"github.com/vela-public/onekit/lua"
+	"github.com/vela-public/onekit/pipe"
 	"io"
 	"runtime"
 	"strconv"
@@ -177,6 +178,11 @@ func (h *Handler[T]) InvokerFunc(v any) {
 		h.invoke = func(a *Context[T]) error {
 			return h.SafeCall(func(v T) error { return elem(v) }, a)
 		}
+	case pipe.Invoker:
+		h.invoke = func(a *Context[T]) error {
+			return h.SafeCall(func(v T) error { return elem.Invoke(v) }, a)
+		}
+
 	case func(any):
 		h.invoke = func(a *Context[T]) error {
 			return h.SafeCall(func(v T) error { elem(v); return nil }, a)
