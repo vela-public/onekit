@@ -2,6 +2,7 @@ package filekit
 
 import (
 	"fmt"
+	"github.com/vela-public/onekit/todo"
 )
 
 type Setting struct {
@@ -21,7 +22,7 @@ type Setting struct {
 
 func Default(name string) *Setting {
 	return &Setting{
-		Name:   name,
+		Name:   todo.IF(name == "", "filekit.tail", name),
 		Limit:  0,
 		Delim:  '\n',
 		Wait:   10, // 10s
