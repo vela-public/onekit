@@ -178,9 +178,9 @@ func (s *Section) line() {
 	}()
 
 	fsm := &LineFSM{
-		tail: s.tail,
-		buff: s.buff,
-		next: false,
+		tail:   s.tail,
+		reader: s.buff,
+		next:   false,
 	}
 
 	for {

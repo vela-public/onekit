@@ -112,6 +112,7 @@ func Copier(L *lua.LState, field reflect.Value, val lua.LValue) error {
 		}
 		return nil
 	case reflect.Pointer:
+
 		if field.IsNil() {
 			field.Set(reflect.New(typ.Elem()))
 		}
