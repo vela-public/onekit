@@ -197,21 +197,22 @@ func (s *Section) line() {
 				continue
 			}
 
+			text := fsm.Text()
 			err := fsm.UnwrapErr()
 			if err == nil {
-				s.Handle(fsm.Text())
+				s.Handle(text)
 				continue
 			}
 
 			switch err.Error() {
 			case io.EOF.Error():
 				s.flag = Paused
-				s.Handle(fsm.Text())
+				s.Handle(text)
 				return
 
 			case os.ErrClosed.Error():
 				s.flag = Paused
-				s.Handle(fsm.Text())
+				s.Handle(text)
 				return
 			default:
 				s.flag = Paused

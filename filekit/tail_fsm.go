@@ -8,7 +8,6 @@ import (
 type LineFSM struct {
 	tail   *FileTail
 	reader *bufio.Reader
-	buffer bytes.Buffer
 	next   bool
 	err    error
 }
@@ -21,22 +20,28 @@ func (fsm *LineFSM) UnwrapErr() error {
 }
 
 func (fsm *LineFSM) Reset() {
-	fsm.buffer.Reset()
 	fsm.err = nil
 	fsm.next = false
 }
 
-func (fsm *LineFSM) Text() []byte {
-	return fsm.buffer.Bytes()
-}
-
-func (fsm *LineFSM) Read() {
+func (fsm *LineFSM) Read() ([]byte, error) {
 	fsm.tail.Wait()
+	var buff bytes.Buffer
+	defer fsm.Reset()
+
+repeat:
 	data, next, err := fsm.reader.ReadLine()
 	fsm.err = err
 	fsm.next = next
 
-	if len(data) > 0 {
-		fsm.buffer.Write(data)
+	if sz := len(data); sz > 0 {
+		buff.Write(data)
 	}
+
+	if err == nil && next {
+		goto repeat
+	}
+
+	return buff.Bytes(), err
+
 }
