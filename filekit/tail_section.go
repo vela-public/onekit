@@ -192,13 +192,7 @@ func (s *Section) line() {
 			return
 
 		default:
-			fsm.Read()
-			if fsm.err == nil && fsm.next {
-				continue
-			}
-
-			text := fsm.Text()
-			err := fsm.UnwrapErr()
+			text, err := fsm.Read()
 			if err == nil {
 				s.Handle(text)
 				continue
