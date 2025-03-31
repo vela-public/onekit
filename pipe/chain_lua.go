@@ -9,7 +9,7 @@ func (c *Chain) InvokeL(L *lua.LState) int {
 		args[i-1] = L.Get(i)
 	}
 
-	v := lua.NewGeneric[*Context](c.Invoke(args...))
+	v := c.Invoke(args...)
 	L.Push(v)
 	return 1
 }

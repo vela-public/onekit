@@ -3,6 +3,8 @@ package filekit
 import (
 	"bufio"
 	"bytes"
+	"fmt"
+	"sync/atomic"
 )
 
 type LineFSM struct {
@@ -28,6 +30,7 @@ func (fsm *LineFSM) Read() ([]byte, error) {
 	fsm.tail.Wait()
 	var buff bytes.Buffer
 	defer fsm.Reset()
+	var size int32
 
 repeat:
 	data, next, err := fsm.scanner.ReadLine()
@@ -36,6 +39,9 @@ repeat:
 
 	if sz := len(data); sz > 0 {
 		buff.Write(data)
+		if atomic.AddInt32(&size, int32(sz)) > 64*1024 {
+			return buff.Bytes(), fmt.Errorf("line size too large %d", size)
+		}
 	}
 
 	if err == nil && next {

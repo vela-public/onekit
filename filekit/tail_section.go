@@ -2,7 +2,6 @@ package filekit
 
 import (
 	"bufio"
-	"github.com/vela-public/onekit/cast"
 	"io"
 	"os"
 	"runtime"
@@ -176,7 +175,7 @@ func (s *Section) line() {
 		s.close()
 	}()
 
-	scanner := bufio.NewScanner(s.file)
+	reader := bufio.NewReader(s.file)
 
 	for {
 
@@ -187,9 +186,14 @@ func (s *Section) line() {
 			return
 
 		default:
-			scanner.Scan()
-			text := cast.S2B(scanner.Text())
-			err := scanner.Err()
+			fsm := LineFSM{
+				tail:    s.tail,
+				scanner: reader,
+				next:    false,
+				err:     nil,
+			}
+
+			text, err := fsm.Read()
 			if err == nil {
 				s.Handle(text)
 				continue
