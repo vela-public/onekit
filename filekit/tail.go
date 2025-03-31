@@ -3,13 +3,12 @@ package filekit
 import (
 	"context"
 	"fmt"
-	"github.com/valyala/fastjson"
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/cond"
 	"github.com/vela-public/onekit/gopool"
 	"github.com/vela-public/onekit/jsonkit"
 	"github.com/vela-public/onekit/noop"
-	"github.com/vela-public/onekit/pipekit"
+	"github.com/vela-public/onekit/pipe"
 	"go.etcd.io/bbolt"
 	"os"
 	"path/filepath"
@@ -42,11 +41,10 @@ type FileTail struct {
 		limit    *limit
 		context  context.Context
 		cancel   context.CancelFunc
-		parser   *fastjson.ParserPool
 		pool     gopool.Pool
-		Chain    *pipekit.Chain[*Line]
-		Switch   *pipekit.Switch[*Line]
-		Debug    *pipekit.Chain[string]
+		Chain    *pipe.Chain
+		Switch   *pipe.Switch
+		Debug    *pipe.Chain
 		DB       *bbolt.DB
 		Drop     *cond.Ignore
 		SkipFile []func(string) bool
@@ -164,7 +162,6 @@ func (ft *FileTail) Prepare(parent context.Context) {
 
 	ft.private.limit = NewLimit(ft.private.context, ft.setting.Limit)
 	ft.private.history = make(map[string]*Section)
-	ft.private.parser = new(fastjson.ParserPool)
 
 	//new pool
 	ft.private.pool = gopool.NewPool(ft.Name(), int32(ft.setting.Thread), gopool.NewConfig())
@@ -311,11 +308,11 @@ func (ft *FileTail) Close() error {
 	return nil
 }
 
-func (ft *FileTail) Switch() *pipekit.Switch[*Line] {
+func (ft *FileTail) Switch() *pipe.Switch {
 	return ft.private.Switch
 }
 
-func (ft *FileTail) Chain() *pipekit.Chain[*Line] {
+func (ft *FileTail) Chain() *pipe.Chain {
 	return ft.private.Chain
 }
 
@@ -339,9 +336,9 @@ func NewTail(name string, opts ...FileTailFunc) *FileTail {
 		fn(ft)
 	}
 
-	ft.private.Chain = pipekit.NewChain[*Line]()
-	ft.private.Switch = pipekit.NewSwitch[*Line]()
-	ft.private.Debug = pipekit.NewChain[string]()
+	ft.private.Chain = pipe.NewChain()
+	ft.private.Switch = pipe.NewSwitch()
+	ft.private.Debug = pipe.NewChain()
 	ft.private.Drop = cond.NewIgnore()
 	return ft
 }

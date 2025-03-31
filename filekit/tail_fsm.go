@@ -6,10 +6,10 @@ import (
 )
 
 type LineFSM struct {
-	tail   *FileTail
-	reader *bufio.Reader
-	next   bool
-	err    error
+	tail    *FileTail
+	scanner *bufio.Reader
+	next    bool
+	err     error
 }
 
 func (fsm *LineFSM) Next() bool {
@@ -30,7 +30,7 @@ func (fsm *LineFSM) Read() ([]byte, error) {
 	defer fsm.Reset()
 
 repeat:
-	data, next, err := fsm.reader.ReadLine()
+	data, next, err := fsm.scanner.ReadLine()
 	fsm.err = err
 	fsm.next = next
 

@@ -2,6 +2,7 @@ package filekit
 
 import (
 	"bufio"
+	"github.com/vela-public/onekit/cast"
 	"io"
 	"os"
 	"runtime"
@@ -21,7 +22,6 @@ type Section struct {
 	path  string
 	seek  int64
 	file  *os.File
-	buff  *bufio.Reader
 	time  time.Time //start time
 }
 
@@ -53,7 +53,6 @@ func (s *Section) open() (stop bool) {
 	}
 
 	s.file = file
-	s.buff = bufio.NewReaderSize(file, s.tail.setting.Buffer)
 	s.time = time.Now()
 	go s.line()
 	s.flag = Running
@@ -177,11 +176,7 @@ func (s *Section) line() {
 		s.close()
 	}()
 
-	fsm := &LineFSM{
-		tail:   s.tail,
-		reader: s.buff,
-		next:   false,
-	}
+	scanner := bufio.NewScanner(s.file)
 
 	for {
 
@@ -192,7 +187,9 @@ func (s *Section) line() {
 			return
 
 		default:
-			text, err := fsm.Read()
+			scanner.Scan()
+			text := cast.S2B(scanner.Text())
+			err := scanner.Err()
 			if err == nil {
 				s.Handle(text)
 				continue

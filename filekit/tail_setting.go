@@ -6,15 +6,14 @@ import (
 )
 
 type Setting struct {
-	Name   string   `lua:"name"`
-	Limit  int      `lua:"limit"`
-	Thread int      `lua:"thread"`
-	Buffer int      `lua:"buffer"`
-	Wait   int      `lua:"wait"`
-	Delim  byte     `lua:"delim"`
-	Follow bool     `lua:"follow"`
-	Target []string `lua:"target"`
-	//Bucket   []string `lua:"bucket"`
+	Name     string   `lua:"name"`
+	Limit    int      `lua:"limit"`
+	Thread   int      `lua:"thread"`
+	Buffer   int      `lua:"buffer"`
+	Wait     int      `lua:"wait"`
+	Delim    byte     `lua:"delim"`
+	Follow   bool     `lua:"follow"`
+	Target   []string `lua:"target"`
 	FastJSON bool     `lua:"fastjson"`
 	Location SeekInfo `lua:"location"`
 	Poll     int      `lua:"poll"`

@@ -2,7 +2,7 @@ package filekit
 
 import (
 	"context"
-	"github.com/vela-public/onekit/pipekit"
+	"github.com/vela-public/onekit/pipe"
 	"go.etcd.io/bbolt"
 	"io"
 	"strings"
@@ -57,12 +57,12 @@ func (l *LazyFileTail) Delim(byt byte) *LazyFileTail {
 	return l
 }
 
-func (l *LazyFileTail) Pipe(v any, options ...func(*pipekit.HandleEnv)) *LazyFileTail {
+func (l *LazyFileTail) Pipe(v any, options ...func(*pipe.HandleEnv)) *LazyFileTail {
 	l.tail.private.Chain.NewHandler(v, options...)
 	return l
 }
 
-func (l *LazyFileTail) Output(v any, options ...func(*pipekit.HandleEnv)) *LazyFileTail {
+func (l *LazyFileTail) Output(v any, options ...func(*pipe.HandleEnv)) *LazyFileTail {
 	l.tail.private.Chain.NewHandler(v, options...)
 	l.err = l.tail.Background(l.ctx)
 	return l

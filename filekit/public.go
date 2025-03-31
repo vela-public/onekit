@@ -395,7 +395,7 @@ var IsNotEmpty = func(data []byte) bool {
 	return len(data) > 0
 }
 
-// CountLinesWithOptions from a reader and custom filter function
+// CountLinesWithOptions from a scanner and custom filter function
 func CountLinesWithOptions(reader io.Reader, separator []byte, filter func([]byte) bool) (uint, error) {
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
@@ -421,7 +421,7 @@ func CountLinesWithOptions(reader io.Reader, separator []byte, filter func([]byt
 	return count, scanner.Err()
 }
 
-// SubstituteConfigFromEnvVars reads a config file and generates a reader with substituted config values from environment variables
+// SubstituteConfigFromEnvVars reads a config file and generates a scanner with substituted config values from environment variables
 func SubstituteConfigFromEnvVars(filepath string) (io.Reader, error) {
 	var config strings.Builder
 

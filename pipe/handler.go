@@ -107,6 +107,7 @@ func InvokerFunc(h *Handler, v any) {
 			elem.Invoke(a)
 			return nil
 		}
+
 	case io.Writer:
 		h.invoke = func(a *Context) error {
 			return h.Writer(elem, a)
