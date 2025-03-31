@@ -87,7 +87,7 @@ func (s *Section) follow() bool {
 	return true
 }
 
-func (s *Section) Handle(raw []byte) {
+func (s *Section) Handle(raw string) {
 	sz := len(raw)
 	if sz <= 1 {
 		return
@@ -100,7 +100,7 @@ func (s *Section) Handle(raw []byte) {
 
 	v := &Line{
 		File: s.path,
-		Text: raw,
+		Text: []byte(raw),
 		Size: sz,
 	}
 
