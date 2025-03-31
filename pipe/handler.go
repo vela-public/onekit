@@ -108,10 +108,6 @@ func InvokerFunc(h *Handler, v any) {
 			return nil
 		}
 
-	case io.Writer:
-		h.invoke = func(a *Context) error {
-			return h.Writer(elem, a)
-		}
 	case Invoker:
 		h.invoke = func(a *Context) error {
 			return h.SafeCall(elem.Invoke, a)
@@ -159,6 +155,12 @@ func InvokerFunc(h *Handler, v any) {
 		}
 	case lua.PackType:
 		InvokerFunc(h, elem.Unpack())
+
+	case io.Writer:
+		h.invoke = func(a *Context) error {
+			return h.Writer(elem, a)
+		}
+
 	default:
 		h.info = fmt.Errorf("not compatible %T", v)
 	}

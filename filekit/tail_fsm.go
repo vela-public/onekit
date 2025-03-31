@@ -26,7 +26,7 @@ func (fsm *LineFSM) Reset() {
 	fsm.next = false
 }
 
-func (fsm *LineFSM) Read() ([]byte, error) {
+func (fsm *LineFSM) Read() (string, error) {
 	fsm.tail.Wait()
 	var buff bytes.Buffer
 	defer fsm.Reset()
@@ -39,8 +39,8 @@ repeat:
 
 	if sz := len(data); sz > 0 {
 		buff.Write(data)
-		if atomic.AddInt32(&size, int32(sz)) > 64*1024 {
-			return buff.Bytes(), fmt.Errorf("line size too large %d", size)
+		if atomic.AddInt32(&size, int32(sz)) > 1024*1024 {
+			return buff.String(), fmt.Errorf("line size too large %d", size)
 		}
 	}
 
@@ -48,6 +48,6 @@ repeat:
 		goto repeat
 	}
 
-	return buff.Bytes(), err
+	return buff.String(), err
 
 }

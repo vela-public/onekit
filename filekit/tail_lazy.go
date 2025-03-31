@@ -24,7 +24,6 @@ func LazyTail(ctx context.Context, pattern ...string) *LazyFileTail {
 		tail:    NewTail(name),
 	}
 	tail.Mem()
-	tail.SeekEnd()
 	tail.Follow(true)
 	tail.Thread(100)
 	tail.Poll(3)
