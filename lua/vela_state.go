@@ -1,7 +1,6 @@
 package lua
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -176,10 +175,13 @@ func (ls *LState) Coroutine() *LState {
 	co := ls.pool().Get().(*LState)
 
 	if ls.ctx != nil {
-		co.mainLoop = mainLoopWithContext
-		ctx, cancel := context.WithCancel(ls.ctx)
-		co.ctx = ctx
-		co.ctxCancelFn = cancel
+		co.ctx = ls.ctx
+		co.ctxCancelFn = ls.ctxCancelFn
+		/*
+			ctx, cancel := context.WithCancel(ls.ctx)
+			co.ctx = ctx
+			co.ctxCancelFn = cancel
+		*/
 	}
 
 	co.private.Exdata = ls.private.Exdata
