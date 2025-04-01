@@ -210,6 +210,26 @@ func (cs *fixedCallFrameStack) Pop() *callFrame {
 	return &cs.array[cs.sp]
 }
 
+func (cs *fixedCallFrameStack) reset() {
+	sz := len(cs.array)
+	for i := 0; i < sz; i++ {
+		cf := &cs.array[i]
+		cf.Parent = nil
+		cf.Fn = nil
+		cf.Idx = 0
+		cf.Pc = 0
+		cf.Base = 0
+		cf.LocalBase = 0
+		cf.ReturnBase = 0
+		cf.NArgs = 0
+		cf.NRet = 0
+		cf.TailCall = 0
+		cf.NRet = 0
+		cf.Idx = 0
+	}
+	cs.sp = 0
+}
+
 func (cs *fixedCallFrameStack) FreeAll() {
 	// nothing to do for fixed callframestack
 }

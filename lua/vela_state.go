@@ -1,6 +1,7 @@
 package lua
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -175,13 +176,10 @@ func (ls *LState) Coroutine() *LState {
 	co := ls.pool().Get().(*LState)
 
 	if ls.ctx != nil {
-		co.ctx = ls.ctx
-		co.ctxCancelFn = ls.ctxCancelFn
-		/*
-			ctx, cancel := context.WithCancel(ls.ctx)
-			co.ctx = ctx
-			co.ctxCancelFn = cancel
-		*/
+		co.mainLoop = ls.mainLoop
+		ctx, cancel := context.WithCancel(ls.ctx)
+		co.ctx = ctx
+		co.ctxCancelFn = cancel
 	}
 
 	co.private.Exdata = ls.private.Exdata
@@ -192,7 +190,7 @@ func (ls *LState) Coroutine() *LState {
 	co.reg.top = 0
 	switch stack := co.stack.(type) {
 	case *fixedCallFrameStack:
-		stack.sp = 0
+		stack.reset()
 	case *autoGrowingCallFrameStack:
 		stack.segIdx = 0
 		stack.segments[0] = newCallFrameStackSegment()
@@ -207,8 +205,19 @@ func (ls *LState) Coroutine() *LState {
 }
 
 func (ls *LState) Keepalive(co *LState) {
-	co.private.Exdata2 = nil
+
+	if cancel := co.ctxCancelFn; cancel != nil {
+		cancel()
+	}
+
+	if term := co.private.Terminated; term != nil {
+		term <- struct{}{}
+	}
+
+	co.ctx = nil
+	co.ctxCancelFn = nil
 	co.private.Terminated = nil
+	co.private.Exdata2 = nil
 	ls.pool().Put(co)
 }
 
