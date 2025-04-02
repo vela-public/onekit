@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"runtime"
+	"sync/atomic"
 	"time"
 )
 
@@ -107,6 +108,20 @@ func (s *Section) Handle(raw string) {
 	s.tail.Input(v)
 }
 
+func (s *Section) SaveSeek() {
+	if s.file == nil {
+		s.tail.Errorf("%s not file handle", s.path)
+		return
+	}
+
+	seek, e := s.file.Seek(0, io.SeekCurrent)
+	if e != nil {
+		s.tail.Errorf("%s current seek error %v", s.path, e)
+		return
+	}
+	s.tail.Tell(s.path, seek)
+}
+
 func (s *Section) close() {
 
 	if s.file == nil {
@@ -176,6 +191,7 @@ func (s *Section) line() {
 	}()
 
 	reader := bufio.NewReader(s.file)
+	var cnt uint32
 
 	for {
 
@@ -197,6 +213,10 @@ func (s *Section) line() {
 			if err == nil {
 				s.Handle(text)
 				continue
+			}
+
+			if atomic.AddUint32(&cnt, uint32(1)) > uint32(200) {
+				s.SaveSeek()
 			}
 
 			switch err.Error() {

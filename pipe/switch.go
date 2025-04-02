@@ -8,7 +8,7 @@ type Switch struct {
 	Debug   bool
 	Break   bool
 	Cases   []*Case
-	Default *Chain
+	Default SwitchHandler
 	Before  *Chain
 	After   *Chain
 }
@@ -44,7 +44,19 @@ func (s *Switch) NotFound(v any, options ...func(*HandleEnv)) {
 }
 
 func (s *Switch) Invoke(v any, more ...func(*Context)) {
-	s.Before.Invoke(v)
+
+	f := &Factory{
+		Data: v,
+	}
+
+	var dat any
+	s.Before.Invoke(f)
+
+	if f.Value != nil {
+		dat = f.Value
+	} else {
+		dat = v
+	}
 
 	sz := len(s.Cases)
 	if sz == 0 {
@@ -54,7 +66,7 @@ func (s *Switch) Invoke(v any, more ...func(*Context)) {
 	hit := false
 	for i := 0; i < sz; i++ {
 		c := s.Cases[i]
-		ctx, ok := c.Match(i, v)
+		ctx, ok := c.Match(i, dat)
 		if !ok {
 			continue
 		}
@@ -68,17 +80,17 @@ func (s *Switch) Invoke(v any, more ...func(*Context)) {
 	}
 
 	if !hit {
-		s.Default.Invoke(v)
+		s.Default.Case(-1, nil, dat)
 	}
-	s.After.Invoke(v)
+
+	s.After.Invoke(dat)
 }
 
 func (s *Switch) Case(options ...func(*Case)) *Case {
 	c := &Case{
-		Switch: s,
-		Happy:  NewChain(),
-		Debug:  NewChain(),
-		Break:  true,
+		Happy: NewChain(),
+		Debug: NewChain(),
+		Break: true,
 	}
 	for _, opt := range options {
 		opt(c)

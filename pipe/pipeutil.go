@@ -62,7 +62,6 @@ func MarshalText(item any) ([]byte, error) {
 		return v.Bytes(), nil
 	case *bytes.Buffer:
 		return v.Bytes(), nil
-
 	default:
 		text, err := json.Marshal(item)
 		return text, err

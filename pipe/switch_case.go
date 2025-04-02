@@ -4,14 +4,19 @@ import (
 	"fmt"
 	"github.com/vela-public/onekit/cond"
 	"github.com/vela-public/onekit/lua"
+	"github.com/vela-public/onekit/todo"
 )
 
+type SwitchHandler interface {
+	Case(idx int, cnd *cond.Cond, v any) *Context
+	NewHandler(v any, options ...func(*HandleEnv)) (r todo.Result[*Handler, error])
+}
+
 type Case struct {
-	Switch *Switch
-	Break  bool
-	Cnd    *cond.Cond
-	Happy  *Chain
-	Debug  *Chain
+	Break bool
+	Cnd   *cond.Cond
+	Happy SwitchHandler
+	Debug SwitchHandler
 }
 
 func (c *Case) String() string                         { return fmt.Sprintf("switch.case(%s)", c.Cnd) }
@@ -47,7 +52,7 @@ func (c *Case) Match(idx int, v any) (*Context, bool) {
 	ctx.meta.Cnd = c.Cnd
 	ctx.meta.CaseID = idx
 	ctx.meta.Switch = true
-	c.Debug.Invoke(ctx)
+	c.Debug.Case(idx, c.Cnd, v)
 	return ctx, true
 }
 

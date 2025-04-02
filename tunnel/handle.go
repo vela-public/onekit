@@ -5,7 +5,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/lua"
-	"github.com/vela-public/onekit/pipekit"
+	"github.com/vela-public/onekit/pipe"
 	"github.com/vela-public/onekit/treekit"
 	"github.com/vela-public/onekit/webkit"
 	"path/filepath"
@@ -21,7 +21,7 @@ type config struct {
 	recycle bool
 	co      *lua.LState
 	webctx  *webkit.HttpContext
-	handle  *pipekit.Chain[*webkit.WebContext]
+	handle  *pipe.Chain
 	router  *Router
 }
 
@@ -85,7 +85,7 @@ func (lh *LHandle) Close() error {
 
 func NewHandleL(L *lua.LState, rr *Router, method string) lua.LValue {
 	path := L.CheckString(1)
-	chain := pipekit.Lua[*webkit.WebContext](L, pipekit.LState(L), pipekit.Protect(true), pipekit.Seek(2))
+	chain := pipe.Lua(L, pipe.LState(L), pipe.Protect(true), pipe.Seek(2))
 
 	cfg := &config{
 		method: method,

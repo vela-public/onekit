@@ -13,6 +13,10 @@ type Invoker interface {
 	Invoke(v interface{}) error
 }
 
+type InvokerT[T any] interface {
+	Invoke(v T) error
+}
+
 type Bytes interface {
 	Bytes() []byte
 }

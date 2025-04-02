@@ -2,9 +2,9 @@ package treekit
 
 import (
 	"context"
-	"github.com/panjf2000/ants/v2"
+	"github.com/vela-public/onekit/gopool"
 	"github.com/vela-public/onekit/luakit"
-	"github.com/vela-public/onekit/pipekit"
+	"github.com/vela-public/onekit/pipe"
 	"sync"
 )
 
@@ -19,14 +19,14 @@ type TaskTree struct {
 		cancel  context.CancelFunc
 		luakit  *luakit.Kit
 		protect bool
-		threads *ants.Pool
+		threads gopool.Pool
 	}
 
 	handler struct {
-		Create *pipekit.Chain[*Task]
-		Error  *pipekit.Chain[error]
-		Panic  *pipekit.Chain[error]
-		Report *pipekit.Chain[*Task]
+		Create *pipe.Chain
+		Error  *pipe.Chain
+		Panic  *pipe.Chain
+		Report *pipe.Chain
 	}
 }
 
@@ -70,12 +70,7 @@ func (t *TaskTree) Submit(tas *Task) {
 	if t.private.threads == nil {
 		return
 	}
-
-	err := t.private.threads.Submit(tas.pcall)
-	if err != nil {
-		t.Error(err)
-	}
-
+	t.private.threads.CtxGo(t.Context(), tas.pcall)
 }
 
 func NewTaskTree(parent context.Context, kit *luakit.Kit, option *TaskTreeOption) *TaskTree {
@@ -88,13 +83,6 @@ func NewTaskTree(parent context.Context, kit *luakit.Kit, option *TaskTreeOption
 	tree.handler.Report = option.report
 	tree.handler.Error = option.error
 	tree.handler.Panic = option.panic
-
-	threads, err := ants.NewPool(128)
-	if err != nil {
-		tree.Error(err)
-		return tree
-	}
-
-	tree.private.threads = threads
+	tree.private.threads = gopool.NewPool("task.tree", int32(128), gopool.NewConfig())
 	return tree
 }

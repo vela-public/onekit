@@ -40,6 +40,15 @@ func Protect(b bool) func(*HandleEnv) {
 	}
 }
 
+func Clone(e *HandleEnv) func(env *HandleEnv) {
+	return func(env *HandleEnv) {
+		env.Protect = e.Protect
+		env.Seek = e.Seek
+		env.Error = e.Error
+		env.Parent = e.Parent
+	}
+}
+
 func LState(co *lua.LState) func(*HandleEnv) {
 	return func(e *HandleEnv) {
 		e.Parent = co

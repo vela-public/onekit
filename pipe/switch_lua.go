@@ -6,7 +6,7 @@ import (
 )
 
 func (s *Switch) push(L *lua.LState) int {
-	L.Push(lua.NewGeneric[*Switch](s))
+	L.Push(s)
 	return 1
 }
 
@@ -46,7 +46,7 @@ func (s *Switch) DefaultL(L *lua.LState) int {
 }
 
 func (s *Switch) BeforeL(L *lua.LState) int {
-	s.Before = Lua(L, LState(L))
+	s.Before = Lua(L, LState(L), Seek(1))
 	return s.push(L)
 }
 

@@ -1,22 +1,24 @@
 package treekit
 
-import "github.com/vela-public/onekit/pipekit"
+import (
+	"github.com/vela-public/onekit/pipe"
+)
 
 type TaskTreeOption struct {
-	create  *pipekit.Chain[*Process]
-	error   *pipekit.Chain[error]
-	panic   *pipekit.Chain[error]
-	report  *pipekit.Chain[*Task]
+	create  *pipe.Chain
+	error   *pipe.Chain
+	panic   *pipe.Chain
+	report  *pipe.Chain
 	protect bool
 }
 
 func NewTaskTreeOption() *TaskTreeOption {
 	return &TaskTreeOption{
 		protect: false,
-		create:  pipekit.NewChain[*Process](),
-		error:   pipekit.NewChain[error](),
-		panic:   pipekit.NewChain[error](),
-		report:  pipekit.NewChain[*Task](),
+		create:  pipe.NewChain(),
+		error:   pipe.NewChain(),
+		panic:   pipe.NewChain(),
+		report:  pipe.NewChain(),
 	}
 }
 
@@ -25,17 +27,33 @@ func (tt *TaskTreeOption) Protect(flag bool) {
 }
 
 func (tt *TaskTreeOption) Error(fn func(error)) {
-	tt.error.NewHandler(fn)
+	tt.error.NewHandler(func(v any) {
+		if err, ok := v.(error); ok {
+			fn(err)
+		}
+	})
 }
 
 func (tt *TaskTreeOption) Panic(fn func(error)) {
-	tt.panic.NewHandler(fn)
+	tt.panic.NewHandler(func(v any) {
+		if err, ok := v.(error); ok {
+			fn(err)
+		}
+	})
 }
 
 func (tt *TaskTreeOption) Create(fn func(p *Process)) {
-	tt.create.NewHandler(fn)
+	tt.create.NewHandler(func(v any) {
+		if p, ok := v.(*Process); ok {
+			fn(p)
+		}
+	})
 }
 
 func (tt *TaskTreeOption) Report(fn func(*Task)) {
-	tt.report.NewHandler(fn)
+	tt.report.NewHandler(func(v any) {
+		if t, ok := v.(*Task); ok {
+			fn(t)
+		}
+	})
 }

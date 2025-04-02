@@ -40,7 +40,7 @@ func parseRequestURL(c *Client, r *Request) error {
 			}
 		}
 
-		// GitHub #663 Raw Path Params
+		// GitHub #663 Data Path Params
 		for p, v := range r.RawPathParams {
 			if _, ok := params[p]; !ok {
 				params[p] = v

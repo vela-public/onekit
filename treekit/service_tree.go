@@ -5,7 +5,7 @@ import (
 	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/luakit"
-	"github.com/vela-public/onekit/pipekit"
+	"github.com/vela-public/onekit/pipe"
 	"strings"
 	"sync"
 )
@@ -17,11 +17,11 @@ type MsTree struct {
 	}
 
 	handler struct {
-		Report *pipekit.Chain[*MsTree]
-		Create *pipekit.Chain[*Process]
-		Error  *pipekit.Chain[error]
-		Wakeup *pipekit.Chain[*Process]
-		Panic  *pipekit.Chain[error]
+		Report *pipe.Chain
+		Create *pipe.Chain
+		Error  *pipe.Chain
+		Wakeup *pipe.Chain
+		Panic  *pipe.Chain
 	}
 
 	private struct {

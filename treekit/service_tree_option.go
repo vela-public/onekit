@@ -1,26 +1,26 @@
 package treekit
 
 import (
-	"github.com/vela-public/onekit/pipekit"
+	"github.com/vela-public/onekit/pipe"
 )
 
 type MicroServiceOption struct {
-	create  *pipekit.Chain[*Process]
-	error   *pipekit.Chain[error]
-	wakeup  *pipekit.Chain[*Process]
-	panic   *pipekit.Chain[error]
-	report  *pipekit.Chain[*MsTree]
+	create  *pipe.Chain
+	error   *pipe.Chain
+	wakeup  *pipe.Chain
+	panic   *pipe.Chain
+	report  *pipe.Chain
 	protect bool
 }
 
 func NewMicoServiceOption() *MicroServiceOption {
 	return &MicroServiceOption{
 		protect: false,
-		create:  pipekit.NewChain[*Process](),
-		error:   pipekit.NewChain[error](),
-		wakeup:  pipekit.NewChain[*Process](),
-		panic:   pipekit.NewChain[error](),
-		report:  pipekit.NewChain[*MsTree](),
+		create:  pipe.NewChain(),
+		error:   pipe.NewChain(),
+		wakeup:  pipe.NewChain(),
+		panic:   pipe.NewChain(),
+		report:  pipe.NewChain(),
 	}
 }
 
