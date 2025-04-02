@@ -1,6 +1,6 @@
 package lua
 
-func Kind(L *LState, v any, name string) LValue {
+func ValueOf(L *LState, v any, name string) LValue {
 	switch kt := v.(type) {
 	case IndexType:
 		return kt.Index(L, name)
