@@ -203,6 +203,10 @@ func MustBe[T any](L *LState, idx int) T {
 		return vt
 	}
 
+	if ptr, yes := any(lv).(*T); yes {
+		return *ptr
+	}
+
 	switch any(vt).(type) {
 	case string:
 		v := lv.String()
@@ -326,27 +330,6 @@ func UnpackGo(L *LState) []any {
 		}
 	}
 	return rc
-}
-
-func L2SS(L *LState) []string {
-	n := L.GetTop()
-	if n == 0 {
-		return nil
-	}
-
-	var ssv []string
-	for i := 1; i <= n; i++ {
-		lv := L.Get(i)
-		if lv.Type() == LTNil {
-			continue
-		}
-		v := lv.String()
-		if len(v) == 0 {
-			continue
-		}
-		ssv = append(ssv, v)
-	}
-	return ssv
 }
 
 func NewFunction(gn LGFunction) *LFunction {
