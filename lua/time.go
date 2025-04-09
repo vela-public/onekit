@@ -221,6 +221,17 @@ func TimeDayL(L *LState) int {
 	return 1
 }
 
+func NewTimeRangeL(L *LState) int {
+	times := Unpack[string](L)
+	tr := NewRange(times)
+	if e := tr.compile(); e != nil {
+		L.RaiseError("%v", e)
+		return 0
+	}
+	L.Push(tr)
+	return 1
+}
+
 func TimeIndexL(L *LState, key string) LValue {
 	switch key {
 	case "now":
@@ -235,6 +246,8 @@ func TimeIndexL(L *LState, key string) LValue {
 		return NewFunction(TimeDayL)
 	case "layout":
 		return NewFunction(NewLayoutL)
+	case "range":
+		return NewFunction(NewTimeRangeL)
 	}
 	return LNil
 }
