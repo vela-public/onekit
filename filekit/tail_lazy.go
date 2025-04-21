@@ -107,6 +107,21 @@ func (l *LazyFileTail) Thread(n int) *LazyFileTail {
 	return l
 }
 
+func (l *LazyFileTail) Nonblocking(b bool) *LazyFileTail {
+	l.tail.setting.Nonblocking = b
+	return l
+}
+
+func (l *LazyFileTail) Blocking(n int) *LazyFileTail {
+	l.tail.setting.MaxBlocking = n
+	return l
+}
+
+func (l *LazyFileTail) PreAllow(b bool) *LazyFileTail {
+	l.tail.setting.PreAllow = b
+	return l
+}
+
 func (l *LazyFileTail) Target(s ...string) {
 	l.tail.setting.Target = append(l.tail.setting.Target, s...)
 }

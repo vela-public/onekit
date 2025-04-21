@@ -11,6 +11,7 @@ type Switch struct {
 	Default SwitchHandler
 	Before  *Chain
 	After   *Chain
+	Error   *Chain
 }
 
 func (s *Switch) String() string                         { return "switch" }
@@ -31,6 +32,10 @@ func More(ctx *Context, more ...func(*Context)) {
 	}
 }
 
+func (s *Switch) NewErrorHandler(v any, options ...func(*HandleEnv)) {
+	s.Error.NewHandler(v, options...)
+}
+
 func (s *Switch) OnBefore(v any, options ...func(*HandleEnv)) {
 	s.Before.NewHandler(v, options...)
 }
@@ -45,15 +50,15 @@ func (s *Switch) NotFound(v any, options ...func(*HandleEnv)) {
 
 func (s *Switch) Invoke(v any, more ...func(*Context)) {
 
-	f := &Factory{
+	t := &Temporary{
 		Data: v,
 	}
 
 	var dat any
-	s.Before.Invoke(f)
+	s.Before.Invoke(t)
 
-	if f.Value != nil {
-		dat = f.Value
+	if t.Value != nil {
+		dat = t.Value
 	} else {
 		dat = v
 	}
@@ -61,6 +66,12 @@ func (s *Switch) Invoke(v any, more ...func(*Context)) {
 	sz := len(s.Cases)
 	if sz == 0 {
 		return
+	}
+
+	errFn := func(ctx *Context, err error) {
+		if s.Error != nil {
+			s.Error.Invoke(err)
+		}
 	}
 
 	hit := false
@@ -72,6 +83,7 @@ func (s *Switch) Invoke(v any, more ...func(*Context)) {
 		}
 
 		hit = true
+		ctx.hijack.Error = errFn
 		More(ctx, more...)
 		if s.Break || c.Break {
 			break
@@ -104,6 +116,7 @@ func NewSwitch() *Switch {
 		Default: NewChain(),
 		Before:  NewChain(),
 		After:   NewChain(),
+		Error:   NewChain(),
 	}
 }
 

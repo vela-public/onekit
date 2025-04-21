@@ -47,6 +47,10 @@ func (zc *LazyChain[T]) NewHandler(v any, option ...func(env *HandleEnv)) (r tod
 	}
 }
 
+func (zc *LazyChain[T]) NewErrorHandler(v any, option ...func(env *HandleEnv)) error {
+	return zc.Chain.NewErrorHandler(v, option...)
+}
+
 func (zc *LazyChain[T]) Merge(v any) {
 	switch sub := v.(type) {
 	case *LazyChain[T]:

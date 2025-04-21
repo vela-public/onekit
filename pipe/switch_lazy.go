@@ -22,6 +22,10 @@ func (s *LazySwitch[T]) Invoke(v T) {
 	s.ref.Invoke(v)
 }
 
+func (s *LazySwitch[T]) NewErrorHandler(v any, options ...func(*HandleEnv)) {
+	s.ref.Error.NewHandler(v, options...)
+}
+
 func (s *LazySwitch[T]) Case(options ...func(*Case)) *Case {
 	c := &Case{
 		Happy: NewLazyChain[T](),
@@ -70,6 +74,7 @@ func (s *LazySwitch[T]) OneL(L *lua.LState) int {
 	s.ref.Break = true
 	return s.push(L)
 }
+
 func (s *LazySwitch[T]) DefaultL(L *lua.LState) int {
 	s.ref.Default = Lua(L, LState(L))
 	return s.push(L)
@@ -78,6 +83,12 @@ func (s *LazySwitch[T]) DefaultL(L *lua.LState) int {
 func (s *LazySwitch[T]) BeforeL(L *lua.LState) int {
 	s.ref.Before = Lua(L, LState(L), Seek(1))
 	return s.push(L)
+}
+
+func (s *LazySwitch[T]) ErrorL(L *lua.LState) int {
+	sub := Lua(L, LState(L), Seek(1))
+	s.ref.Error.Merge(sub)
+	return 0
 }
 
 func (s *LazySwitch[T]) AfterL(L *lua.LState) int {
@@ -99,6 +110,8 @@ func (s *LazySwitch[T]) Index(L *lua.LState, key string) lua.LValue {
 		return lua.NewFunction(s.AfterL)
 	case "default":
 		return lua.NewFunction(s.DefaultL)
+	case "error":
+		return lua.NewFunction(s.ErrorL)
 	default:
 		return nil
 	}

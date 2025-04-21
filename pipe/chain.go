@@ -9,6 +9,10 @@ import (
 
 type Chain struct {
 	handle []*Handler
+
+	private struct {
+		ErrHandle []*Handler
+	}
 }
 
 func (c *Chain) append(v *Handler) {
@@ -22,6 +26,27 @@ func (c *Chain) Len() int {
 func (c *Chain) Merge(sub *Chain) {
 	for _, h := range sub.handle {
 		c.append(h)
+	}
+}
+
+func (c *Chain) error(err error) {
+	if err == nil {
+		return
+	}
+
+	sz := len(c.private.ErrHandle)
+	if sz == 0 {
+		return
+	}
+
+	ctx := &Context{
+		size: 1,
+		data: []any{any(err)},
+	}
+
+	for i := 0; i < sz; i++ {
+		h := c.private.ErrHandle[i]
+		_ = h.invoke(ctx)
 	}
 }
 
@@ -92,15 +117,32 @@ func (c *Chain) Invoke(v ...any) *Context {
 		if err := h.Invoke(ctx); err != nil {
 			key := fmt.Sprintf("handle.%d:%T", i, h.data)
 			ctx.errs.Try(key, err)
+			c.error(err)
 		}
 	}
-
 	return ctx
 }
 
 func (c *Chain) NewHandler(v any, options ...func(*HandleEnv)) (r todo.Result[*Handler, error]) {
 	env := NewEnv(options...)
 	return c.handler(v, env)
+}
+
+func (c *Chain) NewErrorHandler(v any, options ...func(*HandleEnv)) error {
+	env := NewEnv(options...)
+	h, ok := v.(*Handler)
+	if ok {
+		c.private.ErrHandle = append(c.private.ErrHandle, h)
+		return nil
+	}
+
+	hd := &Handler{env: env}
+	hd.prepare(v)
+	if hd.info == nil {
+		c.private.ErrHandle = append(c.private.ErrHandle, h)
+		return nil
+	}
+	return hd.info
 }
 
 func (c *Chain) handler(v any, env *HandleEnv) (r todo.Result[*Handler, error]) {

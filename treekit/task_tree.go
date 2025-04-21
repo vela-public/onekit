@@ -2,7 +2,7 @@ package treekit
 
 import (
 	"context"
-	"github.com/vela-public/onekit/gopool"
+	"github.com/panjf2000/ants/v2"
 	"github.com/vela-public/onekit/luakit"
 	"github.com/vela-public/onekit/pipe"
 	"sync"
@@ -19,7 +19,7 @@ type TaskTree struct {
 		cancel  context.CancelFunc
 		luakit  *luakit.Kit
 		protect bool
-		threads gopool.Pool
+		threads *ants.Pool
 	}
 
 	handler struct {
@@ -70,7 +70,10 @@ func (t *TaskTree) Submit(tas *Task) {
 	if t.private.threads == nil {
 		return
 	}
-	t.private.threads.CtxGo(t.Context(), tas.pcall)
+	err := t.private.threads.Submit(tas.pcall)
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func NewTaskTree(parent context.Context, kit *luakit.Kit, option *TaskTreeOption) *TaskTree {
@@ -83,6 +86,12 @@ func NewTaskTree(parent context.Context, kit *luakit.Kit, option *TaskTreeOption
 	tree.handler.Report = option.report
 	tree.handler.Error = option.error
 	tree.handler.Panic = option.panic
-	tree.private.threads = gopool.NewPool("task.tree", int32(128), gopool.NewConfig())
+
+	threads, err := ants.NewPool(128, ants.WithPreAlloc(false), ants.WithNonblocking(true))
+	if err != nil {
+		tree.Error(err)
+		return tree
+	}
+	tree.private.threads = threads
 	return tree
 }
