@@ -95,3 +95,15 @@ func Start(L *lua.LState, v ProcessType, x func(e error)) {
 		x(fmt.Errorf("lua.exdata must *MicroService or *TaskTree got:%T", exdata))
 	}
 }
+
+func Close(L *lua.LState, v ProcessType, x func(e error)) {
+	exdata := L.Exdata()
+	switch dat := exdata.(type) {
+	case *MicroService:
+		dat.Shutdown(v, x)
+	case *Task:
+		dat.Shutdown(v, x)
+	default:
+		x(fmt.Errorf("lua.exdata must *MicroService or *TaskTree got:%T", exdata))
+	}
+}

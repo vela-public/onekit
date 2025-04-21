@@ -239,6 +239,46 @@ func (ms *MicroService) ID() int64 {
 	return ms.config.ID
 }
 
+func (ms *MicroService) Shutdown(s ProcessType, x func(error)) {
+	srvName := ms.Key()
+	name := s.Name()
+	pro, exist := ms.have(name)
+	if !exist {
+		err := fmt.Errorf("%s not found %s", srvName, name)
+		x(err)
+		return
+	}
+
+	from := pro.From()
+	if srvName != from {
+		err := fmt.Errorf("%s processes.from=%s with %s not allow", srvName, pro.from, pro.Name())
+		x(err)
+		return
+	}
+
+	if ms.has(Disable) {
+		err := fmt.Errorf("%s processes.from=%s disable", srvName, from)
+		x(err)
+		return
+	}
+
+	if pro.has(Succeed) {
+		if err := pro.Close(); err != nil {
+			pro.info = fmt.Errorf("%s close fail error %v", pro.Name(), err)
+			pro.set(Failed)
+			x(pro.info)
+			return
+		} else {
+			pro.info = nil
+			pro.set(Stopped)
+		}
+		return
+	}
+
+	pro.info = fmt.Errorf("%s close fail error not running", pro.Name())
+	return
+}
+
 func (ms *MicroService) Startup(s ProcessType, x func(error)) {
 	srvName := ms.Key()
 	name := s.Name()

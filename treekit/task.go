@@ -72,10 +72,6 @@ func (t *Task) Key() string {
 	return fmt.Sprintf("task.%s", t.config.Name)
 }
 
-func (t *Task) shutdown() {
-
-}
-
 func (t *Task) define(name string) *Process {
 	t.processes.mutex.Lock()
 	defer t.processes.mutex.Unlock()
@@ -123,6 +119,40 @@ func (t *Task) have(name string) (*Process, bool) {
 		}
 	}
 	return nil, false
+}
+
+func (t *Task) Shutdown(v ProcessType, x func(error)) {
+	key := t.Key()
+	name := v.Name()
+	pro, exist := t.have(name)
+	if !exist {
+		err := fmt.Errorf("%s not found %s", key, name)
+		x(err)
+		return
+	}
+
+	from := pro.From()
+	if key != from {
+		err := fmt.Errorf("%s processes.from=%s with %s not allow", key, pro.from, pro.name)
+		x(err)
+		return
+	}
+
+	if pro.has(Succeed) {
+		if err := pro.Close(); err != nil {
+			pro.info = fmt.Errorf("%s close fail error %v", pro.name, err)
+			pro.set(Failed)
+			x(pro.info)
+			return
+		} else {
+			pro.info = nil
+			pro.set(Stopped)
+		}
+		return
+	}
+
+	pro.info = fmt.Errorf("%s close fail error not running", pro.name)
+	return
 }
 
 func (t *Task) Startup(v ProcessType, x func(error)) {
