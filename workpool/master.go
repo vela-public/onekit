@@ -132,17 +132,21 @@ func (m *Master[T]) Stop() {
 	}
 }
 
-// Submit submits only data, using preset function and timeout values.
-func (m *Master[T]) Submit(data T) error {
+func (m *Master[T]) Balance() *Worker[T] {
 	offset := atomic.AddUint64(&m.rrIndex, 1)
 	worker := m.workers[offset/uint64(len(m.workers))]
-	err := worker.Submit(Task[T]{fn: m.taskFunc, data: data, timeout: m.taskTimeout}, m.blockTimeout)
+	return worker
+}
+
+// Submit submits only data, using preset function and timeout values.
+func (m *Master[T]) Submit(data T) error {
+	w := m.Balance()
+	err := w.Submit(Task[T]{fn: m.taskFunc, data: data, timeout: m.taskTimeout}, m.blockTimeout)
 	return err
 }
 
 // SubmitBlocking is still available for custom taskFunc and timeout.
 func (m *Master[T]) SubmitBlocking(fn TaskFunc[T], data T, taskTimeout, blockTimeout time.Duration) error {
-	offset := atomic.AddUint64(&m.rrIndex, 1)
-	worker := m.workers[offset/uint64(len(m.workers))]
-	return worker.Submit(Task[T]{fn: fn, data: data, timeout: taskTimeout}, blockTimeout)
+	w := m.Balance()
+	return w.Submit(Task[T]{fn: fn, data: data, timeout: taskTimeout}, blockTimeout)
 }
