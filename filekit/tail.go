@@ -3,12 +3,12 @@ package filekit
 import (
 	"context"
 	"fmt"
-	"github.com/panjf2000/ants/v2"
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/cond"
 	"github.com/vela-public/onekit/jsonkit"
 	"github.com/vela-public/onekit/noop"
 	"github.com/vela-public/onekit/pipe"
+	"github.com/vela-public/onekit/workpool"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -39,8 +39,7 @@ type FileTail struct {
 		limit    *limit
 		context  context.Context
 		cancel   context.CancelFunc
-		queue    chan *Line
-		pool     *ants.Pool
+		queue    *workpool.Queue[*Line]
 		Chain    *pipe.Chain
 		Switch   *pipe.Switch
 		Debug    *pipe.Chain
@@ -85,19 +84,7 @@ func (ft *FileTail) Input(line *Line) {
 		return
 	}
 
-	ft.private.queue <- line
-
-	/*
-		err := ft.private.pool.Submit(func() {
-			ft.private.Chain.Invoke(line)
-			ft.private.Switch.Invoke(line)
-			atomic.AddInt64(&ft.datalog.done, 1)
-		})
-
-		if err != nil {
-			ft.Errorf("%s tail submit fail %v", line.File, err)
-		}
-	*/
+	ft.private.queue.Push(line)
 }
 
 func (ft *FileTail) Wait() {
@@ -160,6 +147,11 @@ func (ft *FileTail) WaitFor(callback func() (stop bool)) {
 	}
 }
 
+func (ft *FileTail) invoke(line *Line) {
+	ft.private.Chain.Invoke(line)
+	ft.private.Switch.Invoke(line)
+}
+
 func (ft *FileTail) Prepare(parent context.Context) {
 
 	//初始化context
@@ -169,17 +161,13 @@ func (ft *FileTail) Prepare(parent context.Context) {
 	ft.private.limit = NewLimit(ft.private.context, ft.setting.Limit)
 	ft.private.history = make(map[string]*Section)
 
-	ft.private.queue = make(chan *Line)
-	//new pool
-	pool, err := ants.NewPool(ft.setting.Thread,
-		ants.WithNonblocking(ft.setting.Nonblocking),
-		ants.WithMaxBlockingTasks(ft.setting.MaxBlocking),
-		ants.WithPreAlloc(ft.setting.PreAllow))
-	if err != nil {
-		ft.Errorf("%s new pool fail %v", ft.Name(), err)
-		return
-	}
-	ft.private.pool = pool
+	queue := workpool.NewQueue[*Line](ft.private.context, workpool.Workers(ft.setting.Thread), workpool.Ticker(5))
+	queue.Handler(ft.invoke)
+	queue.SetErrHandler(func(err error) {
+		ft.Errorf(err.Error())
+	})
+
+	ft.private.queue = queue
 
 }
 
@@ -265,20 +253,6 @@ func (ft *FileTail) Detect(history map[string]*Section, file string) {
 	s.detect()
 }
 
-func (ft *FileTail) Submit(fn func()) {
-	if ft.private.pool == nil {
-		ft.Errorf("%s pool is nil", ft.Name())
-		return
-	}
-
-	err := ft.private.pool.Submit(fn)
-	if err != nil {
-		ft.Errorf("%s submit fail %v", ft.Name(), err)
-		return
-	}
-
-}
-
 func (ft *FileTail) scanner() {
 	tk := time.NewTicker(time.Duration(ft.setting.Poll) * time.Second)
 	defer tk.Stop()
@@ -292,23 +266,7 @@ func (ft *FileTail) scanner() {
 			ft.Errorf("%s watch exit", ft.Name())
 			return
 		case <-tk.C:
-			ft.Submit(ft.GlobFor)
-		}
-	}
-}
-
-func (ft *FileTail) consumer() {
-
-	for {
-		select {
-		case <-ft.Done():
-			ft.Errorf("%s consumer exit", ft.Name())
-			return
-		case line := <-ft.private.queue:
-			ft.Submit(func() {
-				ft.private.Chain.Invoke(line)
-				ft.private.Switch.Invoke(line)
-			})
+			ft.GlobFor()
 		}
 	}
 }
@@ -320,7 +278,6 @@ func (ft *FileTail) Background(ctx context.Context) error {
 
 	ft.Prepare(ctx)
 	go ft.scanner()
-	go ft.consumer()
 	return nil
 }
 
@@ -331,7 +288,6 @@ func (ft *FileTail) Run(ctx context.Context) error {
 
 	ft.Prepare(ctx)
 	ft.scanner()
-	go ft.consumer()
 	return nil
 }
 

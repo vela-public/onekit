@@ -2,6 +2,7 @@ package filekit
 
 import (
 	"context"
+	"github.com/vela-public/onekit/cond"
 	"github.com/vela-public/onekit/pipe"
 	"go.etcd.io/bbolt"
 	"io"
@@ -51,8 +52,17 @@ func (l *LazyFileTail) Follow(b bool) *LazyFileTail {
 	return l
 }
 
+func (l *LazyFileTail) Stop() error {
+	return l.tail.Close()
+}
+
 func (l *LazyFileTail) Delim(byt byte) *LazyFileTail {
 	l.tail.setting.Delim = byt
+	return l
+}
+
+func (l *LazyFileTail) Drop(v ...string) *LazyFileTail {
+	l.tail.private.Drop.Add(cond.NewText(v...))
 	return l
 }
 
@@ -86,6 +96,10 @@ func (l *LazyFileTail) Poll(n int) *LazyFileTail {
 	return l
 }
 
+func (l *LazyFileTail) Logger(logger Logger) {
+	l.tail.logger = logger
+}
+
 func (l *LazyFileTail) SkipFile(fn func(string) bool) *LazyFileTail {
 	l.tail.private.SkipFile = append(l.tail.private.SkipFile, fn)
 	return l
@@ -104,21 +118,6 @@ func (l *LazyFileTail) Location(offset int64, whence int) *LazyFileTail {
 
 func (l *LazyFileTail) Thread(n int) *LazyFileTail {
 	l.tail.setting.Thread = n
-	return l
-}
-
-func (l *LazyFileTail) Nonblocking(b bool) *LazyFileTail {
-	l.tail.setting.Nonblocking = b
-	return l
-}
-
-func (l *LazyFileTail) Blocking(n int) *LazyFileTail {
-	l.tail.setting.MaxBlocking = n
-	return l
-}
-
-func (l *LazyFileTail) PreAllow(b bool) *LazyFileTail {
-	l.tail.setting.PreAllow = b
 	return l
 }
 

@@ -39,6 +39,7 @@ func (w *WebContext) SayL(L *lua.LState) int {
 func (w *WebContext) ExitL(L *lua.LState) int {
 	code := L.CheckInt(1)
 	w.Request.Response.SetStatusCode(code)
+	L.Terminated()
 	return 0
 }
 
@@ -118,5 +119,10 @@ func (w *WebContext) Index(L *lua.LState, key string) lua.LValue {
 	case "exit":
 		return lua.NewFunction(w.ExitL)
 	}
+
 	return K2V(w.Request, key)
+}
+
+func NewWebContext(ctx *RequestCtx) *WebContext {
+	return &WebContext{Request: ctx}
 }

@@ -889,7 +889,7 @@ func (r *Request) Patch(url string) (*Response, error) {
 //	req := client.R()
 //	req.Method = resty.GET
 //	req.URL = "http://httpbin.org/get"
-//	resp, err := req.Send()
+//	resp, err := req.Push()
 func (r *Request) Send() (*Response, error) {
 	return r.Execute(r.Method, r.URL)
 }

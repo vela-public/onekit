@@ -6,35 +6,29 @@ import (
 )
 
 type Setting struct {
-	Name        string   `lua:"name"`
-	Limit       int      `lua:"limit"`
-	Thread      int      `lua:"thread"`
-	Buffer      int      `lua:"buffer"`
-	Wait        int      `lua:"wait"`
-	Delim       byte     `lua:"delim"`
-	Follow      bool     `lua:"follow"`
-	Target      []string `lua:"target"`
-	FastJSON    bool     `lua:"fastjson"`
-	Nonblocking bool     `lua:"nonblocking"`
-	MaxBlocking int      `lua:"max_blocking"`
-	PreAllow    bool     `lua:"pre_allow"`
-	Location    SeekInfo `lua:"location"`
-	Poll        int      `lua:"poll"`
+	Name     string   `lua:"name"`
+	Limit    int      `lua:"limit"`
+	Thread   int      `lua:"thread"`
+	Buffer   int      `lua:"buffer"`
+	Wait     int      `lua:"wait"`
+	Delim    byte     `lua:"delim"`
+	Follow   bool     `lua:"follow"`
+	Target   []string `lua:"target"`
+	FastJSON bool     `lua:"fastjson"`
+	Location SeekInfo `lua:"location"`
+	Poll     int      `lua:"poll"`
 }
 
 func Default(name string) *Setting {
 	return &Setting{
-		Name:        todo.IF(name == "", "filekit.tail", name),
-		Limit:       0,
-		Delim:       '\n',
-		Wait:        10, // 10s
-		Thread:      128,
-		Follow:      true,
-		Poll:        3,
-		Buffer:      4096,
-		Nonblocking: false,
-		MaxBlocking: 1000,
-		PreAllow:    false,
+		Name:   todo.IF(name == "", "filekit.tail", name),
+		Limit:  0,
+		Delim:  '\n',
+		Wait:   10, // 10s
+		Thread: 128,
+		Follow: true,
+		Poll:   3,
+		Buffer: 4096,
 	}
 }
 

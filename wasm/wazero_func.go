@@ -53,7 +53,7 @@ func (fn *Function) Write(buff []byte) (int, error) {
 		}
 		data = chunk
 
-	case Json: //Json
+	case Json: //Decode
 		f := &jsonkit.FastJSON{}
 		chunk, e := fn.reader(page)
 		if e != nil {
@@ -220,7 +220,7 @@ func (fn *Function) Call(L *lua.LState) int {
 		L.Push(lua.B2L(buff))
 		return 1
 
-	case Json: //Json
+	case Json: //Decode
 		f := &jsonkit.FastJSON{}
 		buff, e := fn.reader(page)
 		if e != nil {

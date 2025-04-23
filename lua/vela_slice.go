@@ -34,6 +34,10 @@ func (s *Slice[T]) Bytes() []byte {
 	return text
 }
 
+func (s *Slice[T]) Append(v T) {
+	*s = append(*s, v)
+}
+
 func (s *Slice[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(*s)
 }

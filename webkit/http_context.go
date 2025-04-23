@@ -81,15 +81,6 @@ func addr(ctx *RequestCtx) string {
 	return ctx.RemoteIP().String()
 }
 
-func regionCityId(ctx *RequestCtx) int {
-	uv := ctx.UserValue("region_city")
-	v, ok := uv.(int)
-	if ok {
-		return v
-	}
-	return 0
-}
-
 func HttpSay(co *lua.LState) int {
 	n := co.GetTop()
 	if n == 0 {

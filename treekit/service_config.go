@@ -8,6 +8,7 @@ import (
 	"hash/crc32"
 	"io"
 	"os"
+	"strings"
 )
 
 type MicoServiceConfig struct {
@@ -78,6 +79,30 @@ func NewFile(key string, path string) (*MicoServiceConfig, error) {
 		cfg.MTime = st.ModTime().Unix()
 	}
 
+	m5 := md5.New()
+	buf := bytes.NewBuffer(nil)
+
+	w := io.MultiWriter(m5, buf)
+	size, err := io.Copy(w, fd)
+	if err != nil && err != io.EOF {
+		return cfg, err
+	}
+	cfg.size = size
+	cfg.Source = buf.Bytes()
+	cfg.Hash = fmt.Sprintf("%x", m5.Sum(nil))
+
+	return cfg, cfg.verify()
+}
+
+func NewText(key string, data string) (*MicoServiceConfig, error) {
+	cfg := &MicoServiceConfig{
+		ID:      int64(crc32.ChecksumIEEE(cast.S2B(key))),
+		Key:     key,
+		Path:    "memory",
+		Dialect: true,
+	}
+
+	fd := strings.NewReader(data)
 	m5 := md5.New()
 	buf := bytes.NewBuffer(nil)
 

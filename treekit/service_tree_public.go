@@ -79,6 +79,17 @@ func (mt *MsTree) DoServiceFile(key string, path string) error {
 	}
 	return tas.wakeup()
 }
+func (mt *MsTree) DoString(key string, data string) error {
+	cfg, err := NewText(key, data)
+	if err != nil {
+		return err
+	}
+	tas, err := mt.create(cfg)
+	if err != nil {
+		return err
+	}
+	return tas.wakeup()
+}
 
 func (mt *MsTree) Reload(filter func(name string) bool) error {
 	sz := len(mt.cache.data)
