@@ -94,12 +94,13 @@ func NewFile(key string, path string) (*MicoServiceConfig, error) {
 	return cfg, cfg.verify()
 }
 
-func NewText(key string, data string) (*MicoServiceConfig, error) {
+func NewText(key string, data string, mtime int64) (*MicoServiceConfig, error) {
 	cfg := &MicoServiceConfig{
 		ID:      int64(crc32.ChecksumIEEE(cast.S2B(key))),
 		Key:     key,
 		Path:    "memory",
 		Dialect: true,
+		MTime:   mtime,
 	}
 
 	fd := strings.NewReader(data)

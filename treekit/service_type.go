@@ -34,6 +34,11 @@ type Runner struct {
 	Cause    string                     `json:"cause"`
 	Metadata libkit.DataKV[string, any] `json:"metadata"`
 }
+type LuaText struct {
+	Name  string
+	Text  string
+	MTime time.Time
+}
 
 type ServiceView struct {
 	ID      int64     `json:"id"`

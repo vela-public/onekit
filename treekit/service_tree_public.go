@@ -79,8 +79,8 @@ func (mt *MsTree) DoServiceFile(key string, path string) error {
 	}
 	return tas.wakeup()
 }
-func (mt *MsTree) DoString(key string, data string) error {
-	cfg, err := NewText(key, data)
+func (mt *MsTree) DoString(v LuaText) error {
+	cfg, err := NewText(v.Name, v.Text, v.MTime.Unix())
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,35 @@ func (mt *MsTree) DoString(key string, data string) error {
 	return tas.wakeup()
 }
 
-func (mt *MsTree) Reload(filter func(name string) bool) error {
+func (mt *MsTree) ReloadText(filter func(name string) bool, needle func(name string) LuaText) error {
+	sz := len(mt.cache.data)
+	if sz == 0 {
+		return nil
+	}
+
+	errs := &errkit.JoinError{}
+	for i := 0; i < sz; i++ {
+		tas := mt.cache.data[i]
+		if filter != nil && !filter(tas.Key()) {
+			continue
+		}
+
+		v := needle(tas.Key())
+		cnf := tas.config
+		if cnf.MTime == 0 {
+			continue
+		}
+
+		mtime := v.MTime.Unix()
+		if mtime != cnf.MTime {
+			errs.Try(tas.Key(), mt.DoString(v))
+		}
+	}
+	return errs.Wrap()
+
+}
+
+func (mt *MsTree) ReloadFile(filter func(name string) bool) error {
 	sz := len(mt.cache.data)
 	if sz == 0 {
 		return nil
