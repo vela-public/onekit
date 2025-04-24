@@ -5,6 +5,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/vela-public/onekit/errkit"
 	"github.com/vela-public/onekit/layer"
+	"github.com/vela-public/onekit/libkit"
 )
 
 func (mt *MsTree) diff(ctx *fasthttp.RequestCtx) (err error) {
@@ -22,7 +23,9 @@ func (mt *MsTree) diff(ctx *fasthttp.RequestCtx) (err error) {
 	}
 
 	//diff remove task by ids
-	mt.RemoveByID(diff.Removes)
+	mt.Remove(func(ms *MicroService) bool {
+		return libkit.In(diff.Removes, ms.ID())
+	})
 
 	errs := errkit.New()
 	for _, entry := range diff.Updates {
@@ -30,6 +33,7 @@ func (mt *MsTree) diff(ctx *fasthttp.RequestCtx) (err error) {
 			c.ID = entry.ID
 			c.Hash = entry.Hash
 			c.Dialect = entry.Dialect
+			c.MTime = entry.MTime
 		}); e != nil {
 			errs.Try(entry.Name, e)
 		}

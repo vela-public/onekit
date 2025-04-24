@@ -35,6 +35,7 @@ func (ms *MicroService) View() *ServiceView {
 		Status:  ms.private.Flag.String(),
 		Uptime:  ms.private.Uptime,
 		Dialect: ms.config.Dialect,
+		MTime:   ms.config.MTime,
 	}
 
 	if e := ms.UnwrapErr(); e != nil {

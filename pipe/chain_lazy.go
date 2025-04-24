@@ -31,7 +31,14 @@ func (zc *LazyChain[T]) NewHandler(v any, option ...func(env *HandleEnv)) (r tod
 		return zc.Chain.NewHandler(fn, option...)
 
 	case func(T):
-		return zc.Chain.NewHandler(dat, option...)
+		fn := func(v any) error {
+			if data, ok := v.(T); ok {
+				dat(data)
+				return nil
+			}
+			return fmt.Errorf("data type is not %T", *new(T))
+		}
+		return zc.Chain.NewHandler(fn, option...)
 
 	case InvokerT[T]:
 		fn := func(v any) error {

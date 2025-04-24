@@ -16,6 +16,10 @@ func (mt *MsTree) Errorf(format string, v ...any) {
 	mt.handler.Error.Invoke(fmt.Errorf(format, v...))
 }
 
+func (mt *MsTree) Debugf(format string, v ...any) {
+	mt.handler.Debug.Invoke(fmt.Sprintf(format, v...))
+}
+
 func (mt *MsTree) OnError(err error) {
 	mt.handler.Error.Invoke(err)
 }
@@ -26,6 +30,22 @@ func (mt *MsTree) OnCreate(srv *Process) {
 
 func (mt *MsTree) OnWakeup(srv *Process) {
 	mt.handler.Wakeup.Invoke(srv)
+}
+
+func (mt *MsTree) Map() map[string]*ServiceView {
+	mt.cache.mutex.RLock()
+	defer mt.cache.mutex.RUnlock()
+	tab := make(map[string]*ServiceView)
+	sz := len(mt.cache.data)
+	if sz == 0 {
+		return tab
+	}
+
+	for i := 0; i < sz; i++ {
+		dat := mt.cache.data[i]
+		tab[dat.Key()] = dat.View()
+	}
+	return tab
 }
 
 func (mt *MsTree) View() *TreeView {
@@ -41,6 +61,71 @@ func (mt *MsTree) View() *TreeView {
 		tv.Services = append(tv.Services, tas.View())
 	}
 	return tv
+}
+
+func (mt *MsTree) DoDiff(v []*ServiceEntry) error {
+	var diff Diff
+	tab := mt.Map()
+
+	for _, entry := range v {
+		view, ok := tab[entry.Name]
+		if !ok {
+			diff.Updates = append(diff.Updates, entry)
+			continue
+		}
+
+		delete(tab, entry.Name)
+		if view.Hash == entry.Hash {
+			continue
+		}
+
+		diff.Updates = append(diff.Updates, entry)
+	}
+
+	for _, view := range tab {
+		diff.Removes = append(diff.Removes, &ServiceEntry{
+			Name:  view.Name,
+			ID:    view.ID,
+			MTime: view.MTime,
+		})
+	}
+
+	return mt.update(diff)
+}
+
+func (mt *MsTree) update(d Diff) error {
+	if d.NotChange() {
+		return nil
+	}
+
+	//diff remove task by ids
+	mt.Remove(func(ms *MicroService) bool {
+		for _, entry := range d.Removes {
+			if entry.Name == ms.Key() {
+				return true
+			}
+		}
+		return false
+	})
+
+	errs := errkit.New()
+	for _, entry := range d.Updates {
+		if e := mt.Register(entry.Name, entry.Chunk, func(c *MicoServiceConfig) {
+			c.ID = entry.ID
+			c.Hash = entry.Hash
+			c.Dialect = entry.Dialect
+			c.MTime = entry.MTime
+		}); e != nil {
+			errs.Try(entry.Name, e)
+		}
+	}
+
+	if e := errs.Wrap(); e != nil {
+		mt.Errorf(e.Error())
+	}
+
+	mt.Wakeup()
+	return mt.UnwrapErr()
 }
 
 func (mt *MsTree) Doc() []byte {
@@ -68,6 +153,21 @@ func (mt *MsTree) create(config *MicoServiceConfig) (*MicroService, error) {
 	return tas, tas.UnwrapErr()
 }
 
+func (mt *MsTree) Load(v ...Script) error {
+	errs := errkit.New()
+	s, err := Load(v...)
+	if err != nil {
+		errs.Try("load", err)
+	}
+
+	err = mt.DoDiff(s)
+	if err != nil {
+		errs.Try("diff", err)
+	}
+
+	return errs.Wrap()
+}
+
 func (mt *MsTree) DoServiceFile(key string, path string) error {
 	cfg, err := NewFile(key, path)
 	if err != nil {
@@ -79,7 +179,8 @@ func (mt *MsTree) DoServiceFile(key string, path string) error {
 	}
 	return tas.wakeup()
 }
-func (mt *MsTree) DoString(v LuaText) error {
+
+func (mt *MsTree) DoString(v *LuaText) error {
 	cfg, err := NewText(v.Name, v.Text, v.MTime.Unix())
 	if err != nil {
 		return err
@@ -91,39 +192,13 @@ func (mt *MsTree) DoString(v LuaText) error {
 	return tas.wakeup()
 }
 
-func (mt *MsTree) ReloadText(filter func(name string) bool, needle func(name string) LuaText) error {
+func (mt *MsTree) Reload(filter func(name string) bool) error {
 	sz := len(mt.cache.data)
 	if sz == 0 {
 		return nil
 	}
-
-	errs := &errkit.JoinError{}
-	for i := 0; i < sz; i++ {
-		tas := mt.cache.data[i]
-		if filter != nil && !filter(tas.Key()) {
-			continue
-		}
-
-		v := needle(tas.Key())
-		cnf := tas.config
-		if cnf.MTime == 0 {
-			continue
-		}
-
-		mtime := v.MTime.Unix()
-		if mtime != cnf.MTime {
-			errs.Try(tas.Key(), mt.DoString(v))
-		}
-	}
-	return errs.Wrap()
-
-}
-
-func (mt *MsTree) ReloadFile(filter func(name string) bool) error {
-	sz := len(mt.cache.data)
-	if sz == 0 {
-		return nil
-	}
+	mt.cache.mutex.RLock()
+	defer mt.cache.mutex.RUnlock()
 
 	errs := &errkit.JoinError{}
 	for i := 0; i < sz; i++ {
@@ -148,6 +223,10 @@ func (mt *MsTree) ReloadFile(filter func(name string) bool) error {
 		}
 	}
 	return errs.Wrap()
+}
+
+func (mt *MsTree) Diff(info []ServiceDiffInfo) error {
+	return nil
 }
 
 func (mt *MsTree) Register(key string, body []byte, options ...func(*MicoServiceConfig)) error {
@@ -197,7 +276,8 @@ func (mt *MsTree) Wakeup() {
 	errs := &errkit.JoinError{}
 	for i := 0; i < sz; i++ {
 		tas := mt.cache.data[i]
-		errs.Try(tas.Key(), mt.SafeWakeup(tas))
+		err := mt.SafeWakeup(tas)
+		errs.Try(tas.Key(), err)
 	}
 
 	mt.private.error = errs.Wrap()

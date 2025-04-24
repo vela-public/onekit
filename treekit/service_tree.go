@@ -22,6 +22,7 @@ type MsTree struct {
 		Error  *pipe.Chain
 		Wakeup *pipe.Chain
 		Panic  *pipe.Chain
+		Debug  *pipe.LazyChain[string]
 	}
 
 	private struct {
@@ -120,17 +121,18 @@ func (mt *MsTree) find(key string) (*MicroService, bool) {
 	return nil, false
 }
 
-func (mt *MsTree) RemoveByID(ids []int64) {
+func (mt *MsTree) Remove(filter func(ms *MicroService) bool) {
 	mt.cache.mutex.Lock()
 	defer mt.cache.mutex.Unlock()
 	var mss []*MicroService
 
 	for i, ms := range mt.cache.data {
-		if !libkit.In[int64](ids, ms.ID()) {
+		if !filter(ms) {
 			mss = append(mss, mt.cache.data[i])
 			continue
 		}
 		ms.Close()
+		mt.Debugf("service.%s remove succeed", ms.Key())
 	}
 	mt.cache.data = mss
 }
@@ -147,5 +149,6 @@ func NewMicoSrvTree(parent context.Context, kit *luakit.Kit, option *MicroServic
 	tree.handler.Error = option.error
 	tree.handler.Wakeup = option.wakeup
 	tree.handler.Panic = option.panic
+	tree.handler.Debug = option.debug
 	return tree
 }

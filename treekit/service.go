@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/vela-public/onekit/errkit"
-	"github.com/vela-public/onekit/event"
 	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/pipe"
@@ -432,13 +431,16 @@ func (ms *MicroService) SafeCall() *MicroService {
 
 	if err == nil {
 		ms.succeed()
+		ms.root.Debugf("service.%s succeed", ms.Key())
 		return ms
 	}
 
 	if e, ok := err.(*lua.ApiError); ok && strings.HasSuffix(e.Object.String(), "disable") {
 		ms.disable()
+		ms.root.Debugf("service.%s disable", ms.Key())
 	} else {
 		ms.fail(err)
+		ms.root.Debugf("service.%s fail %v", ms.Key(), err)
 	}
 	return ms
 }
@@ -460,14 +462,14 @@ func (ms *MicroService) Close() {
 	defer ms.processes.mutex.Unlock()
 
 	sz := len(ms.processes.data)
-	ev := event.Lazy().Trace("service")
-	ev.FromCode = ms.config.Key
-	ev.Subject = "关闭服务"
-	ev.Message = fmt.Sprintf("关闭了%d工作进程", sz)
+	//ev := event.Lazy().Trace("service")
+	//ev.FromCode = ms.config.Key
+	//ev.Subject = "关闭服务"
+	//ev.Message = fmt.Sprintf("关闭了%d工作进程", sz)
 	for i := 0; i < sz; i++ {
 		pro := ms.processes.data[i]
 		_ = pro.Close()
-		ev.Metadata[pro.name] = pro.UnwrapErr()
+		//ev.Metadata[pro.name] = pro.UnwrapErr()
 	}
-	ev.Error().Report()
+	//ev.Error().Report()
 }

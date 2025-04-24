@@ -1,8 +1,13 @@
 package treekit
 
 import (
+	"bytes"
+	"crypto/md5"
 	"fmt"
+	"github.com/vela-public/onekit/errkit"
 	"github.com/vela-public/onekit/lua"
+	"io"
+	"os"
 	"strings"
 )
 
@@ -106,4 +111,55 @@ func Close(L *lua.LState, v ProcessType, x func(e error)) {
 	default:
 		x(fmt.Errorf("lua.exdata must *MicroService or *TaskTree got:%T", exdata))
 	}
+}
+
+func Read(name string, path string) (*ServiceEntry, error) {
+	fd, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer fd.Close()
+
+	s := &ServiceEntry{
+		Dialect: true,
+		Name:    name,
+	}
+
+	st, err := fd.Stat()
+	if err == nil {
+		s.MTime = st.ModTime().Unix()
+	}
+
+	m5 := md5.New()
+	buf := bytes.NewBuffer(nil)
+	w := io.MultiWriter(m5, buf)
+	_, err = io.Copy(w, fd)
+	if err != nil && err != io.EOF {
+		return s, err
+	}
+
+	s.Chunk = buf.Bytes()
+	s.Hash = fmt.Sprintf("%x", m5.Sum(nil))
+	return s, nil
+}
+
+func Load(s ...Script) ([]*ServiceEntry, error) {
+	errs := errkit.New()
+	var ss []*ServiceEntry
+	for _, v := range s {
+		if v.Name == "" {
+			continue
+		}
+		if v.Path == "" {
+			continue
+		}
+
+		entry, err := Read(v.Name, v.Path)
+		if err != nil {
+			errs.Try(v.Name, err)
+			continue
+		}
+		ss = append(ss, entry)
+	}
+	return ss, errs.Wrap()
 }

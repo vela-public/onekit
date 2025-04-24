@@ -12,12 +12,31 @@ type ReloadType interface {
 	Reload() error
 }
 
+type Script struct {
+	Name string
+	Path string
+}
+
 type ServiceEntry struct {
 	ID      int64  `json:"id"`
 	Dialect bool   `json:"dialect"`
 	Name    string `json:"name"`
 	Chunk   []byte `json:"chunk"`
 	Hash    string `json:"hash"`
+	MTime   int64  `json:"mtime"`
+}
+
+type Diff struct {
+	Removes []*ServiceEntry `json:"removes"`
+	Updates []*ServiceEntry `json:"updates"`
+}
+
+func (d Diff) NotChange() bool {
+	return d.Change() == 0
+}
+
+func (d Diff) Change() int {
+	return len(d.Updates) + len(d.Removes)
 }
 
 type ServiceDiffInfo struct {
@@ -52,6 +71,7 @@ type ServiceView struct {
 	Failed  bool      `json:"failed"`
 	Cause   string    `json:"cause"`
 	Runners []*Runner `json:"runners"`
+	MTime   int64     `json:"mtime"`
 }
 
 type TreeView struct {

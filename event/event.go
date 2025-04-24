@@ -84,6 +84,9 @@ func (e *Event) Env() layer.Environment {
 }
 
 func (e *Event) Logger() layer.LoggerType {
+	if e.Env() == nil {
+		return nil
+	}
 	return e.Env().Logger()
 }
 
@@ -91,6 +94,10 @@ func (e *Event) Save(level zapcore.Level) *Event {
 	if e.private.Env == nil {
 		return e
 	}
+	if e.Logger() == nil {
+		return e
+	}
+
 	e.Logger().Save(level, e.Text())
 	return e
 }
@@ -101,7 +108,7 @@ func (e *Event) Report() *Event {
 	}
 
 	err := e.private.Env.Transport().Push("/api/v1/broker/audit/event", e)
-	if err != nil {
+	if err != nil && e.Logger() != nil {
 		e.private.Env.Logger().Error(err)
 	}
 
