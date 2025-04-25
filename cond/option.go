@@ -5,6 +5,7 @@ import (
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/errkit"
 	"github.com/vela-public/onekit/lua"
+	"time"
 )
 
 type OptionFunc func(*option)
@@ -63,7 +64,6 @@ func (opt *option) NewPeek(v interface{}) bool {
 	case Lookup:
 		opt.field = item
 		return true
-
 	case CompareEx:
 		opt.compare = item.Compare
 
@@ -74,6 +74,51 @@ func (opt *option) NewPeek(v interface{}) bool {
 	case []byte:
 		opt.field = String(string(item))
 		return true
+	case map[string]float32:
+		opt.field = func(key string) string {
+			return cast.ToString(item[key])
+		}
+	case map[string]float64:
+		opt.field = func(key string) string {
+			return cast.ToString(item[key])
+		}
+	case map[string]int64:
+		opt.field = func(key string) string {
+			return cast.ToString(item[key])
+		}
+	case map[string]uint64:
+		opt.field = func(key string) string {
+			return cast.ToString(item[key])
+		}
+	case map[string]time.Time:
+		opt.field = func(key string) string {
+			return cast.ToString(item[key])
+		}
+
+	case map[string]int32:
+		opt.field = func(key string) string {
+			return cast.ToString(item[key])
+		}
+
+	case map[string]int:
+		opt.field = func(key string) string {
+			return cast.ToString(item[key])
+		}
+	case map[string]string:
+		opt.field = func(key string) string {
+			return item[key]
+		}
+	case map[string]bool:
+		opt.field = func(key string) string {
+			if item[key] {
+				return "true"
+			}
+			return "false"
+		}
+	case map[string]interface{}:
+		opt.field = func(key string) string {
+			return cast.ToString(item[key])
+		}
 
 	case func() string:
 		opt.field = func(string) string {
