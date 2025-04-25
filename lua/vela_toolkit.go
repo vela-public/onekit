@@ -178,91 +178,100 @@ func B2L(b []byte) LString {
 	return *(*LString)(unsafe.Pointer(&b))
 }
 
-func MustBeNumber[T Number](L *LState, lv LValue) (vt T) {
+func MustBeNumber[T Number](lv LValue) (vt T, ok bool) {
 	switch lv.Type() {
 	case LTNumber:
-		return T(lv.(LNumber))
+		return T(lv.(LNumber)), true
 	case LTInt:
-		return T(lv.(LInt))
+		return T(lv.(LInt)), true
 	case LTInt64:
-		return T(lv.(LInt64))
+		return T(lv.(LInt64)), true
 	case LTUint:
-		return T(lv.(LUint))
+		return T(lv.(LUint)), true
 	case LTUint64:
-		return T(lv.(LUint64))
+		return T(lv.(LUint64)), true
 	default:
-		L.RaiseError("must be %T , got %s", vt, lv.Type().String())
-		return
+		return vt, false
 	}
 }
 
-func MustBe[T any](L *LState, idx int) T {
-	lv := L.Get(idx)
+func Must[T any](lv LValue) (T, bool) {
 	vt, ok := lv.(T)
 	if ok {
-		return vt
+		return vt, true
 	}
 
 	if ptr, yes := any(lv).(*T); yes {
-		return *ptr
+		return *ptr, true
 	}
 
 	switch any(vt).(type) {
 	case string:
 		v := lv.String()
-		return *(*T)(unsafe.Pointer(&v))
+		return *(*T)(unsafe.Pointer(&v)), true
 	case []byte:
 		v := S2B(lv.String())
-		return *(*T)(unsafe.Pointer(&v))
+		return *(*T)(unsafe.Pointer(&v)), true
 	case float64:
-		n := MustBeNumber[float64](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[float64](lv)
+		return any(n).(T), yes
 	case float32:
-		n := MustBeNumber[float32](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[float32](lv)
+		return any(n).(T), yes
 	case int:
-		n := MustBeNumber[int](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[int](lv)
+		return any(n).(T), yes
 	case int8:
-		n := MustBeNumber[int8](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[int8](lv)
+		return any(n).(T), yes
 	case int16:
-		n := MustBeNumber[int16](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[int16](lv)
+		return any(n).(T), yes
 	case int32:
-		n := MustBeNumber[int32](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[int32](lv)
+		return any(n).(T), yes
 	case int64:
-		n := MustBeNumber[int64](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[int64](lv)
+		return any(n).(T), yes
 	case uint:
-		n := MustBeNumber[uint](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[uint](lv)
+		return any(n).(T), yes
 	case uint8:
-		n := MustBeNumber[uint8](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[uint8](lv)
+		return any(n).(T), yes
 	case uint16:
-		n := MustBeNumber[uint16](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[uint16](lv)
+		return any(n).(T), yes
 	case uint32:
-		n := MustBeNumber[uint32](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[uint32](lv)
+		return any(n).(T), yes
 	case uint64:
-		n := MustBeNumber[uint64](L, lv)
-		return any(n).(T)
+		n, yes := MustBeNumber[uint64](lv)
+		return any(n).(T), yes
 	case bool:
 		if lv.Type() != LTBool {
-			L.RaiseError("must be %T , got %s", vt, lv.Type().String())
-			return vt
+			return vt, false
 		}
 		if lv.(LBool) == LTrue {
-			return any(true).(T)
+			return any(true).(T), true
 		}
-		return any(false).(T)
+		return any(false).(T), true
 	default:
-		L.RaiseError("must be %T , got %s", vt, lv.Type().String())
-		return vt
+		return vt, false
 	}
+
+}
+
+func MustBe[T any](L *LState, idx int) T {
+	lv := L.Get(idx)
+
+	t, ok := Must[T](lv)
+	if ok {
+		return t
+	}
+
+	L.RaiseError("must be %T , got %s", t, lv.Type().String())
+	return t
 }
 
 func UnpackSeek[T any](L *LState, seek int) []T {

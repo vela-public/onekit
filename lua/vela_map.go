@@ -30,8 +30,7 @@ func (m Map[K, V]) String() string {
 }
 
 func (m Map[K, V]) Meta(L *LState, key LValue) LValue {
-
-	k, ok := key.(K)
+	k, ok := Must[K](key)
 	if !ok {
 		return LNil
 	}
@@ -61,11 +60,12 @@ func NewMap[K comparable, V any](size int) Map[K, V] {
 }
 
 func (m Map[K, V]) NewMeta(L *LState, key LValue, val LValue) {
-	k, ok := key.(K)
+	k, ok := Must[K](key)
 	if !ok {
 		return
 	}
-	v, ok := val.(V)
+
+	v, ok := Must[V](val)
 	if !ok {
 		return
 	}
