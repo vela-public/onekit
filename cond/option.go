@@ -78,36 +78,44 @@ func (opt *option) NewPeek(v interface{}) bool {
 		opt.field = func(key string) string {
 			return cast.ToString(item[key])
 		}
+		return true
 	case map[string]float64:
 		opt.field = func(key string) string {
 			return cast.ToString(item[key])
 		}
+		return true
 	case map[string]int64:
 		opt.field = func(key string) string {
 			return cast.ToString(item[key])
 		}
+		return true
 	case map[string]uint64:
 		opt.field = func(key string) string {
 			return cast.ToString(item[key])
 		}
+		return true
 	case map[string]time.Time:
 		opt.field = func(key string) string {
 			return cast.ToString(item[key])
 		}
+		return true
 
 	case map[string]int32:
 		opt.field = func(key string) string {
 			return cast.ToString(item[key])
 		}
+		return true
 
 	case map[string]int:
 		opt.field = func(key string) string {
 			return cast.ToString(item[key])
 		}
+		return true
 	case map[string]string:
 		opt.field = func(key string) string {
 			return item[key]
 		}
+		return true
 	case map[string]bool:
 		opt.field = func(key string) string {
 			if item[key] {
@@ -115,10 +123,12 @@ func (opt *option) NewPeek(v interface{}) bool {
 			}
 			return "false"
 		}
+		return true
 	case map[string]interface{}:
 		opt.field = func(key string) string {
 			return cast.ToString(item[key])
 		}
+		return true
 
 	case func() string:
 		opt.field = func(string) string {

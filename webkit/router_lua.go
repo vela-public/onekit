@@ -3,8 +3,10 @@ package webkit
 import (
 	"fmt"
 	"github.com/valyala/fasthttp"
+	"github.com/valyala/fasthttp/fasthttpadaptor"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/pipe"
+	"net/http/pprof"
 )
 
 func (r *Router) String() string                         { return "fasthttp.router" }
@@ -30,6 +32,37 @@ func (r *Router) NotFoundL(L *lua.LState) int {
 		hc := NewWebContext(ctx)
 		handle.Invoke(hc)
 	}
+	return 0
+}
+
+func (r *Router) NewPprofL(L *lua.LState) int {
+	base := L.CheckString(1)
+	r.GET(base+"/debug/pprof/", func(ctx *fasthttp.RequestCtx) {
+		fasthttpadaptor.NewFastHTTPHandlerFunc(pprof.Index)(ctx)
+	})
+
+	r.GET(base+"/debug/pprof/cmdline", func(ctx *fasthttp.RequestCtx) {
+		fasthttpadaptor.NewFastHTTPHandlerFunc(pprof.Cmdline)(ctx)
+	})
+	r.GET(base+"/debug/pprof/profile", func(ctx *fasthttp.RequestCtx) {
+		fasthttpadaptor.NewFastHTTPHandlerFunc(pprof.Profile)(ctx)
+	})
+	r.GET(base+"/debug/pprof/symbol", func(ctx *fasthttp.RequestCtx) {
+		fasthttpadaptor.NewFastHTTPHandlerFunc(pprof.Symbol)(ctx)
+	})
+	r.GET(base+"/debug/pprof/trace", func(ctx *fasthttp.RequestCtx) {
+		fasthttpadaptor.NewFastHTTPHandlerFunc(pprof.Trace)(ctx)
+	})
+
+	r.GET(base+"/debug/pprof/{name:*}", func(ctx *fasthttp.RequestCtx) {
+		uv := ctx.UserValue("name")
+		name, ok := uv.(string)
+		if !ok {
+			ctx.Error("not found", fasthttp.StatusNotFound)
+			return
+		}
+		fasthttpadaptor.NewFastHTTPHandlerFunc(pprof.Handler(name).ServeHTTP)(ctx)
+	})
 	return 0
 }
 

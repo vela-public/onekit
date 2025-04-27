@@ -40,13 +40,11 @@ func TestExp(t *testing.T) {
 
 func TestUnary(t *testing.T) {
 	cnd := NewText("type = typeof")
-	ev := &Event{
-		Type:  "typeof",
-		Value: 456,
-		Addr:  "a",
-	}
-
-	t.Log(cnd.Match(ev))
+	t.Log(cnd.Match(map[string]string{
+		"type":  "typeof",
+		"value": "456",
+		"addr":  "a",
+	}))
 }
 
 func TestString(t *testing.T) {

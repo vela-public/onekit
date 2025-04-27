@@ -30,6 +30,8 @@ func (hs *HttpSrv) Index(L *lua.LState, key string) lua.LValue {
 		return hs.cnf.Router.Index(L, key)
 	case "not_found":
 		return lua.NewFunction(hs.cnf.Router.NotFoundL)
+	case "pprof":
+		return lua.NewFunction(hs.cnf.Router.NewPprofL)
 	}
 	return lua.LNil
 }
