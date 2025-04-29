@@ -163,9 +163,10 @@ func (l *LazyProcess[T, K]) onPanic(err error) {
 
 func (l *LazyProcess[T, K]) MustBe(v any) ProcessType {
 	pt, ok := v.(ProcessType)
-	if !ok {
-		l.handler.Panic(fmt.Errorf("mismatch process type [%T] Got %T", (*T)(nil), v))
+	if ok {
+		return pt
 	}
+	l.handler.Panic(fmt.Errorf("mismatch process type [%T] Got %T", (*T)(nil), v))
 	return pt
 }
 

@@ -91,11 +91,12 @@ func Check[T any](L *lua.LState, pro *Process) (t T) {
 
 func Start(L *lua.LState, v ProcessType, x func(e error)) {
 	exdata := L.Exdata()
+	ctx := L.Context()
 	switch dat := exdata.(type) {
 	case *MicroService:
-		dat.Startup(v, x)
+		dat.Startup(ctx, v, x)
 	case *Task:
-		dat.Startup(v, x)
+		dat.Startup(ctx, v, x)
 	default:
 		x(fmt.Errorf("lua.exdata must *MicroService or *TaskTree got:%T", exdata))
 	}

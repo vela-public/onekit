@@ -278,7 +278,7 @@ func (ms *MicroService) Shutdown(s ProcessType, x func(error)) {
 	return
 }
 
-func (ms *MicroService) Startup(s ProcessType, x func(error)) {
+func (ms *MicroService) Startup(ctx context.Context, s ProcessType, x func(error)) {
 	srvName := ms.Key()
 	name := s.Name()
 	pro, exist := ms.have(name)
@@ -326,7 +326,7 @@ func (ms *MicroService) Startup(s ProcessType, x func(error)) {
 			pro.set(Stopped)
 		}
 
-		if err := pro.data.Start(); err != nil {
+		if err := pro.data.Start(ctx); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.Name(), err)
 			pro.set(Failed)
 			x(pro.info)
@@ -336,13 +336,13 @@ func (ms *MicroService) Startup(s ProcessType, x func(error)) {
 		}
 
 	default:
-		if err := pro.data.Start(); err != nil {
+		if err := pro.data.Start(ctx); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.Name(), err)
 			pro.set(Failed)
 			x(pro.info)
 		} else {
-			pro.info = nil
 			pro.set(Succeed)
+			pro.info = nil
 		}
 	}
 }

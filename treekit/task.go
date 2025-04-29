@@ -155,7 +155,7 @@ func (t *Task) Shutdown(v ProcessType, x func(error)) {
 	return
 }
 
-func (t *Task) Startup(v ProcessType, x func(error)) {
+func (t *Task) Startup(ctx context.Context, v ProcessType, x func(error)) {
 	key := t.Key()
 	name := v.Name()
 	pro, exist := t.have(name)
@@ -197,7 +197,7 @@ func (t *Task) Startup(v ProcessType, x func(error)) {
 			pro.set(Stopped)
 		}
 
-		if err := pro.data.Start(); err != nil {
+		if err := pro.data.Start(ctx); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.name, err)
 			pro.set(Failed)
 			x(pro.info)
@@ -207,7 +207,7 @@ func (t *Task) Startup(v ProcessType, x func(error)) {
 		}
 
 	default:
-		if err := pro.data.Start(); err != nil {
+		if err := pro.data.Start(ctx); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.name, err)
 			pro.set(Failed)
 			x(pro.info)

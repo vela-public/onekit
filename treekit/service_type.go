@@ -7,8 +7,7 @@ import (
 )
 
 type ReloadType interface {
-	Start() error
-	Close() error
+	ProcessType
 	Reload() error
 }
 

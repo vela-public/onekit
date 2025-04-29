@@ -1,6 +1,7 @@
 package treekit
 
 import (
+	"context"
 	"fmt"
 	"github.com/vela-public/onekit/libkit"
 	"runtime"
@@ -8,7 +9,7 @@ import (
 
 type ProcessType interface {
 	Name() string
-	Start() error
+	Start(context.Context) error
 	Close() error
 	Metadata() libkit.DataKV[string, any]
 }

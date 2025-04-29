@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"github.com/valyala/fasthttp"
 )
 
@@ -24,7 +25,7 @@ func (hs *HttpSrv) Close() error {
 	return nil
 }
 
-func (hs *HttpSrv) Start() (err error) {
+func (hs *HttpSrv) Start(ctx context.Context) (err error) {
 	hs.srv = &fasthttp.Server{
 		Handler: hs.HttpFunc,
 	}
