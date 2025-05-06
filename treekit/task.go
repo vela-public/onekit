@@ -155,31 +155,29 @@ func (t *Task) Shutdown(v ProcessType, x func(error)) {
 	return
 }
 
-func (t *Task) Startup(ctx context.Context, v ProcessType, x func(error)) {
+func (t *Task) Startup(v ProcessType, env *Env) {
 	key := t.Key()
 	name := v.Name()
 	pro, exist := t.have(name)
 	if !exist {
-		err := fmt.Errorf("%s not found %s", key, name)
-		x(err)
+		env.Errorf("%s not found %s", key, name)
 		return
 	}
 
 	from := pro.From()
 	if key != from {
-		err := fmt.Errorf("%s processes.from=%s with %s not allow", key, pro.from, pro.name)
-		x(err)
+		env.Errorf("%s processes.from=%s with %s not allow", key, pro.from, pro.name)
 		return
 	}
 
 	switch {
 	case pro.has(Succeed):
 		if rd, ok := pro.data.(ReloadType); ok {
-			err := rd.Reload()
+			err := rd.Reload(env)
 			if err != nil {
 				pro.info = err
 				pro.set(Failed)
-				x(err)
+				env.Error(err)
 			} else {
 				pro.info = nil
 				pro.set(Succeed)
@@ -190,27 +188,27 @@ func (t *Task) Startup(ctx context.Context, v ProcessType, x func(error)) {
 		if err := pro.Close(); err != nil {
 			pro.info = fmt.Errorf("%s close fail error %v", pro.name, err)
 			pro.set(Failed)
-			x(pro.info)
+			env.Error(pro.info)
 			return
 		} else {
 			pro.info = nil
 			pro.set(Stopped)
 		}
 
-		if err := pro.data.Start(ctx); err != nil {
+		if err := pro.data.Start(env); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.name, err)
 			pro.set(Failed)
-			x(pro.info)
+			env.Error(pro.info)
 		} else {
 			pro.set(Succeed)
 			pro.info = nil
 		}
 
 	default:
-		if err := pro.data.Start(ctx); err != nil {
+		if err := pro.data.Start(env); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.name, err)
 			pro.set(Failed)
-			x(pro.info)
+			env.Error(pro.info)
 		} else {
 			pro.info = nil
 			pro.set(Succeed)

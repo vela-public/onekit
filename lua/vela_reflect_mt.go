@@ -278,6 +278,10 @@ func (r *Reflect[T]) Filed(key string) (reflect.Value, bool) {
 
 }
 
+func (r *Reflect[T]) Unpack() T {
+	return r.inner.d
+}
+
 func NewReflect[T any](t T) *Reflect[T] {
 	r := &Reflect[T]{}
 	r.inner.d = t

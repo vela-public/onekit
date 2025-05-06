@@ -278,26 +278,23 @@ func (ms *MicroService) Shutdown(s ProcessType, x func(error)) {
 	return
 }
 
-func (ms *MicroService) Startup(ctx context.Context, s ProcessType, x func(error)) {
+func (ms *MicroService) Startup(s ProcessType, env *Env) {
 	srvName := ms.Key()
 	name := s.Name()
 	pro, exist := ms.have(name)
 	if !exist {
-		err := fmt.Errorf("%s not found %s", srvName, name)
-		x(err)
+		env.Errorf("%s not found %s", srvName, name)
 		return
 	}
 
 	from := pro.From()
 	if srvName != from {
-		err := fmt.Errorf("%s processes.from=%s with %s not allow", srvName, pro.from, pro.Name())
-		x(err)
+		env.Errorf("%s processes.from=%s with %s not allow", srvName, pro.from, pro.Name())
 		return
 	}
 
 	if ms.has(Disable) {
-		err := fmt.Errorf("%s processes.from=%s disable", srvName, from)
-		x(err)
+		env.Errorf("%s processes.from=%s disable", srvName, from)
 		return
 	}
 
@@ -308,7 +305,7 @@ func (ms *MicroService) Startup(ctx context.Context, s ProcessType, x func(error
 			if err != nil {
 				pro.info = err
 				pro.set(Failed)
-				x(err)
+				env.Error(err)
 			} else {
 				pro.info = nil
 				pro.set(Succeed)
@@ -319,27 +316,27 @@ func (ms *MicroService) Startup(ctx context.Context, s ProcessType, x func(error
 		if err := pro.Close(); err != nil {
 			pro.info = fmt.Errorf("%s close fail error %v", pro.Name(), err)
 			pro.set(Failed)
-			x(pro.info)
+			env.Error(pro.info)
 			return
 		} else {
 			pro.info = nil
 			pro.set(Stopped)
 		}
 
-		if err := pro.data.Start(ctx); err != nil {
+		if err := pro.data.Start(env); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.Name(), err)
 			pro.set(Failed)
-			x(pro.info)
+			env.Error(pro.info)
 		} else {
 			pro.set(Succeed)
 			pro.info = nil
 		}
 
 	default:
-		if err := pro.data.Start(ctx); err != nil {
+		if err := pro.data.Start(env); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.Name(), err)
 			pro.set(Failed)
-			x(pro.info)
+			env.Error(pro.info)
 		} else {
 			pro.set(Succeed)
 			pro.info = nil

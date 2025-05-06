@@ -89,17 +89,46 @@ func Check[T any](L *lua.LState, pro *Process) (t T) {
 	return dat
 }
 
-func Start(L *lua.LState, v ProcessType, x func(e error)) {
+func Startup(L *lua.LState, process ProcessType, envs ...TreeEnvFunc) {
+	env := &Env{}
+	for _, fn := range envs {
+		fn(env)
+	}
+
+	if env.ctx == nil {
+		env.ctx = L.Context()
+	}
+
+	if env.lua == nil {
+		env.lua = L
+	}
+
+	if env.err == nil {
+		env.err = func(e error) {
+			L.RaiseError("startup fail error %v", e)
+		}
+	}
+
 	exdata := L.Exdata()
-	ctx := L.Context()
+
 	switch dat := exdata.(type) {
 	case *MicroService:
-		dat.Startup(ctx, v, x)
+		dat.Startup(process, env)
 	case *Task:
-		dat.Startup(ctx, v, x)
+		dat.Startup(process, env)
 	default:
-		x(fmt.Errorf("lua.exdata must *MicroService or *TaskTree got:%T", exdata))
+		env.err(fmt.Errorf("lua.exdata must *MicroService or *TaskTree got:%T", exdata))
+		L.RaiseError("lua.exdata must *MicroService or *TaskTree got:%T", exdata)
 	}
+
+}
+
+func Start(L *lua.LState, process ProcessType, x func(e error)) {
+	Startup(L, process, func(v *Env) {
+		v.err = x
+		v.lua = L
+		v.ctx = L.Context()
+	})
 }
 
 func Close(L *lua.LState, v ProcessType, x func(e error)) {

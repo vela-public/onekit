@@ -8,7 +8,7 @@ import (
 
 type ReloadType interface {
 	ProcessType
-	Reload() error
+	Reload(*Env) error
 }
 
 type Script struct {
