@@ -64,3 +64,24 @@ func (gc GoCond[T]) AssertFloat64() (float64, bool)     { return 0, false }
 func (gc GoCond[T]) AssertString() (string, bool)       { return "", false }
 func (gc GoCond[T]) AssertFunction() (*LFunction, bool) { return nil, false }
 func (gc GoCond[T]) Hijack(*CallFrameFSM) bool          { return false }
+
+func LazyInvoker[T any](fn func(T)) Invoker {
+	return func(v any) error {
+		t, ok := v.(T)
+		if !ok {
+			return fmt.Errorf("invalid type: %T", v)
+		}
+		fn(t)
+		return nil
+	}
+}
+
+func LazyInvokerE[T any](fn func(T) error) Invoker {
+	return func(v any) error {
+		t, ok := v.(T)
+		if !ok {
+			return fmt.Errorf("invalid type: %T", v)
+		}
+		return fn(t)
+	}
+}
