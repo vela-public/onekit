@@ -7,9 +7,10 @@ import (
 )
 
 type Env struct {
-	ctx context.Context
-	lua *lua.LState
-	err func(error)
+	ctx  context.Context
+	lua  *lua.LState
+	err  func(error)
+	data any
 }
 
 func (env *Env) Context() context.Context {
@@ -17,6 +18,10 @@ func (env *Env) Context() context.Context {
 		return env.lua.Context()
 	}
 	return env.ctx
+}
+
+func (env *Env) ExData() any {
+	return env.data
 }
 
 func (env *Env) Error(err error) {
@@ -44,6 +49,12 @@ func Context(ctx context.Context) TreeEnvFunc {
 func LState(co *lua.LState) TreeEnvFunc {
 	return func(te *Env) {
 		te.lua = co
+	}
+}
+
+func Exdata(data any) TreeEnvFunc {
+	return func(te *Env) {
+		te.data = data
 	}
 }
 
