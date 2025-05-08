@@ -1,8 +1,8 @@
 package web
 
 import (
-	"context"
 	"github.com/valyala/fasthttp"
+	"github.com/vela-public/onekit/treekit"
 )
 
 type HttpSrv struct {
@@ -25,7 +25,7 @@ func (hs *HttpSrv) Close() error {
 	return nil
 }
 
-func (hs *HttpSrv) Start(ctx context.Context) (err error) {
+func (hs *HttpSrv) Startup(env *treekit.Env) (err error) {
 	hs.srv = &fasthttp.Server{
 		Handler: hs.HttpFunc,
 	}
