@@ -221,6 +221,16 @@ func TimeDayL(L *LState) int {
 	return 1
 }
 
+func NewTimeSleepL(L *LState) int {
+	n := L.IsInt(1)
+	if n <= 0 {
+		return 0
+	}
+
+	time.Sleep(time.Duration(n) * time.Millisecond)
+	return 0
+}
+
 func NewTimeRangeL(L *LState) int {
 	times := Unpack[string](L)
 	tr := NewRange(times)
@@ -248,6 +258,8 @@ func TimeIndexL(L *LState, key string) LValue {
 		return NewFunction(NewLayoutL)
 	case "range":
 		return NewFunction(NewTimeRangeL)
+	case "sleep":
+		return NewFunction(NewTimeSleepL)
 	}
 	return LNil
 }

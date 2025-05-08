@@ -12,6 +12,8 @@ func ValueOf(L *LState, v any, name string) LValue {
 		return kt.Get(name)
 	case Getter:
 		return ReflectTo(kt.Getter(name))
+	case *LTable:
+		return kt.RawGet(LString(name))
 	}
 
 	return LNil
