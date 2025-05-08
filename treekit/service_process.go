@@ -2,7 +2,6 @@ package treekit
 
 import (
 	"fmt"
-	"github.com/vela-public/onekit/libkit"
 	"runtime"
 )
 
@@ -10,7 +9,6 @@ type ProcessType interface {
 	Name() string
 	Startup(*Env) error
 	Close() error
-	Metadata() libkit.DataKV[string, any]
 }
 
 type Process struct {

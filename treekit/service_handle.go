@@ -58,7 +58,7 @@ func (ms *MicroService) View() *ServiceView {
 			Status:   pro.Status(),
 			CodeVM:   pro.From(),
 			Private:  pro.private,
-			Metadata: pro.data.Metadata(),
+			Metadata: MetadataOf(pro.data),
 		}
 
 		if pro.info != nil {
@@ -68,4 +68,20 @@ func (ms *MicroService) View() *ServiceView {
 	}
 
 	return tv
+}
+
+func MetadataOf(data ProcessType) libkit.DataKV[string, any] {
+	if data == nil {
+		return nil
+	}
+
+	type meta interface {
+		Metadata() libkit.DataKV[string, any]
+	}
+
+	dat, ok := data.(meta)
+	if !ok {
+		return nil
+	}
+	return dat.Metadata()
 }
