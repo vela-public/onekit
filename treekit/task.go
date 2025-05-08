@@ -195,7 +195,7 @@ func (t *Task) Startup(v ProcessType, env *Env) {
 			pro.set(Stopped)
 		}
 
-		if err := pro.data.Start(env); err != nil {
+		if err := pro.data.Startup(env); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.name, err)
 			pro.set(Failed)
 			env.Error(pro.info)
@@ -205,7 +205,7 @@ func (t *Task) Startup(v ProcessType, env *Env) {
 		}
 
 	default:
-		if err := pro.data.Start(env); err != nil {
+		if err := pro.data.Startup(env); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.name, err)
 			pro.set(Failed)
 			env.Error(pro.info)

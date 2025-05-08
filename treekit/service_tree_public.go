@@ -76,6 +76,7 @@ func (mt *MsTree) DoDiff(v []*ServiceEntry) error {
 
 		delete(tab, entry.Name)
 		if view.Hash == entry.Hash {
+			diff.Nothing = append(diff.Nothing, view)
 			continue
 		}
 
@@ -87,6 +88,44 @@ func (mt *MsTree) DoDiff(v []*ServiceEntry) error {
 			Name:  view.Name,
 			ID:    view.ID,
 			MTime: view.MTime,
+		})
+	}
+
+	linked := func(filter func(...string) bool, ss []*ServiceEntry, todo func(link string)) {
+		for _, entry := range ss {
+			if filter(entry.Name) {
+				todo(entry.Name)
+			}
+		}
+	}
+
+	for _, mod := range diff.Nothing {
+		ms, ok := mt.find(mod.Name)
+		if !ok {
+			ms.NoError("can view %s service but not found service", mod.Name)
+			continue
+		}
+
+		if len(ms.config.Source) == 0 {
+			continue
+		}
+
+		linked(ms.BeLink, diff.Updates, func(link string) {
+			if !ms.HasSource() {
+				mt.Errorf("want update %s service cause linked %s but not found source", ms.Key(), link)
+				return
+			}
+			diff.Updates = append(diff.Updates, ms.Again())
+			mt.Debugf("update %s service cause linked %s", ms.Key(), link)
+		})
+
+		linked(ms.BeLink, diff.Removes, func(link string) {
+			if !ms.HasSource() {
+				mt.Errorf("want remove %s service cause linked %s but not found source", ms.Key(), link)
+				return
+			}
+			diff.Updates = append(diff.Updates, ms.Again())
+			mt.Debugf("update %s service cause linked %s", ms.Key(), link)
 		})
 	}
 
@@ -123,7 +162,6 @@ func (mt *MsTree) update(d Diff) error {
 	if e := errs.Wrap(); e != nil {
 		mt.Errorf(e.Error())
 	}
-
 	mt.Wakeup()
 	return mt.UnwrapErr()
 }

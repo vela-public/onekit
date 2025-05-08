@@ -2,7 +2,6 @@ package treekit
 
 import (
 	"context"
-	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/luakit"
 	"github.com/vela-public/onekit/pipe"
@@ -40,15 +39,6 @@ func (mt *MsTree) Protect() bool {
 
 func (mt *MsTree) Length() int {
 	return len(mt.cache.data)
-}
-
-func (mt *MsTree) BeLinked(name string) bool {
-	for _, ms := range mt.cache.data {
-		if libkit.In[string](ms.processes.Link, name) {
-			return true
-		}
-	}
-	return false
 }
 
 func (mt *MsTree) Lookup(L *lua.LState) int {

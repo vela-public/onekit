@@ -97,6 +97,34 @@ func (ms *MicroService) set(op SerErrNo) {
 	ms.private.Flag = op
 }
 
+func (ms *MicroService) HasSource() bool {
+	return len(ms.config.Source) > 0
+}
+
+func (ms *MicroService) Again() *ServiceEntry {
+	return &ServiceEntry{
+		Name:    ms.config.Key,
+		ID:      ms.config.ID,
+		MTime:   ms.config.MTime,
+		Hash:    ms.config.Hash,
+		Dialect: ms.config.Dialect,
+		Chunk:   ms.config.Source,
+	}
+}
+
+func (ms *MicroService) BeLink(other ...string) bool {
+	sz := len(ms.processes.Link)
+	if sz == 0 {
+		return false
+	}
+	for i := 0; i < sz; i++ {
+		if libkit.In(other, ms.processes.Link[i]) {
+			return true
+		}
+	}
+	return false
+}
+
 func (ms *MicroService) build() {
 	parent := ms.root.Context()
 	ctx, cancel := context.WithCancel(parent)
@@ -175,7 +203,9 @@ func (ms *MicroService) clean() {
 
 func (ms *MicroService) succeed() {
 	ms.set(Running)
-	ms.config.Source = nil
+	if sz := len(ms.processes.Link); sz == 0 {
+		ms.config.Source = nil
+	}
 	ms.private.Error = nil
 }
 
@@ -301,7 +331,7 @@ func (ms *MicroService) Startup(s ProcessType, env *Env) {
 	switch {
 	case pro.has(Succeed):
 		if rd, ok := pro.data.(ReloadType); ok {
-			err := rd.Reload()
+			err := rd.Reload(env)
 			if err != nil {
 				pro.info = err
 				pro.set(Failed)
@@ -323,7 +353,7 @@ func (ms *MicroService) Startup(s ProcessType, env *Env) {
 			pro.set(Stopped)
 		}
 
-		if err := pro.data.Start(env); err != nil {
+		if err := pro.data.Startup(env); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.Name(), err)
 			pro.set(Failed)
 			env.Error(pro.info)
@@ -333,7 +363,7 @@ func (ms *MicroService) Startup(s ProcessType, env *Env) {
 		}
 
 	default:
-		if err := pro.data.Start(env); err != nil {
+		if err := pro.data.Startup(env); err != nil {
 			pro.info = fmt.Errorf("%s open fail error %v", pro.Name(), err)
 			pro.set(Failed)
 			env.Error(pro.info)

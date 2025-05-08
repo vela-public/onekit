@@ -26,6 +26,7 @@ type ServiceEntry struct {
 }
 
 type Diff struct {
+	Nothing []*ServiceView  `json:"nothing"`
 	Removes []*ServiceEntry `json:"removes"`
 	Updates []*ServiceEntry `json:"updates"`
 }
@@ -36,6 +37,22 @@ func (d Diff) NotChange() bool {
 
 func (d Diff) Change() int {
 	return len(d.Updates) + len(d.Removes)
+}
+
+func (d Diff) UpdateNames() []string {
+	names := make([]string, len(d.Updates))
+	for i, entry := range d.Updates {
+		names[i] = entry.Name
+	}
+	return names
+}
+
+func (d Diff) RemoveNames() []string {
+	names := make([]string, len(d.Removes))
+	for i, entry := range d.Removes {
+		names[i] = entry.Name
+	}
+	return names
 }
 
 type ServiceDiffInfo struct {

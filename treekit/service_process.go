@@ -8,7 +8,7 @@ import (
 
 type ProcessType interface {
 	Name() string
-	Start(*Env) error
+	Startup(*Env) error
 	Close() error
 	Metadata() libkit.DataKV[string, any]
 }

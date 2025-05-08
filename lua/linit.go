@@ -43,6 +43,7 @@ var luaLibs = []luaLib{
 	luaLib{SliceLibName, OpenSliceLib},
 	luaLib{MapLibName, OpenMapLib},
 	luaLib{IntegerLibName, OpenIntegerLib},
+	luaLib{StructLibName, OpenStructLib},
 }
 
 // OpenLibs loads the built-in libraries. It is equivalent to running OpenLoad,

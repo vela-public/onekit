@@ -83,7 +83,6 @@ func (tg *tlsGo) NewIndex(L *lua.LState, key string, val lua.LValue) {
 func newLuaTlsInfo(L *lua.LState) int {
 
 	tg := &tlsGo{network: "tcp", timeout: 1000, insecure: true}
-
 	n := L.GetTop()
 	if n == 0 {
 		L.Push(tg)

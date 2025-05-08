@@ -216,10 +216,45 @@ func (gen *Generic[T]) Unwrap() T {
 	return gen.Data
 }
 
+func (gen *Generic[T]) Is(L *LState, lv LValue) error {
+	if lv.Type() != LTGeneric {
+		return fmt.Errorf("type not match")
+	}
+
+	dat, ok := lv.(*Generic[T])
+	if !ok {
+		return fmt.Errorf("type not match %T Got %T", gen, lv)
+	}
+
+	gen.Data = dat.Data
+	gen.flag = dat.flag
+	return nil
+}
+
 func NewGeneric[T any](data T) *Generic[T] {
 	return &Generic[T]{
 		Data: data,
 	}
+}
+
+func NewGenericOf[T any]() *Generic[T] {
+	return &Generic[T]{}
+}
+
+func CheckGeneric[T any](L *LState, n int) *Generic[T] {
+	dat := Check[*Generic[T]](L, L.Get(n))
+	if dat == nil {
+		return nil
+	}
+	return dat
+}
+
+func CheckGenericOf[T any](L *LState, n int) (t T) {
+	dat := Check[*Generic[T]](L, L.Get(n))
+	if dat == nil {
+		return
+	}
+	return dat.Data
 }
 
 func NewGenericR[T any](data T) *Generic[T] {

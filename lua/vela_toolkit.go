@@ -425,6 +425,11 @@ func SetExdata2[T any](L *LState, t T) {
 }
 
 func Check[T any](L *LState, lv LValue) (t T) {
+	vt, ok := lv.(T)
+	if ok {
+		return vt
+	}
+
 	to := func(v any) T {
 		return v.(T)
 	}
@@ -603,18 +608,25 @@ func Check[T any](L *LState, lv LValue) (t T) {
 		default:
 			return to(uint64(0))
 		}
+
+	case *Generic[T]:
+		dat := lv.(*Generic[T])
+		return dat.Unwrap()
+
 	default:
-		vt, ok := lv.(T)
-		if ok {
+		var dat PackType
+		dat, ok = lv.(PackType)
+		if !ok {
+			L.RaiseError("must be %T, got %s", t, lv.Type().String())
+			return
+		}
+
+		vt, ok = dat.Unpack().(T)
+		if !ok {
+			L.RaiseError("must be %T, got %s", t, lv.Type().String())
 			return vt
 		}
 
-		dat, ok := lv.(*Generic[T])
-		if ok {
-			return dat.Unwrap()
-		}
-
-		L.RaiseError("must be %T, got %s", t, lv.Type().String())
-		return
+		return vt
 	}
 }

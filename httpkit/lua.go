@@ -51,7 +51,7 @@ Content-Length: 26
 Accept: application/json
 DNT: 1
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36
-Content-Ktype: application/x-www-form-urlencoded
+Content-type: application/x-www-form-urlencoded
 Origin: http://172.31.231.146:9000
 Referer: http://172.31.231.146:9000/sessions/new
 Accept-Encoding: gzip, deflate
@@ -134,3 +134,7 @@ func indexL(L *lua.LState, key string) lua.LValue {
 			print(v["name"])
 		end)
 */
+
+func Preload(p lua.Preloader) {
+	p.SetGlobal("http", lua.NewExport("lua.http.kit", lua.WithIndex(indexL)))
+}
