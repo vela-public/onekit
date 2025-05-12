@@ -47,6 +47,17 @@ func (w *WebContext) H(key string, val string) {
 	w.session.Request.Header.Set(key, val)
 }
 
+func (w *WebContext) SayJsonGo(code int, v any) {
+	chunk, err := json.Marshal(v)
+	if err != nil {
+		w.session.Error(err.Error(), 500)
+		return
+	}
+	w.session.Response.SetStatusCode(code)
+	w.session.Response.SetBody(chunk)
+	w.H2("Content-Type", "application/json")
+}
+
 func (w *WebContext) H2(key string, val string) {
 	w.session.Response.Header.Set(key, val)
 }
