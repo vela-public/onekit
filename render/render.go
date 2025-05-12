@@ -121,6 +121,12 @@ func (r *Render) Render(v any, env *Env) string {
 		text, _ := r.Reader()
 		return text
 	}
+	if env == nil {
+		env = &Env{
+			LState: lua.NewState(),
+		}
+		defer env.LState.Close()
+	}
 
 	content, change := r.Reader()
 	if change || r.Template == nil {
@@ -151,4 +157,10 @@ func NewRender(reader ReadFunc, options ...func(*Render)) *Render {
 		option(r)
 	}
 	return r
+}
+
+func Text(text string, options ...func(*Render)) *Render {
+	return NewRender(func() (string, bool) {
+		return text, false
+	})
 }

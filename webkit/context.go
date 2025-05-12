@@ -22,6 +22,11 @@ func (w *WebContext) AssertString() (string, bool)           { return "", false 
 func (w *WebContext) AssertFunction() (*lua.LFunction, bool) { return nil, false }
 func (w *WebContext) Hijack(fsm *lua.CallFrameFSM) bool      { return false }
 
+func (w *WebContext) SayGo(code int, body string) {
+	w.Request.Response.SetStatusCode(code)
+	w.Request.Response.SetBodyString(body)
+}
+
 func (w *WebContext) SayL(L *lua.LState) int {
 	n := L.GetTop()
 	if n == 0 {
