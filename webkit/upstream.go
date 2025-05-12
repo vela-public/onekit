@@ -199,7 +199,7 @@ func (p *ReverseProxy) Close() {
 //	logger.Debugf("response header=%v", src.Header)
 //}
 //
-//func copyRequest(src *fasthttp.Request, dst *fasthttp.Request) {
+//func copyRequest(src *fasthttp.session, dst *fasthttp.session) {
 //	src.CopyTo(dst)
 //}
 //
@@ -209,8 +209,8 @@ func (p *ReverseProxy) Close() {
 //	return dst
 //}
 //
-//func cloneRequest(src *fasthttp.Request) *fasthttp.Request {
-//	dst := new(fasthttp.Request)
+//func cloneRequest(src *fasthttp.session) *fasthttp.session {
+//	dst := new(fasthttp.session)
 //	copyRequest(src, dst)
 //	return dst
 //}

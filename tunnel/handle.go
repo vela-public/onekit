@@ -62,7 +62,7 @@ func (lh *LHandle) Metadata() libkit.DataKV[string, any] {
 }
 
 func (lh *LHandle) HandleFunc(ctx *fasthttp.RequestCtx) {
-	webctx := &webkit.WebContext{Request: ctx}
+	webctx := &webkit.WebContext{session: ctx}
 	lh.cfg.handle.Invoke(webctx)
 }
 

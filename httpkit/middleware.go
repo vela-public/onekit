@@ -23,7 +23,7 @@ import (
 const debugRequestLogKey = "__restyDebugRequestLog"
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-// Request Middleware(s)
+// session Middleware(s)
 //_______________________________________________________________________
 
 func parseRequestURL(c *Client, r *Request) error {
@@ -106,8 +106,8 @@ func parseRequestURL(c *Client, r *Request) error {
 		return err
 	}
 
-	// If Request.URL is relative path then added c.HostURL into
-	// the request URL otherwise Request.URL will be used as-is
+	// If session.URL is relative path then added c.HostURL into
+	// the request URL otherwise session.URL will be used as-is
 	if !reqURL.IsAbs() {
 		r.URL = reqURL.String()
 		if len(r.URL) > 0 && r.URL[0] != '/' {
@@ -187,7 +187,7 @@ func parseRequestBody(c *Client, r *Request) error {
 			}
 		case len(c.FormData) > 0 || len(r.FormData) > 0: // Handling Form Exdata
 			handleFormData(c, r)
-		case r.Body != nil: // Handling Request body
+		case r.Body != nil: // Handling session body
 			handleContentType(c, r)
 
 			if err := handleRequestBody(c, r); err != nil {

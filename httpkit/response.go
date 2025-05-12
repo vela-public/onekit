@@ -118,7 +118,7 @@ func (r *Response) String() string {
 
 // Time method returns the time of HTTP response time that from request we sent and received a request.
 //
-// See `Response.ReceivedAt` to know when client received response and see `Response.Request.Time` to know
+// See `Response.ReceivedAt` to know when client received response and see `Response.session.Time` to know
 // when client sent a request.
 func (r *Response) Time() time.Duration {
 	if r.Request.clientTrace != nil {

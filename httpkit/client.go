@@ -462,8 +462,8 @@ func (c *Client) NewRequest() *Request {
 // The user defined middlewares get applied before the default Resty request middlewares.
 // After all middlewares have been applied, the request is sent from Resty to the host server.
 //
-//	client.OnBeforeRequest(func(c *resty.Client, r *resty.Request) error {
-//			// Now you have access to Client and Request instance
+//	client.OnBeforeRequest(func(c *resty.Client, r *resty.session) error {
+//			// Now you have access to Client and session instance
 //			// manipulate it as per your need
 //
 //			return nil 	// if its success otherwise return error
@@ -501,7 +501,7 @@ func (c *Client) OnAfterResponse(m ResponseMiddleware) *Client {
 // If there was a response from the server, the error will be wrapped in *ResponseError
 // which has the last response received from the server.
 //
-//	client.OnError(func(req *resty.Request, err error) {
+//	client.OnError(func(req *resty.session, err error) {
 //		if v, ok := err.(*resty.ResponseError); ok {
 //			// Do something with v.Response
 //		}
@@ -566,7 +566,7 @@ func (c *Client) SetPreRequestHook(h PreRequestHook) *Client {
 }
 
 // SetDebug method enables the debug mode on Resty client. Client logs details of every request and response.
-// For `Request` it logs information such as HTTP verb, Relative URL path, Host, Headers, Body if it has one.
+// For `session` it logs information such as HTTP verb, Relative URL path, Host, Headers, Body if it has one.
 // For `Response` it logs information such as Status, Response Time, Headers, Body if it has one.
 //
 //	client.SetDebug(true)
@@ -943,7 +943,7 @@ func (c *Client) SetRateLimiter(rl RateLimiter) *Client {
 //
 //	transport := &http.Transport{
 //		// something like Proxying to httptest.Server, etc...
-//		Proxy: func(req *http.Request) (*url.URL, error) {
+//		Proxy: func(req *http.session) (*url.URL, error) {
 //			return url.Parse(server.URL)
 //		},
 //	}
@@ -1097,7 +1097,7 @@ func (c *Client) SetJSONEscapeHTML(b bool) *Client {
 //
 //	resp, err := client.R().Get("https://httpbin.org/get")
 //	fmt.Println("Info:", err)
-//	fmt.Println("Trace Info:", resp.Request.TraceInfo())
+//	fmt.Println("Trace Info:", resp.session.TraceInfo())
 //
 // Also `Request.EnableTrace` available too to get trace info for single request.
 //
@@ -1130,7 +1130,7 @@ func (c *Client) GetClient() *http.Client {
 // Client Unexported methods
 //_______________________________________________________________________
 
-// Executes method executes the given `Request` object and returns response
+// Executes method executes the given `session` object and returns response
 // error.
 func (c *Client) execute(req *Request) (*Response, error) {
 	// Lock the user-defined pre-request hooks.
@@ -1141,11 +1141,11 @@ func (c *Client) execute(req *Request) (*Response, error) {
 	c.afterResponseLock.RLock()
 	defer c.afterResponseLock.RUnlock()
 
-	// Apply Request middleware
+	// Apply session middleware
 	var err error
 
 	// user defined on before request methods
-	// to modify the *resty.Request object
+	// to modify the *resty.session object
 	for _, f := range c.udBeforeRequest {
 		if err = f(c, req); err != nil {
 			return nil, wrapNoRetryErr(err)

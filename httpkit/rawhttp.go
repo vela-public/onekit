@@ -69,7 +69,7 @@ const (
 	eMLHeaderValue
 )
 
-// Parse the buffer as an HTTP Request. The buffer must contain the entire
+// Parse the buffer as an HTTP session. The buffer must contain the entire
 // request or Parse will return ErrMissingData for the caller to get more
 // data. (this thusly favors getting a completed request in a single Read()
 // call).

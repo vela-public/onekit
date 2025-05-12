@@ -20,7 +20,7 @@ import (
 )
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-// Request struct and methods
+// session struct and methods
 //_______________________________________________________________________
 
 // Request struct is used to compose and fire individual request from
@@ -749,7 +749,7 @@ func (r *Request) SetLogger(l Logger) *Request {
 
 // SetDebug method enables the debug mode on current request Resty request, It logs
 // the details current request and response.
-// For `Request` it logs information such as HTTP verb, Relative URL path, Host, Headers, Body if it has one.
+// For `session` it logs information such as HTTP verb, Relative URL path, Host, Headers, Body if it has one.
 // For `Response` it logs information such as Status, Response Time, Headers, Body if it has one.
 //
 //	client.R().SetDebug(true)
@@ -781,7 +781,7 @@ func (r *Request) AddRetryCondition(condition RetryConditionFunc) *Request {
 //
 //	resp, err := client.R().EnableTrace().Get("https://httpbin.org/get")
 //	fmt.Println("Info:", err)
-//	fmt.Println("Trace Info:", resp.Request.TraceInfo())
+//	fmt.Println("Trace Info:", resp.session.TraceInfo())
 //
 // See `Client.EnableTrace` available too to get trace info for all requests.
 //
@@ -884,7 +884,7 @@ func (r *Request) Patch(url string) (*Response, error) {
 }
 
 // Send method performs the HTTP request using the method and URL already defined
-// for current `Request`.
+// for current `session`.
 //
 //	req := client.R()
 //	req.Method = resty.GET
@@ -895,7 +895,7 @@ func (r *Request) Send() (*Response, error) {
 }
 
 // Execute method performs the HTTP request with given HTTP method and URL
-// for current `Request`.
+// for current `session`.
 //
 //	resp, err := client.R().Execute(resty.GET, "http://httpbin.org/get")
 func (r *Request) Execute(method, url string) (*Response, error) {
@@ -980,7 +980,7 @@ type SRVRecord struct {
 }
 
 //‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
-// Request Unexported methods
+// session Unexported methods
 //_______________________________________________________________________
 
 func (r *Request) fmtBodyString(sl int64) (body string) {

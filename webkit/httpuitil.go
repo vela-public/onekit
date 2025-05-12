@@ -97,3 +97,11 @@ func ExecL(L *lua.LState) int {
 	ctx.WriteString(body)
 	return 0
 }
+
+func UserValue[T any](ctx *WebContext, name string) (t T) {
+	v, ok := ctx.UserValue(name).(T)
+	if !ok {
+		return
+	}
+	return v
+}

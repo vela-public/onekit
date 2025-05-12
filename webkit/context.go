@@ -13,7 +13,7 @@ import (
 type HandleFunc func(ctx *WebContext)
 
 type WebContext struct {
-	Request *RequestCtx
+	session *RequestCtx
 }
 
 func (w *WebContext) String() string                         { return fmt.Sprintf("http.context %p", w) }
@@ -24,33 +24,61 @@ func (w *WebContext) AssertFunction() (*lua.LFunction, bool) { return nil, false
 func (w *WebContext) Hijack(fsm *lua.CallFrameFSM) bool      { return false }
 
 func (w *WebContext) Bind(v any) error {
-	data := w.Request.Request.Body()
+	data := w.session.Request.Body()
 	return json.Unmarshal(data, v)
 }
 
+func (w *WebContext) R() *fasthttp.RequestCtx {
+	return w.session
+}
+func (w *WebContext) UserValue(key string) any {
+	return w.session.UserValue(key)
+}
+
+func (w *WebContext) WriteString(s string) {
+	w.session.Response.SetBodyString(s)
+}
+
+func (w *WebContext) Write(data []byte) {
+	w.session.Response.SetBody(data)
+}
+
+func (w *WebContext) H(key string, val string) {
+	w.session.Request.Header.Set(key, val)
+}
+
+func (w *WebContext) H2(key string, val string) {
+	w.session.Response.Header.Set(key, val)
+}
+
 func (w *WebContext) Args() *fasthttp.Args {
-	return w.Request.QueryArgs()
+	return w.session.QueryArgs()
 }
 
 func (w *WebContext) Str(name string) string {
-	return string(w.Request.QueryArgs().Peek(name))
+	return string(w.session.QueryArgs().Peek(name))
 }
 
 func (w *WebContext) Int(name string) int {
-	return w.Request.QueryArgs().GetUintOrZero(name)
+	return w.session.QueryArgs().GetUintOrZero(name)
 }
 
 func (w *WebContext) Bool(name string) bool {
-	return w.Request.QueryArgs().GetBool(name)
+	return w.session.QueryArgs().GetBool(name)
 }
 
 func (w *WebContext) Has(name string) bool {
-	return w.Request.QueryArgs().Has(name)
+	return w.session.QueryArgs().Has(name)
 }
 
 func (w *WebContext) SayGo(code int, body string) {
-	w.Request.Response.SetStatusCode(code)
-	w.Request.Response.SetBodyString(body)
+	w.session.Response.SetStatusCode(code)
+	w.session.Response.SetBodyString(body)
+}
+
+func (w *WebContext) Usr(code int, body string) {
+	w.session.Response.SetStatusCode(code)
+	w.session.SetBodyString(body)
 }
 
 func (w *WebContext) SayL(L *lua.LState) int {
@@ -63,13 +91,13 @@ func (w *WebContext) SayL(L *lua.LState) int {
 	for i := 1; i <= n; i++ {
 		buf.WriteString(L.Get(i).String())
 	}
-	w.Request.SetBody(buf.Bytes())
+	w.session.SetBody(buf.Bytes())
 	return 0
 }
 
 func (w *WebContext) ExitL(L *lua.LState) int {
 	code := L.CheckInt(1)
-	w.Request.Response.SetStatusCode(code)
+	w.session.Response.SetStatusCode(code)
 	L.Terminated()
 	return 0
 }
@@ -81,7 +109,7 @@ func (w *WebContext) SayFormatL(L *lua.LState) int {
 	}
 
 	body := luakit.Format(L, 0)
-	w.Request.Response.SetBodyRaw(lua.S2B(body))
+	w.session.Response.SetBodyRaw(lua.S2B(body))
 	return 0
 }
 
@@ -95,7 +123,7 @@ func (w *WebContext) SayRawL(L *lua.LState) int {
 	for i := 1; i <= n; i++ {
 		buf.Write(lua.S2B(L.CheckString(i)))
 	}
-	w.Request.Response.SetBodyRaw(buf.Bytes())
+	w.session.Response.SetBodyRaw(buf.Bytes())
 	return 0
 }
 
@@ -110,7 +138,7 @@ func (w *WebContext) AppendL(L *lua.LState) int {
 		if len(dat) == 0 {
 			continue
 		}
-		w.Request.Response.AppendBody(cast.S2B(dat))
+		w.session.Response.AppendBody(cast.S2B(dat))
 	}
 	return 0
 }
@@ -119,17 +147,17 @@ func (w *WebContext) JsonL(L *lua.LState) int {
 	lv := L.CheckAny(1)
 	chunk, err := json.Marshal(lv)
 	if err != nil {
-		w.Request.Error(err.Error(), 500)
+		w.session.Error(err.Error(), 500)
 		return 0
 	}
 
-	w.Request.SetBody(chunk)
+	w.session.SetBody(chunk)
 	return 0
 }
 
 func (w *WebContext) fileL(L *lua.LState) int {
 	path := L.CheckString(1)
-	w.Request.SendFile(path)
+	w.session.SendFile(path)
 	return 0
 }
 
@@ -151,9 +179,9 @@ func (w *WebContext) Index(L *lua.LState, key string) lua.LValue {
 		return lua.NewFunction(w.ExitL)
 	}
 
-	return K2V(w.Request, key)
+	return K2V(w.session, key)
 }
 
 func NewWebContext(ctx *RequestCtx) *WebContext {
-	return &WebContext{Request: ctx}
+	return &WebContext{session: ctx}
 }

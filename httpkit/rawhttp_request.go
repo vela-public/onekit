@@ -149,7 +149,7 @@ func (r RawHttp) Header(search string) string {
 }
 
 // AutoSetHost adds a Host header to the request
-// using the value of Request.Hostname
+// using the value of session.Hostname
 func (r *RawHttp) AutoSetHost() {
 	n := len(r.Headers)
 	for i := 0; i < n; i++ {
