@@ -164,5 +164,7 @@ func Text(text string, options ...func(*Render)) *Render {
 	for _, option := range options {
 		option(r)
 	}
+
+	r.PrepareText()
 	return r
 }
