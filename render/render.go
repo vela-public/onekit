@@ -122,10 +122,7 @@ func (r *Render) Render(v any, env *Env) string {
 		return text
 	}
 	if env == nil {
-		env = &Env{
-			LState: lua.NewState(),
-		}
-		defer env.LState.Close()
+		env = &Env{}
 	}
 
 	content, change := r.Reader()
@@ -160,7 +157,12 @@ func NewRender(reader ReadFunc, options ...func(*Render)) *Render {
 }
 
 func Text(text string, options ...func(*Render)) *Render {
-	return NewRender(func() (string, bool) {
+	r := NewRender(func() (string, bool) {
 		return text, false
 	})
+
+	for _, option := range options {
+		option(r)
+	}
+	return r
 }
