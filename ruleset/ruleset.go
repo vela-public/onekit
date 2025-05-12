@@ -105,6 +105,21 @@ func (rs *RuleSet) UseTag(prefix string) lua.Invoker {
 	}
 }
 
+func (rs *RuleSet) by(key string) lua.Invoker {
+	return func(v any) error {
+		name := lua.ValueOf(rs.L, v, key).String()
+		if len(name) == 0 {
+			return nil
+		}
+		if name == "nil" {
+			return nil
+		}
+
+		rs.Exec(v, name)
+		return nil
+	}
+}
+
 func (rs *RuleSet) UseL(L *lua.LState) int {
 	rules := lua.Unpack[string](L)
 	L.Push(rs.Use(rules...))
@@ -117,28 +132,10 @@ func (rs *RuleSet) UseTagL(L *lua.LState) int {
 	return 1
 }
 
-func (rs *RuleSet) DynamicL(L *lua.LState) int {
-	text := L.CheckString(1) // public.v_black > 10 then deny
-	//todo
-
-	/*
-		deny = function()
-			line.incr('')
-		end
-
-		function(lock , deny , line)
-			if public.v_black > 10 then deny(); return end
-		    if public.v_black > 10 then lock(100); return end
-
-
-	*/
-	L.DoString(text)
-	rs.Add(&Rule{
-		Key:   "hash",
-		Chain: nil,
-	})
-
-	return 0
+func (rs *RuleSet) ByL(L *lua.LState) int {
+	name := L.IsString(1)
+	L.Push(rs.by(name))
+	return 1
 }
 
 func (rs *RuleSet) Index(L *lua.LState, key string) lua.LValue {
@@ -147,8 +144,8 @@ func (rs *RuleSet) Index(L *lua.LState, key string) lua.LValue {
 		return lua.NewFunction(rs.UseL)
 	case "tag":
 		return lua.NewFunction(rs.UseTagL)
-	case "dynamic":
-		return lua.NewFunction(rs.DynamicL)
+	case "by":
+		return lua.NewFunction(rs.ByL)
 	}
 
 	if strings.HasPrefix(key, "use_") {
