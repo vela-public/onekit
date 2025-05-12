@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/valyala/fasthttp"
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/luakit"
@@ -25,6 +26,26 @@ func (w *WebContext) Hijack(fsm *lua.CallFrameFSM) bool      { return false }
 func (w *WebContext) Bind(v any) error {
 	data := w.Request.Request.Body()
 	return json.Unmarshal(data, v)
+}
+
+func (w *WebContext) Args() *fasthttp.Args {
+	return w.Request.QueryArgs()
+}
+
+func (w *WebContext) Str(name string) string {
+	return string(w.Request.QueryArgs().Peek(name))
+}
+
+func (w *WebContext) Int(name string) int {
+	return w.Request.QueryArgs().GetUintOrZero(name)
+}
+
+func (w *WebContext) Bool(name string) bool {
+	return w.Request.QueryArgs().GetBool(name)
+}
+
+func (w *WebContext) Has(name string) bool {
+	return w.Request.QueryArgs().Has(name)
 }
 
 func (w *WebContext) SayGo(code int, body string) {
