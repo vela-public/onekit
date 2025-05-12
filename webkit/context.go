@@ -23,7 +23,8 @@ func (w *WebContext) AssertFunction() (*lua.LFunction, bool) { return nil, false
 func (w *WebContext) Hijack(fsm *lua.CallFrameFSM) bool      { return false }
 
 func (w *WebContext) Bind(v any) error {
-	return json.NewDecoder(w.Request.RequestBodyStream()).Decode(v)
+	data := w.Request.Request.Body()
+	return json.Unmarshal(data, v)
 }
 
 func (w *WebContext) SayGo(code int, body string) {
