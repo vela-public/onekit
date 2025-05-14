@@ -3,6 +3,7 @@ package workpool
 import (
 	"context"
 	"fmt"
+	"github.com/vela-public/go-diskqueue"
 	"github.com/vela-public/onekit/libkit"
 	"sync/atomic"
 	"time"
@@ -27,30 +28,6 @@ func (qf *QueueFSM) done() {
 	atomic.AddInt32(&qf.cnt, -1)
 }
 
-type Option struct {
-	Workers int
-	Cache   int
-	Tick    int
-}
-
-func Workers(n int) func(option *Option) {
-	return func(opt *Option) {
-		opt.Workers = n
-	}
-}
-
-func Cache(n int) func(option *Option) {
-	return func(opt *Option) {
-		opt.Cache = n
-	}
-}
-
-func Ticker(n int) func(option *Option) {
-	return func(opt *Option) {
-		opt.Tick = n
-	}
-}
-
 type WorkerFlag uint8
 
 type Worker[T any] struct {
@@ -59,7 +36,7 @@ type Worker[T any] struct {
 	context context.Context
 	cancel  context.CancelFunc
 	todo    func(T) error
-	queue   chan T
+	queue   QueueLine[T]
 	errorf  func(format string, v ...any)
 }
 
@@ -82,11 +59,10 @@ func (w *Worker[T]) run(fsm *QueueFSM) {
 			w.flag = Stop
 			w.errorf("queue.%d worker exit", w.id)
 			return
-		case t, ok := <-w.queue:
+		case t, ok := <-w.queue.ReadChan():
 			if !ok {
 				return
 			}
-
 			err := w.todo(t)
 			if err != nil {
 				w.errorf("%v", err)
@@ -99,7 +75,7 @@ func (w *Worker[T]) run(fsm *QueueFSM) {
 type Queue[T any] struct {
 	option  *Option
 	fsm     *QueueFSM
-	queue   chan T
+	queue   QueueLine[T]
 	context context.Context
 	cancel  context.CancelFunc
 	workers []*Worker[T]
@@ -162,7 +138,12 @@ func (q *Queue[T]) Push(data T) {
 	select {
 	case <-q.context.Done():
 		return
-	case q.queue <- data:
+	default:
+		err := q.queue.Push(data)
+		if err != nil {
+			q.option.Disk.ErrHandle(diskqueue.ERROR, "queue push data %v", err)
+
+		}
 	}
 }
 
@@ -170,6 +151,16 @@ func (q *Queue[T]) Handler(fn func(T)) {
 	q.todo = func(t T) error {
 		fn(t)
 		return nil
+	}
+}
+
+type HandlerType[T any] interface {
+	Do(T) error
+}
+
+func (q *Queue[T]) HandlerOf(obj interface{ Do(T) error }) {
+	q.todo = func(t T) error {
+		return obj.Do(t)
 	}
 }
 
@@ -193,7 +184,7 @@ func (q *Queue[T]) supervise() {
 	ticker := time.NewTicker(time.Duration(q.option.Tick) * time.Second)
 	defer func() {
 		ticker.Stop()
-		close(q.queue)
+		q.queue.Close()
 		q.closeAll()
 	}()
 
@@ -226,9 +217,9 @@ func NewQueue[T any](ctx context.Context, options ...func(*Option)) *Queue[T] {
 	q.context, q.cancel = context.WithCancel(ctx)
 
 	if opt.Cache > 0 {
-		q.queue = make(chan T, opt.Cache)
+		q.queue = NewChanQueue[T](opt.Cache)
 	} else {
-		q.queue = make(chan T)
+		q.queue = NewChanQueue[T](opt.Cache)
 	}
 
 	q.workers = make([]*Worker[T], opt.Workers)

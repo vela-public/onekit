@@ -12,6 +12,7 @@ require (
 	github.com/valyala/fasthttp v1.62.0
 	github.com/valyala/fastjson v1.6.4
 	github.com/valyala/fasttemplate v1.2.2
+	github.com/vela-public/go-diskqueue v1.5.5
 	github.com/vela-ssoc/vela-common-mba v0.0.0-20250314053022-d3546e19402f
 	github.com/vela-ssoc/vela-tunnel v0.0.0-20250314062840-71acfaf45b3f
 	go.etcd.io/bbolt v1.4.0

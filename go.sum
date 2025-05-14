@@ -30,6 +30,8 @@ github.com/valyala/fastjson v1.6.4 h1:uAUNq9Z6ymTgGhcm0UynUAB6tlbakBrz6CQFax3BXV
 github.com/valyala/fastjson v1.6.4/go.mod h1:CLCAqky6SMuOcxStkYQvblddUtoRxhYMGLrsQns1aXY=
 github.com/valyala/fasttemplate v1.2.2 h1:lxLXG0uE3Qnshl9QyaK6XJxMXlQZELvChBOCmQD0Loo=
 github.com/valyala/fasttemplate v1.2.2/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
+github.com/vela-public/go-diskqueue v1.5.5 h1:ZD2nGv6lqocKbZq3NtgxWn49cKUJpwbuggoB6dx1N9Q=
+github.com/vela-public/go-diskqueue v1.5.5/go.mod h1:T0n+an6lkYGr94ScCOcKXf3O6bg33yQW97mRu+FvJX4=
 github.com/vela-ssoc/vela-common-mba v0.0.0-20250314053022-d3546e19402f h1:y/1XBed5Bt/V6p/wgWeuCdoVfvC3S+8gL5mXfTsNFlY=
 github.com/vela-ssoc/vela-common-mba v0.0.0-20250314053022-d3546e19402f/go.mod h1:DMN/az9fN2p0mJ1CNouJjsEJWs69Ucqbtq34DOCaTlc=
 github.com/vela-ssoc/vela-tunnel v0.0.0-20250314062840-71acfaf45b3f h1:Cw7oMp3UDnm4pLTe+OQ2zgZ0S8QYxqs2pGeGhZ2sdsY=
