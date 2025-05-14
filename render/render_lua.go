@@ -21,3 +21,7 @@ func (r *Render) execL(L *lua.LState) int {
 func (r *Render) Index(L *lua.LState, key string) lua.LValue {
 	return lua.LNil
 }
+
+func (r *Render) NewIndex(L *lua.LState, key string, val lua.LValue) {
+	r.DataKV.Set(key, val)
+}

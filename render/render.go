@@ -16,6 +16,7 @@ type Render struct {
 	Right    string
 	Reader   ReadFunc
 	Template *fasttemplate.Template
+	DataKV   lua.Map[string, lua.LValue]
 	need     bool
 }
 
@@ -31,7 +32,14 @@ func (r *Render) builtin(tag string) []byte {
 		return cast.S2B(time.Now().Format("02"))
 	case "@hour":
 		return cast.S2B(time.Now().Format("15"))
+	case "@now":
+		return cast.S2B(time.Now().Format("2006-01-02 15:04:05"))
 	}
+
+	if v, ok := r.DataKV[tag]; ok {
+		return cast.S2B(v.String())
+	}
+
 	return nil
 }
 
@@ -149,7 +157,7 @@ func Tag(left, right string) func(*Render) {
 }
 
 func NewRender(reader ReadFunc, options ...func(*Render)) *Render {
-	r := &Render{Reader: reader, Left: "${", Right: "}"}
+	r := &Render{Reader: reader, Left: "${", Right: "}", DataKV: lua.Map[string, lua.LValue]{}}
 	for _, option := range options {
 		option(r)
 	}
