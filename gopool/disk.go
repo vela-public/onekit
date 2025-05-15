@@ -27,31 +27,16 @@ func (dk *DiskQueue) Close() {
 }
 
 func NewDiskQueue(ctx context.Context, options ...func(*Option)) *Queue[[]byte] {
-	opt := &Option{
-		Workers: 32,
-		Cache:   0,
-		Tick:    1,
+	q := define[[]byte](ctx, options...)
+	disk := q.option.Disk
+	q.queue = &DiskQueue{
+		dq: diskqueue.NewWithDiskSpace(disk.Name, disk.Path,
+			disk.MaxBytesDiskSpace, disk.MaxBytesPerFile,
+			disk.MinMsgSize, disk.MaxMsgSize,
+			disk.SyncEvery, disk.SyncTimeout, disk.ErrHandle),
 	}
 
-	for _, fn := range options {
-		fn(opt)
-	}
-
-	q := &Queue[[]byte]{
-		option: opt,
-		fsm:    &QueueFSM{},
-	}
-	q.private.Context, q.private.Cancel = context.WithCancel(ctx)
-
-	dq := diskqueue.NewWithDiskSpace(opt.Disk.Name, opt.Disk.Path,
-		opt.Disk.MaxBytesDiskSpace, opt.Disk.MaxBytesPerFile,
-		opt.Disk.MinMsgSize, opt.Disk.MaxMsgSize,
-		opt.Disk.SyncEvery, opt.Disk.SyncTimeout, opt.Disk.ErrHandle)
-
-	q.queue = &DiskQueue{dq: dq}
-	q.workers = make([]*Worker[[]byte], opt.Workers)
-	q.mapping = make([]any, opt.Workers)
-	for i := 0; i < opt.Workers; i++ {
+	for i := 0; i < q.option.Workers; i++ {
 		q.workers[i] = q.NewWorker(i)
 		q.mapping[i] = q.NewExdata()
 	}

@@ -161,8 +161,11 @@ func (ft *FileTail) Prepare(parent context.Context) {
 	ft.private.limit = NewLimit(ft.private.context, ft.setting.Limit)
 	ft.private.history = make(map[string]*Section)
 
-	queue := gopool.NewQueue[*Line](ft.private.context, gopool.Workers(ft.setting.Thread), gopool.Ticker(5))
-	queue.Handler(ft.invoke)
+	queue := gopool.NewQueue[*Line](ft.private.context, gopool.Workers(ft.setting.Thread))
+	queue.HandlerFunc(func(pkt *gopool.Packet[*Line]) {
+		ft.invoke(pkt.Data)
+	})
+
 	queue.SetErrHandler(func(err error) {
 		ft.Errorf(err.Error())
 	})

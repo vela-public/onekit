@@ -252,6 +252,12 @@ func (q *Queue[T]) supervise() {
 		q.closeAll()
 	}()
 
+	//初始化worker
+	for i := 0; i < q.option.Workers; i++ {
+		q.workers[i] = q.NewWorker(i)
+		q.mapping[i] = q.NewExdata()
+	}
+
 	for {
 		select {
 		case <-q.Context().Done():
@@ -263,7 +269,7 @@ func (q *Queue[T]) supervise() {
 	}
 }
 
-func NewQueue[T any](parent context.Context, options ...func(*Option)) *Queue[T] {
+func define[T any](parent context.Context, options ...func(option *Option)) *Queue[T] {
 	opt := &Option{
 		Workers: 32,
 		Cache:   0,
@@ -280,13 +286,19 @@ func NewQueue[T any](parent context.Context, options ...func(*Option)) *Queue[T]
 		option: opt,
 		fsm:    &QueueFSM{},
 	}
-
 	q.private.Context = ctx
 	q.private.Cancel = cancel
-	q.queue = NewChanQueue[T](opt.Cache)
-
 	q.workers = make([]*Worker[T], opt.Workers)
-	for i := 0; i < opt.Workers; i++ {
+	q.mapping = make([]any, opt.Workers)
+
+	return q
+}
+
+func NewQueue[T any](parent context.Context, options ...func(*Option)) *Queue[T] {
+	q := define[T](parent, options...)
+	q.queue = NewChanQueue[T](q.option.Cache)
+
+	for i := 0; i < q.option.Workers; i++ {
 		q.workers[i] = q.NewWorker(i)
 		q.mapping[i] = q.NewExdata()
 	}
