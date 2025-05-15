@@ -1,4 +1,4 @@
-package workpool
+package gopool
 
 import (
 	"github.com/vela-public/go-diskqueue"
@@ -9,8 +9,8 @@ type Option struct {
 	Workers int
 	Cache   int
 	Tick    int
-
-	Disk struct {
+	Exdata  func() any
+	Disk    struct {
 		Name              string
 		Path              string
 		Error             bool
@@ -21,6 +21,12 @@ type Option struct {
 		SyncEvery         int64
 		SyncTimeout       time.Duration
 		ErrHandle         func(diskqueue.LogLevel, string, ...any)
+	}
+}
+
+func Exdata(fn func() any) func(option *Option) {
+	return func(opt *Option) {
+		opt.Exdata = fn
 	}
 }
 

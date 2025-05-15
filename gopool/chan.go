@@ -1,4 +1,4 @@
-package workpool
+package gopool
 
 type ChanQueue[T any] struct {
 	ch chan T

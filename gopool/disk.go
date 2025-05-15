@@ -1,4 +1,4 @@
-package workpool
+package gopool
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func NewDiskQueue(ctx context.Context, options ...func(*Option)) *Queue[[]byte] 
 	opt := &Option{
 		Workers: 32,
 		Cache:   0,
-		Tick:    5,
+		Tick:    1,
 	}
 
 	for _, fn := range options {
@@ -41,7 +41,7 @@ func NewDiskQueue(ctx context.Context, options ...func(*Option)) *Queue[[]byte] 
 		option: opt,
 		fsm:    &QueueFSM{},
 	}
-	q.context, q.cancel = context.WithCancel(ctx)
+	q.private.Context, q.private.Cancel = context.WithCancel(ctx)
 
 	dq := diskqueue.NewWithDiskSpace(opt.Disk.Name, opt.Disk.Path,
 		opt.Disk.MaxBytesDiskSpace, opt.Disk.MaxBytesPerFile,
@@ -50,8 +50,10 @@ func NewDiskQueue(ctx context.Context, options ...func(*Option)) *Queue[[]byte] 
 
 	q.queue = &DiskQueue{dq: dq}
 	q.workers = make([]*Worker[[]byte], opt.Workers)
+	q.mapping = make([]any, opt.Workers)
 	for i := 0; i < opt.Workers; i++ {
-		q.workers[i] = q.NewWorker(i, q.fsm)
+		q.workers[i] = q.NewWorker(i)
+		q.mapping[i] = q.NewExdata()
 	}
 
 	go q.supervise()

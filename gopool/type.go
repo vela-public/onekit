@@ -1,4 +1,4 @@
-package workpool
+package gopool
 
 type QueueLine[T any] interface {
 	Pop() (T, bool)

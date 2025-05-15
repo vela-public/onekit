@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/cond"
+	"github.com/vela-public/onekit/gopool"
 	"github.com/vela-public/onekit/jsonkit"
 	"github.com/vela-public/onekit/noop"
 	"github.com/vela-public/onekit/pipe"
-	"github.com/vela-public/onekit/workpool"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -39,7 +39,7 @@ type FileTail struct {
 		limit    *limit
 		context  context.Context
 		cancel   context.CancelFunc
-		queue    *workpool.Queue[*Line]
+		queue    *gopool.Queue[*Line]
 		Chain    *pipe.Chain
 		Switch   *pipe.Switch
 		Debug    *pipe.Chain
@@ -161,7 +161,7 @@ func (ft *FileTail) Prepare(parent context.Context) {
 	ft.private.limit = NewLimit(ft.private.context, ft.setting.Limit)
 	ft.private.history = make(map[string]*Section)
 
-	queue := workpool.NewQueue[*Line](ft.private.context, workpool.Workers(ft.setting.Thread), workpool.Ticker(5))
+	queue := gopool.NewQueue[*Line](ft.private.context, gopool.Workers(ft.setting.Thread), gopool.Ticker(5))
 	queue.Handler(ft.invoke)
 	queue.SetErrHandler(func(err error) {
 		ft.Errorf(err.Error())
