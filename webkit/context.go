@@ -37,7 +37,11 @@ func (w *WebContext) IsAbort() bool {
 	return w.abort
 }
 
-func (w *WebContext) Abort(code int, format string, v ...any) {
+func (w *WebContext) SetAbort() {
+	w.abort = true
+}
+
+func (w *WebContext) AbortGo(code int, format string, v ...any) {
 	w.abort = true
 	w.session.Response.SetStatusCode(code)
 	w.session.Response.SetBodyString(fmt.Sprintf(format, v...))
