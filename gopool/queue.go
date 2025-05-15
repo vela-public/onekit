@@ -58,16 +58,17 @@ func (w *Worker[T]) handler(v T) error {
 }
 
 func (w *Worker[T]) run() {
+	tk := w.ref.NewTimeTicker()
+
 	defer func() {
 		if e := recover(); e != nil {
 			w.errorf("%v\n%s", e, libkit.StackTrace[string](1024, false))
 			w.flag = Panic
 		}
+		tk.Stop()
 		w.cancel()
 		w.ref.fsm.done()
-		w.ref.doAfter(&Packet[T]{
-			w: w,
-		})
+		w.ref.doAfter(&Packet[T]{w: w})
 	}()
 
 	w.ref.fsm.add(1)
@@ -79,6 +80,11 @@ func (w *Worker[T]) run() {
 			w.flag = Stop
 			w.errorf("queue.%d worker exit", w.id)
 			return
+		case <-tk.C:
+			err := w.ref.doTrigger(&Packet[T]{w: w})
+			if err != nil {
+				w.errorf("%v", err)
+			}
 		case t, ok := <-w.queue.ReadChan():
 			if !ok {
 				return
@@ -104,9 +110,18 @@ type Queue[T any] struct {
 		Cancel  context.CancelFunc
 		Error   func(error)
 		Handler func(*Packet[T]) error
-		After   func(*Packet[T])
+		After   func(*Packet[T]) error
+		Trigger func(*Packet[T]) error
 		Limit   *rate.Limiter
 	}
+}
+
+func (q *Queue[T]) NewTimeTicker() *time.Ticker {
+	if q.option.Ticker <= 0 {
+		return time.NewTicker(time.Second)
+	}
+
+	return time.NewTicker(time.Duration(q.option.Ticker) * time.Second)
 }
 
 func (q *Queue[T]) errorf(format string, v ...any) {
@@ -123,10 +138,22 @@ func (q *Queue[T]) NewExdata() any {
 	return q.option.Exdata()
 }
 
+func (q *Queue[T]) EveryTime(fn func(*Packet[T]) error) {
+	q.private.Trigger = fn
+}
+
 func (q *Queue[T]) doAfter(packet *Packet[T]) {
 	if q.private.After != nil {
-		q.private.After(packet)
+		err := q.private.After(packet)
+		q.errorf("%v", err)
 	}
+}
+
+func (q *Queue[T]) doTrigger(packet *Packet[T]) error {
+	if q.private.Trigger != nil {
+		return q.private.Trigger(packet)
+	}
+	return nil
 }
 
 func (q *Queue[T]) NewWorker(id int) *Worker[T] {
@@ -226,7 +253,7 @@ func (q *Queue[T]) Limit(n int) {
 	}
 }
 
-func (q *Queue[T]) After(fn func(packet *Packet[T])) {
+func (q *Queue[T]) After(fn func(packet *Packet[T]) error) {
 	q.private.After = fn
 }
 
@@ -245,7 +272,7 @@ func (q *Queue[T]) closeAll() {
 }
 
 func (q *Queue[T]) supervise() {
-	ticker := time.NewTicker(time.Duration(q.option.Tick) * time.Second)
+	ticker := time.NewTicker(time.Second)
 	defer func() {
 		ticker.Stop()
 		q.queue.Close()
@@ -273,7 +300,7 @@ func define[T any](parent context.Context, options ...func(option *Option)) *Que
 	opt := &Option{
 		Workers: 32,
 		Cache:   0,
-		Tick:    1,
+		Ticker:  1,
 	}
 
 	for _, fn := range options {

@@ -6,10 +6,10 @@ import (
 )
 
 type Option struct {
-	Workers int
-	Cache   int
-	Tick    int
-	Exdata  func() any
+	Workers int        // 进程数
+	Cache   int        // 缓存数
+	Ticker  int        // 定时器
+	Exdata  func() any // 扩展数据
 	Disk    struct {
 		Name              string
 		Path              string
@@ -44,7 +44,7 @@ func Cache(n int) func(option *Option) {
 
 func Ticker(n int) func(option *Option) {
 	return func(opt *Option) {
-		opt.Tick = n
+		opt.Ticker = n
 	}
 }
 
