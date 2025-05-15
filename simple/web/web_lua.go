@@ -3,7 +3,9 @@ package web
 import (
 	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/lua"
+	"github.com/vela-public/onekit/pipe"
 	"github.com/vela-public/onekit/treekit"
+	"github.com/vela-public/onekit/webkit"
 )
 
 func (hs *HttpSrv) Metadata() libkit.DataKV[string, any] {
@@ -20,6 +22,18 @@ func (hs *HttpSrv) RL(L *lua.LState) int {
 	return 1
 }
 
+func (hs *HttpSrv) beforeL(L *lua.LState) int {
+	sub := pipe.LuaLazyChain[*webkit.WebContext](L, pipe.LState(L), pipe.Seek(1))
+	hs.cnf.Before = sub
+	return 0
+}
+
+func (hs *HttpSrv) afterL(L *lua.LState) int {
+	sub := pipe.LuaLazyChain[*webkit.WebContext](L, pipe.LState(L), pipe.Seek(1))
+	hs.cnf.After = sub
+	return 0
+}
+
 func (hs *HttpSrv) Index(L *lua.LState, key string) lua.LValue {
 	switch key {
 	case "r":
@@ -32,6 +46,10 @@ func (hs *HttpSrv) Index(L *lua.LState, key string) lua.LValue {
 		return lua.NewFunction(hs.cnf.Router.NotFoundL)
 	case "pprof":
 		return lua.NewFunction(hs.cnf.Router.NewPprofL)
+	case "before":
+		return lua.NewFunction(hs.beforeL)
+	case "after":
+		return lua.NewFunction(hs.afterL)
 	}
 	return lua.LNil
 }

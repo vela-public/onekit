@@ -3,6 +3,7 @@ package web
 import (
 	"github.com/valyala/fasthttp"
 	"github.com/vela-public/onekit/treekit"
+	"github.com/vela-public/onekit/webkit"
 )
 
 type HttpSrv struct {
@@ -10,8 +11,11 @@ type HttpSrv struct {
 	srv *fasthttp.Server
 }
 
-func (hs *HttpSrv) HttpFunc(ctx *fasthttp.RequestCtx) {
-	hs.cnf.Router.HandlerFunc(ctx)
+func (hs *HttpSrv) HttpFunc(r *fasthttp.RequestCtx) {
+	ctx := webkit.NewWebContext(r)
+	hs.cnf.Before.Invoke(ctx)
+	hs.cnf.Router.HandlerFunc(r)
+	hs.cnf.After.Invoke(ctx)
 }
 
 func (hs *HttpSrv) Name() string {
