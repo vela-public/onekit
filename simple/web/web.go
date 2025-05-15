@@ -14,6 +14,10 @@ type HttpSrv struct {
 func (hs *HttpSrv) HttpFunc(r *fasthttp.RequestCtx) {
 	ctx := webkit.NewWebContext(r)
 	hs.cnf.Before.Invoke(ctx)
+	if ctx.IsAbort() {
+		return
+	}
+
 	hs.cnf.Router.HandlerFunc(r)
 	hs.cnf.After.Invoke(ctx)
 }

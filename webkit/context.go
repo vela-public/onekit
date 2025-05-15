@@ -14,6 +14,7 @@ type HandleFunc func(ctx *WebContext)
 
 type WebContext struct {
 	session *RequestCtx
+	abort   bool
 }
 
 func (w *WebContext) String() string                         { return fmt.Sprintf("http.context %p", w) }
@@ -31,6 +32,17 @@ func (w *WebContext) Bind(v any) error {
 func (w *WebContext) R() *fasthttp.RequestCtx {
 	return w.session
 }
+
+func (w *WebContext) IsAbort() bool {
+	return w.abort
+}
+
+func (w *WebContext) Abort(code int, format string, v ...any) {
+	w.abort = true
+	w.session.Response.SetStatusCode(code)
+	w.session.Response.SetBodyString(fmt.Sprintf(format, v...))
+}
+
 func (w *WebContext) UserValue(key string) any {
 	return w.session.UserValue(key)
 }
