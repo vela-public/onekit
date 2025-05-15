@@ -127,6 +127,17 @@ func (mt *MsTree) Remove(filter func(ms *MicroService) bool) {
 	mt.cache.data = mss
 }
 
+func (mt *MsTree) Close() error {
+	defer func() {
+		mt.private.cancel()
+	}()
+
+	mt.Remove(func(ms *MicroService) bool {
+		return true
+	})
+	return nil
+}
+
 func NewMicoSrvTree(parent context.Context, kit *luakit.Kit, option *MicroServiceOption) *MsTree {
 	ctx, cancel := context.WithCancel(parent)
 	tree := &MsTree{}
