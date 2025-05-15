@@ -52,6 +52,7 @@ func (w *Worker[T]) handler(v T) error {
 	w.ref.Wait()
 
 	return w.ref.private.Handler(&Packet[T]{
+		flag: 0,
 		Data: v,
 		w:    w,
 	})
@@ -68,7 +69,7 @@ func (w *Worker[T]) run() {
 		tk.Stop()
 		w.cancel()
 		w.ref.fsm.done()
-		w.ref.doAfter(&Packet[T]{w: w})
+		w.ref.doAfter(&Packet[T]{flag: 2, w: w})
 	}()
 
 	w.ref.fsm.add(1)
@@ -81,7 +82,7 @@ func (w *Worker[T]) run() {
 			w.errorf("queue.%d worker exit", w.id)
 			return
 		case <-tk.C:
-			err := w.ref.doTrigger(&Packet[T]{w: w})
+			err := w.ref.doTrigger(&Packet[T]{flag: 1, w: w})
 			if err != nil {
 				w.errorf("%v", err)
 			}
@@ -136,6 +137,12 @@ func (q *Queue[T]) NewExdata() any {
 		return nil
 	}
 	return q.option.Exdata()
+}
+
+func (q *Queue[T]) With(fn func(*Packet[T]) error) {
+	q.EveryTime(fn)
+	q.After(fn)
+	q.HandlerFuncE(fn)
 }
 
 func (q *Queue[T]) EveryTime(fn func(*Packet[T]) error) {
