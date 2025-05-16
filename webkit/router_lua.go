@@ -81,6 +81,8 @@ func (r *Router) Index(L *lua.LState, key string) lua.LValue {
 	switch key {
 	case "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE":
 		return lua.NewFunction(func(L *lua.LState) int { return r.NewExecL(L, key) })
+	case "ANY":
+		return lua.NewFunction(func(L *lua.LState) int { return r.NewExecL(L, "*") })
 	case "not_found":
 		return lua.NewFunction(r.NotFoundL)
 	case "on_panic":
