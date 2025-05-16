@@ -8,6 +8,7 @@ import (
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/luakit"
+	"net"
 )
 
 type HandleFunc func(ctx *WebContext)
@@ -52,15 +53,32 @@ func (w *WebContext) UserValue(key string) any {
 }
 
 func (w *WebContext) WriteString(s string) {
-	w.session.Response.SetBodyString(s)
+	wr := w.session.Response.BodyWriter()
+	dat := cast.S2B(s)
+	if len(dat) < 0 {
+		return
+	}
+	_, _ = wr.Write(dat)
 }
 
 func (w *WebContext) Write(data []byte) {
-	w.session.Response.SetBody(data)
+	wr := w.session.Response.BodyWriter()
+	if len(data) < 0 {
+		return
+	}
+	_, _ = wr.Write(data)
 }
 
 func (w *WebContext) H(key string, val string) {
 	w.session.Request.Header.Set(key, val)
+}
+
+func (w *WebContext) RemoteAddr() net.Addr {
+	return w.session.RemoteAddr()
+}
+
+func (w *WebContext) LocalAddr() net.Addr {
+	return w.session.RemoteAddr()
 }
 
 func (w *WebContext) SayJsonGo(code int, v any) {

@@ -40,7 +40,7 @@ func (hs *HttpSrv) Index(L *lua.LState, key string) lua.LValue {
 		return lua.NewFunction(hs.RL)
 	case "start":
 		return lua.NewFunction(hs.startL)
-	case "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE":
+	case "GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "CONNECT", "TRACE", "ANY":
 		return hs.cnf.Router.Index(L, key)
 	case "not_found":
 		return lua.NewFunction(hs.cnf.Router.NotFoundL)
