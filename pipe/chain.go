@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/vela-public/onekit/cond"
 	"github.com/vela-public/onekit/errkit"
+	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/todo"
 )
 
@@ -107,6 +108,11 @@ func (c *Chain) Invoke(v ...any) *Context {
 		data: v,
 		errs: errkit.Errors(),
 	}
+	defer func() {
+		if e := recover(); e != nil {
+			c.error(fmt.Errorf("pipe invoke panic %v\n%s", e, libkit.StackTrace[string](4096, true)))
+		}
+	}()
 
 	sz := len(c.handle)
 	if sz == 0 {
