@@ -3,6 +3,7 @@ package render
 import (
 	"github.com/valyala/fasttemplate"
 	"github.com/vela-public/onekit/cast"
+	"github.com/vela-public/onekit/jsonkit"
 	"github.com/vela-public/onekit/lua"
 	"io"
 	"strings"
@@ -113,6 +114,27 @@ func Extract(v any, env *Env) func(string) (string, bool) {
 	case *lua.LTable:
 		return func(name string) (string, bool) {
 			vv := vt.RawGet(lua.S2L(name))
+			if vv == nil || vv.Type() == lua.LTNil {
+				return "", false
+			}
+			return vv.String(), true
+		}
+	case string:
+		f := jsonkit.FastJSON{}
+		f.ParseText(vt)
+		return func(name string) (string, bool) {
+			vv := f.Index(env.LState, name)
+			if vv == nil || vv.Type() == lua.LTNil {
+				return "", false
+			}
+			return vv.String(), true
+		}
+
+	case []byte:
+		f := jsonkit.FastJSON{}
+		f.ParseText(cast.B2S(vt))
+		return func(name string) (string, bool) {
+			vv := f.Index(env.LState, name)
 			if vv == nil || vv.Type() == lua.LTNil {
 				return "", false
 			}
