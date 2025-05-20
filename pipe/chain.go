@@ -110,7 +110,7 @@ func (c *Chain) Invoke(v ...any) *Context {
 	}
 	defer func() {
 		if e := recover(); e != nil {
-			c.error(fmt.Errorf("pipe invoke panic %v\n%s", e, libkit.StackTrace[string](4096, true)))
+			fmt.Printf("pipe invoke panic %v\n%s", e, libkit.StackTrace[string](4096, true))
 		}
 	}()
 
