@@ -65,6 +65,7 @@ func Open(path string, mode os.FileMode, options *bbolt.Options) (*bbolt.DB, err
 }
 
 type Setting struct {
+	Names   []string
 	Mode    os.FileMode
 	Options *bbolt.Options
 }
@@ -85,5 +86,9 @@ func OpenBkt[T any](path string, options ...func(*Setting)) (*Bucket[T], error) 
 	if err != nil {
 		return nil, err
 	}
-	return Pack[T](db), nil
+
+	if len(setting.Names) <= 0 {
+		setting.Names = []string{"DB_ADMIN"}
+	}
+	return Pack[T](db, setting.Names...), nil
 }
