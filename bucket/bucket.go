@@ -63,3 +63,27 @@ func Bkt2B(b *bbolt.Bucket, name []byte, readonly bool) (*bbolt.Bucket, error) {
 func Open(path string, mode os.FileMode, options *bbolt.Options) (*bbolt.DB, error) {
 	return bbolt.Open(path, mode, options)
 }
+
+type Setting struct {
+	Mode    os.FileMode
+	Options *bbolt.Options
+}
+
+func OpenBkt[T any](path string, options ...func(*Setting)) (*Bucket[T], error) {
+	var setting Setting
+	for _, opt := range options {
+		opt(&setting)
+	}
+	if setting.Mode == 0 {
+		setting.Mode = 0644
+	}
+	if setting.Options == nil {
+		setting.Options = Default
+	}
+
+	db, err := Open(path, setting.Mode, setting.Options)
+	if err != nil {
+		return nil, err
+	}
+	return Pack[T](db), nil
+}

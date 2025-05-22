@@ -135,7 +135,7 @@ func (d *DataKV[K, V]) Del(key K) {
 	for i := 0; i < n; i++ {
 		kv := &a[i]
 		if Equal(kv.Key, key) {
-			a = append(a[:i], a[:i+1]...)
+			a = append(a[:i], a[i+1:]...)
 			goto DONE
 		}
 	}
