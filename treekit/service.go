@@ -420,6 +420,11 @@ func (ms *MicroService) have(name string) (*Process, bool) {
 
 func (ms *MicroService) Create(L *lua.LState, name string, typeof string) *Process {
 
+	if err := Name(name); err != nil {
+		L.RaiseError("%v", err)
+		return nil
+	}
+
 	sz := len(ms.processes.data)
 	var pro *Process
 	for i := 0; i < sz; i++ {
