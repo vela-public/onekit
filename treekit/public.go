@@ -35,7 +35,7 @@ func Name(v string) error {
 		return fmt.Errorf("too short name got:%s", v)
 	}
 
-	if !alphabet(v[0]) {
+	if ch := v[0]; !alphabet(ch) && ch != '_' && ch != '/' {
 		return fmt.Errorf("first char must be a-z or A-Z got:%v", string(v[0]))
 	}
 
