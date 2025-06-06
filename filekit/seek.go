@@ -29,13 +29,6 @@ func (s *SeekDB) Find(file string) (int64, error) {
 	return seek, nil
 }
 
-func NewSeekDB(db *bbolt.DB, bucket ...string) *SeekDB {
-	return &SeekDB{
-		db:     db,
-		bucket: bucket,
-	}
-}
-
 type SeekMem struct {
 	seek map[string]int64
 }

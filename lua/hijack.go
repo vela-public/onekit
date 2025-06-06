@@ -55,7 +55,7 @@ func (fsm *CallFrameFSM) NewIndex(hook func(*LState, string, LValue)) bool {
 }
 
 func (fsm *CallFrameFSM) NewMeta(hook func(*LState, LValue, LValue)) bool {
-	if fsm.op != OP_SETTABLEKS {
+	if fsm.op != OP_SETTABLE {
 		return false
 	}
 	B := int(fsm.inst & 0x1ff)    //GETB
