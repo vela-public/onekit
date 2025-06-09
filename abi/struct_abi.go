@@ -201,8 +201,7 @@ type StructInstance struct {
 }
 
 func (s *StructInstance) String() string {
-	text, _ := s.ToJSON()
-	return lua.B2S(text)
+	return lua.B2S(s.buffer)
 }
 
 func (s *StructInstance) Type() lua.LValueType                   { return lua.LTObject }
