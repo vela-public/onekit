@@ -75,7 +75,7 @@ func (b *StructBuilder) FinalizeL(L *lua.LState) int {
 	}
 
 	L.Push(s)
-	return 0
+	return 1
 }
 
 func (b *StructBuilder) fillL(L *lua.LState) int {
