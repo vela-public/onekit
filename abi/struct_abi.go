@@ -307,13 +307,47 @@ func toKind(t string) Kind {
 	}
 }
 
+func (b *StructBuilder) FromTexT(raw []byte) (*StructInstance, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if b.finalized {
+		if len(raw) != b.size {
+			return nil, errors.New("mismatch builder size and raw size")
+		}
+		return &StructInstance{layout: b, buffer: raw}, nil
+	}
+
+	offset := 0
+	maxAlign := 1
+	for i := range b.attributes {
+		a := &b.attributes[i]
+		if !b.packed {
+			offset = alignUp(offset, a.Align)
+		}
+		a.Offset = offset
+		offset += a.Size
+		if a.Align > maxAlign {
+			maxAlign = a.Align
+		}
+	}
+	if !b.packed {
+		offset = alignUp(offset, maxAlign)
+	}
+	b.size = offset
+	b.align = maxAlign
+	b.finalized = true
+	return &StructInstance{layout: b, buffer: make([]byte, offset)}, nil
+}
+
 func (b *StructBuilder) Finalize() (*StructInstance, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	if b.finalized {
-		return nil, errors.New("already finalized")
+		return &StructInstance{layout: b, buffer: make([]byte, b.size)}, nil
 	}
+
 	offset := 0
 	maxAlign := 1
 	for i := range b.attributes {
@@ -425,6 +459,10 @@ func (s *StructInstance) GetText(name string) (string, error) {
 	}
 	raw := s.buffer[attr.Offset : attr.Offset+attr.Memory.Len]
 	return cast.B2S(raw), nil
+}
+
+func (s *StructInstance) Fill(b []byte) error {
+
 }
 
 func (s *StructInstance) GetStruct(name string) (*StructInstance, error) {
