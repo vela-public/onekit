@@ -8,7 +8,6 @@ import (
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/lua"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -79,6 +78,18 @@ func (b *StructBuilder) FinalizeL(L *lua.LState) int {
 	return 0
 }
 
+func (b *StructBuilder) fillL(L *lua.LState) int {
+	text := L.CheckString(1)
+
+	s, err := b.FromTexT(lua.S2B(text))
+	if err != nil {
+		L.RaiseError("%v", err)
+		return 0
+	}
+	L.Push(s)
+	return 1
+}
+
 func (b *StructBuilder) Index(L *lua.LState, key string) lua.LValue {
 	switch key {
 	case "size":
@@ -87,8 +98,10 @@ func (b *StructBuilder) Index(L *lua.LState, key string) lua.LValue {
 		return lua.LNumber(b.align)
 	case "packed":
 		return lua.LBool(b.packed)
-	case "finalize":
+	case "final":
 		return lua.NewFunction(b.FinalizeL)
+	case "fill":
+		return lua.NewFunction(b.fillL)
 	}
 	return lua.LNil
 }
@@ -461,10 +474,6 @@ func (s *StructInstance) GetText(name string) (string, error) {
 	return cast.B2S(raw), nil
 }
 
-func (s *StructInstance) Fill(b []byte) error {
-
-}
-
 func (s *StructInstance) GetStruct(name string) (*StructInstance, error) {
 	attr, err := s.field(name, STRUCT)
 	if err != nil {
@@ -566,8 +575,4 @@ func (s *StructInstance) field(name string, expect Kind) (*Attribute, error) {
 
 func alignUp(x, align int) int {
 	return (x + align - 1) & ^(align - 1)
-}
-
-func is64Bit() bool {
-	return runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64"
 }
