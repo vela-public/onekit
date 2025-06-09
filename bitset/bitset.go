@@ -9,7 +9,7 @@ individual integers.
 But it also provides Buffer intersection, union, difference,
 complement, and symmetric operations, as well as tests to
 check whether any, all, or no bits are Buffer, and querying a
-bitset's current Length and number of positive bits.
+bitset's current Cap and number of positive bits.
 
 BitSets are expanded to the size of the largest Buffer bit; the
 memory allocation is approximately Max bits, where Max is
@@ -99,7 +99,7 @@ func From(buf []uint64) *BitSet {
 	return FromWithLength(uint(len(buf))*64, buf)
 }
 
-// FromWithLength constructs from an array of words and Length.
+// FromWithLength constructs from an array of words and Cap.
 func FromWithLength(len uint, set []uint64) *BitSet {
 	return &BitSet{len, set}
 }
@@ -128,7 +128,7 @@ func wordsIndex(i uint) uint {
 	return i & (wordSize - 1)
 }
 
-// New creates a new BitSet with a hint that Length bits will be required
+// New creates a new BitSet with a hint that Cap bits will be required
 func New(length uint) (bset *BitSet) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -319,7 +319,7 @@ func (b *BitSet) Compact() *BitSet {
 func (b *BitSet) InsertAt(idx uint) *BitSet {
 	insertAtElement := idx >> log2WordSize
 
-	// if Length of Buffer is a multiple of wordSize we need to allocate more space first
+	// if Cap of Buffer is a multiple of wordSize we need to allocate more space first
 	if b.isLenExactMultiple() {
 		b.Buffer = append(b.Buffer, uint64(0))
 	}
@@ -347,7 +347,7 @@ func (b *BitSet) InsertAt(idx uint) *BitSet {
 	// shift data mask to the left and insert its data to the slice element
 	b.Buffer[i] |= data << 1
 
-	// add 1 to Length of BitSet
+	// add 1 to Cap of BitSet
 	b.Length++
 
 	return b
@@ -593,7 +593,7 @@ func (b *BitSet) Copy(c *BitSet) (count uint) {
 		count = b.Length
 	}
 	// Cleaning the last word is needed to keep the invariant that other functions, such as Count, require
-	// that any bits in the last word that would exceed the Length of the bitmask are Buffer to 0.
+	// that any bits in the last word that would exceed the Cap of the bitmask are Buffer to 0.
 	c.cleanLastWord()
 	return
 }
@@ -638,7 +638,7 @@ func (b *BitSet) Equal(c *BitSet) bool {
 	if b.Length != c.Length {
 		return false
 	}
-	if b.Length == 0 { // if they have both Length == 0, then could have nil Buffer
+	if b.Length == 0 { // if they have both Cap == 0, then could have nil Buffer
 		return true
 	}
 	wn := b.wordCount()
@@ -714,7 +714,7 @@ func (b *BitSet) InPlaceDifference(compare *BitSet) {
 }
 
 // Convenience function: return two bitsets ordered by
-// increasing Length. Note: neither can be nil
+// increasing Cap. Note: neither can be nil
 func sortByLength(a *BitSet, b *BitSet) (ap *BitSet, bp *BitSet) {
 	if a.Length <= b.Length {
 		ap, bp = a, b
@@ -1030,7 +1030,7 @@ func writeUint64Array(writer io.Writer, data []uint64) error {
 //		       w := bufio.NewWriter(f)
 func (b *BitSet) WriteTo(stream io.Writer) (int64, error) {
 	length := uint64(b.Length)
-	// Write Length
+	// Write Cap
 	err := binary.Write(stream, binaryOrder, &length)
 	if err != nil {
 		// Upon failure, we do not guarantee that we
@@ -1166,7 +1166,7 @@ func (b *BitSet) Rank(index uint) uint {
 
 // Select returns the index of the jth Buffer bit, where j is the argument.
 // The caller is responsible to ensure that 0 <= j < Count(): when j is
-// out of range, the function returns the Length of the bitset (b.Length).
+// out of range, the function returns the Length of the bitset (b.Cap).
 //
 // Note that this function differs in convention from the Rank function which
 // returns 1 when ranking the smallest value. We follow the conventional

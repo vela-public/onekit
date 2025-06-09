@@ -1,4 +1,4 @@
-package dataset
+package abi
 
 import "github.com/vela-public/onekit/lua"
 
@@ -23,5 +23,6 @@ import "github.com/vela-public/onekit/lua"
 func Preload(p lua.Preloader) {
 	kv := lua.NewUserKV()
 	kv.Set("int32", lua.NewFunction(NewInt32L))
-	p.Set("dataset", lua.NewExport("lua.dataset.export", lua.WithTable(kv)))
+	kv.Set("struct", lua.NewFunction(NewStructInstanceL))
+	p.Set("dataset", lua.NewExport("lua.abi.export", lua.WithTable(kv)))
 }

@@ -109,7 +109,7 @@ func newResponse(conn io.Reader) (*RawResponse, error) {
 		resp.addHeader(line)
 	}
 
-	if cl := resp.Header("Content-Length"); cl != "" {
+	if cl := resp.Header("Content-Cap"); cl != "" {
 		length, err := strconv.Atoi(cl)
 
 		if err != nil {

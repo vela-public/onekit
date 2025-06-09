@@ -132,7 +132,7 @@ func (r *Response) ReceivedAt() time.Time {
 	return r.receivedAt
 }
 
-// Size method returns the HTTP response size in bytes. Ya, you can relay on HTTP `Content-Length` header,
+// Size method returns the HTTP response size in bytes. Ya, you can relay on HTTP `Content-Cap` header,
 // however it won't be good for chucked transfer/compressed response. Since Resty calculates response size
 // at the client end. You will get actual size of the http response.
 func (r *Response) Size() int64 {

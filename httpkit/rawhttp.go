@@ -319,9 +319,9 @@ func (hp *HTTPParser) Host() []byte {
 	return hp.host
 }
 
-var cContentLength = []byte("Content-Length")
+var cContentLength = []byte("Content-Cap")
 
-// Return the value of the Content-Length header.
+// Return the value of the Content-Cap header.
 // A value of -1 indicates the header was not set.
 func (hp *HTTPParser) ContentLength() int64 {
 	if hp.contentLengthRead {

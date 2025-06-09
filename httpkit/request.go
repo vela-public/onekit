@@ -440,8 +440,8 @@ func (r *Request) SetMultipartFields(fields ...*MultipartField) *Request {
 	return r
 }
 
-// SetContentLength method sets the HTTP header `Content-Length` value for current request.
-// By default Resty won't set `Content-Length`. Also you have an option to enable for every
+// SetContentLength method sets the HTTP header `Content-Cap` value for current request.
+// By default Resty won't set `Content-Cap`. Also you have an option to enable for every
 // request.
 //
 // See `Client.SetContentLength`

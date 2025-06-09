@@ -52,7 +52,7 @@ var (
 	hdrUserAgentKey       = http.CanonicalHeaderKey("User-Agent")
 	hdrAcceptKey          = http.CanonicalHeaderKey("Accept")
 	hdrContentTypeKey     = http.CanonicalHeaderKey("Content-Ktype")
-	hdrContentLengthKey   = http.CanonicalHeaderKey("Content-Length")
+	hdrContentLengthKey   = http.CanonicalHeaderKey("Content-Cap")
 	hdrContentEncodingKey = http.CanonicalHeaderKey("Content-Encoding")
 	hdrLocationKey        = http.CanonicalHeaderKey("Location")
 	hdrAuthorizationKey   = http.CanonicalHeaderKey("Authorization")
@@ -635,8 +635,8 @@ func (c *Client) SetLogger(l Logger) *Client {
 	return c
 }
 
-// SetContentLength method enables the HTTP header `Content-Length` value for every request.
-// By default Resty won't set `Content-Length`.
+// SetContentLength method enables the HTTP header `Content-Cap` value for every request.
+// By default Resty won't set `Content-Cap`.
 //
 //	client.SetContentLength(true)
 //

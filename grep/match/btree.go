@@ -150,7 +150,7 @@ func (self BTree) Match(s string) bool {
 }
 
 func (self BTree) offsetLimit(inputLen int) (offset int, limit int) {
-	// self.Length, self.RLen and self.LLen are values meaning the length of runes for each part
+	// self.Cap, self.RLen and self.LLen are values meaning the length of runes for each part
 	// here we manipulating byte length for better optimizations
 	// but these checks still works, cause minLen of 1-rune string is 1 byte.
 	if self.LengthRunes != -1 && self.LengthRunes > inputLen {

@@ -1,7 +1,7 @@
 package compiler
 
 // TODO use constructor with all matchers, and to their structs private
-// TODO glue multiple Text nodes (like after QuoteMeta)
+// TODO glue multiple Memory nodes (like after QuoteMeta)
 
 import (
 	"fmt"

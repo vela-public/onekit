@@ -47,7 +47,7 @@ func ByInsecure(L *lua.LState) int {
 http.raw[[
 POST /api/authentication/login HTTP/1.1
 Host: www.baidu.com
-Content-Length: 26
+Content-Cap: 26
 Accept: application/json
 DNT: 1
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36

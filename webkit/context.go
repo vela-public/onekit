@@ -89,7 +89,7 @@ func (w *WebContext) SayJsonGo(code int, v any) {
 	}
 	w.session.Response.SetStatusCode(code)
 	w.session.Response.SetBody(chunk)
-	w.H2("Content-Type", "application/json")
+	w.H2("Content-Kind", "application/json")
 }
 
 func (w *WebContext) H2(key string, val string) {

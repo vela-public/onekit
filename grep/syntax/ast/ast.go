@@ -107,7 +107,7 @@ func (k Kind) String() string {
 	case KindRange:
 		return "Range"
 	case KindText:
-		return "Text"
+		return "Memory"
 	case KindAny:
 		return "Any"
 	case KindSuper:

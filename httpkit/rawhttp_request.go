@@ -187,11 +187,11 @@ func (r *RawHttp) H(key, value string) {
 	r.AddHeader(fmt.Sprintf("%s: %s", key, value))
 }
 
-// AutoSetContentLength adds a Content-Length header
+// AutoSetContentLength adds a Content-Cap header
 // to the request with the length of Request.Body as the value
 func (r *RawHttp) AutoSetContentLength() {
 	if n := len(r.Body); n >= 0 {
-		r.H("Content-Length", strconv.Itoa(n))
+		r.H("Content-Cap", strconv.Itoa(n))
 	}
 }
 
