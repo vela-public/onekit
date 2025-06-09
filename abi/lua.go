@@ -24,5 +24,5 @@ func Preload(p lua.Preloader) {
 	kv := lua.NewUserKV()
 	kv.Set("int32", lua.NewFunction(NewInt32L))
 	kv.Set("struct", lua.NewFunction(NewStructInstanceL))
-	p.Set("dataset", lua.NewExport("lua.abi.export", lua.WithTable(kv)))
+	p.Set("abi", lua.NewExport("lua.abi.export", lua.WithTable(kv)))
 }
