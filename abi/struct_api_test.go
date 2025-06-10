@@ -8,11 +8,11 @@ import (
 type A struct {
 	age   int32
 	name  [12]byte
-	score int32
+	score float32
 }
 
 func (a *A) print() {
-	fmt.Printf("age:%d score:%d name:%s\n", a.age, a.score, BytesToCleanString(a.name[:]))
+	fmt.Printf("age:%d score:%f name:%s\n", a.age, a.score, BytesToCleanString(a.name[:]))
 }
 
 func TestABI(t *testing.T) {
@@ -20,12 +20,12 @@ func TestABI(t *testing.T) {
 
 	_ = bu.Define("age:int32")
 	_ = bu.Define("name:text(12)")
-	_ = bu.Define("score:int32")
+	_ = bu.Define("score:float32")
 
 	s, _ := bu.Finalize()
 
 	_ = s.SetInt32("age", 12)
-	_ = s.SetInt32("score", 100)
+	_ = s.SetFloat32("score", 95.5)
 	_ = s.SetText("name", "hello world")
 
 	t.Logf("%#v", s.ToMap())

@@ -70,7 +70,7 @@ func (b *StructBuilder) DefineL(L *lua.LState) int {
 	return 0
 }
 
-func (b *StructBuilder) FinalizeL(L *lua.LState) int {
+func (b *StructBuilder) finalizeL(L *lua.LState) int {
 	s, err := b.Finalize()
 	if err != nil {
 		L.RaiseError("%v", err)
@@ -102,7 +102,7 @@ func (b *StructBuilder) Index(L *lua.LState, key string) lua.LValue {
 	case "packed":
 		return lua.LBool(b.packed)
 	case "final":
-		return lua.NewFunction(b.FinalizeL)
+		return lua.NewFunction(b.finalizeL)
 	case "fill":
 		return lua.NewFunction(b.fillL)
 	}
