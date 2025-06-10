@@ -11,6 +11,10 @@ type A struct {
 	score int32
 }
 
+func (a *A) print() {
+	fmt.Printf("age:%d score:%d name:%s\n", a.age, a.score, BytesToCleanString(a.name[:]))
+}
+
 func TestABI(t *testing.T) {
 	bu := NewStructBuilder(false)
 
@@ -31,6 +35,5 @@ func TestABI(t *testing.T) {
 		t.Error("cast error")
 	}
 
-	fmt.Printf("age:%d score:%d name:%s\n", cdata.age, cdata.score, BytesToCleanString(cdata.name[:]))
-
+	cdata.print()
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/lua"
+	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -19,6 +20,8 @@ type Kind int
 const (
 	INT32 Kind = iota
 	INT64
+	FLOAT32
+	FLOAT64
 	BOOL
 	TEXT
 	STRUCT
@@ -174,6 +177,10 @@ func (b *StructBuilder) Define(descriptor string) error {
 	switch kind {
 	case "int32":
 		size, align = 4, 4
+	case "float32":
+		size, align = 4, 4
+	case "float64":
+		size, align = 8, 8
 	case "int64":
 		size, align = 8, 8
 	case "bool":
@@ -265,6 +272,24 @@ func (s *StructInstance) NewIndex(L *lua.LState, key string, val lua.LValue) {
 				L.RaiseError("set field %q failed: %v", key, err)
 				return
 			}
+		case FLOAT32:
+			f32, ok := lua.Must[float32](val)
+			if !ok {
+				L.RaiseError("invalid value for field %q", key)
+				return
+			}
+			bits := math.Float32bits(f32)
+			binary.LittleEndian.PutUint32(s.buffer[attr.Offset:], bits)
+			return
+		case FLOAT64:
+			f64, ok := lua.Must[float64](val)
+			if !ok {
+				L.RaiseError("invalid value for field %q", key)
+				return
+			}
+			bits := math.Float64bits(f64)
+			binary.LittleEndian.PutUint64(s.buffer[attr.Offset:], bits)
+			return
 
 		case BOOL:
 			b, ok := lua.Must[bool](val)
@@ -314,6 +339,14 @@ func toKind(t string) Kind {
 		return INT64
 	case "bool":
 		return BOOL
+	case "text":
+		return TEXT
+	case "struct":
+		return STRUCT
+	case "float32":
+		return FLOAT32
+	case "float64":
+		return FLOAT64
 	default:
 		return -1
 	}
@@ -397,6 +430,26 @@ func (s *StructInstance) SetInt64(name string, val int64) error {
 		return err
 	}
 	binary.LittleEndian.PutUint64(s.buffer[attr.Offset:], uint64(val))
+	return nil
+}
+
+func (s *StructInstance) SetFloat32(name string, float322 float32) error {
+	attr, err := s.field(name, FLOAT32)
+	if err != nil {
+		return err
+	}
+	bits := math.Float32bits(float322)
+	binary.LittleEndian.PutUint32(s.buffer[attr.Offset:], bits)
+	return nil
+}
+
+func (s *StructInstance) SetFloat64(name string, float642 float64) error {
+	attr, err := s.field(name, FLOAT64)
+	if err != nil {
+		return err
+	}
+	bits := math.Float64bits(float642)
+	binary.LittleEndian.PutUint64(s.buffer[attr.Offset:], bits)
 	return nil
 }
 
@@ -506,6 +559,8 @@ func (s *StructInstance) ToMap() map[string]interface{} {
 		case STRUCT:
 			sub := &StructInstance{layout: attr.Nested, buffer: s.buffer[attr.Offset : attr.Offset+attr.Size]}
 			m[attr.Name] = sub.ToMap()
+		default:
+			//todo
 		}
 	}
 	return m
