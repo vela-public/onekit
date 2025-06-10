@@ -104,6 +104,8 @@ func HijackTable(fsm *CallFrameFSM) bool {
 		switch dat := data.(type) {
 		case IndexType:
 			return fsm.Index(dat.Index)
+		case MetaTableType:
+			return fsm.Index(dat.MetaTable)
 		case Getter:
 			return fsm.Index(func(_ *LState, key string) LValue {
 				return ReflectTo(dat.Getter(key))
@@ -111,6 +113,9 @@ func HijackTable(fsm *CallFrameFSM) bool {
 		default:
 			if da, ok := v.(IndexOfType); ok {
 				return fsm.Index(da.IndexOf)
+			}
+			if da, ok := v.(MetaTableOfType); ok {
+				return fsm.Index(da.MetaTableOf)
 			}
 			return v.Hijack(fsm)
 		}

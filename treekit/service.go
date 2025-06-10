@@ -3,6 +3,7 @@ package treekit
 import (
 	"context"
 	"fmt"
+	"github.com/vela-public/onekit/datalog"
 	"github.com/vela-public/onekit/errkit"
 	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/lua"
@@ -142,6 +143,9 @@ func (ms *MicroService) build() {
 	ms.Preload(kit)
 	ms.private.LState = kit.NewState(ctx, ms.Key(), func(option *lua.Options) {
 		option.Exdata = ms
+		option.ErrHandle = func(err error) {
+			datalog.Err(ms.Key())("%v", err)
+		}
 	})
 
 	ms.set(Register)

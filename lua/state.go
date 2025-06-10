@@ -111,6 +111,8 @@ type Options struct {
 	MinimizeStackMemory bool
 	//private data object
 	Exdata any
+	//
+	ErrHandle func(error)
 }
 
 /* }}} */
