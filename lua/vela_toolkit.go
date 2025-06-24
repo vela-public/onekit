@@ -257,6 +257,12 @@ func Must[T any](lv LValue) (T, bool) {
 		}
 		return any(false).(T), true
 	default:
+		if pkt, packed := lv.(PackType); packed {
+			vt, ok = pkt.Unpack().(T)
+			if ok {
+				return vt, true
+			}
+		}
 		return vt, false
 	}
 
