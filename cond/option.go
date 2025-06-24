@@ -22,9 +22,9 @@ type option struct {
 	payload   func(int, string)
 }
 
-func Seek(i int) OptionFunc {
+func Seek(seek int) OptionFunc {
 	return func(o *option) {
-		o.seek = i
+		o.seek = seek
 	}
 }
 

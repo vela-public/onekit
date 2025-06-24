@@ -40,6 +40,7 @@ func (s *Switch) OneL(L *lua.LState) int {
 	s.Break = true
 	return s.push(L)
 }
+
 func (s *Switch) DefaultL(L *lua.LState) int {
 	s.Default = Lua(L, LState(L))
 	return s.push(L)

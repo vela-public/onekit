@@ -540,6 +540,7 @@ func (s *StructInstance) GetBytes(name string) ([]byte, error) {
 			return s.buffer[attr.Offset : attr.Offset+attr.Size], nil
 		}
 	}
+
 	return nil, fmt.Errorf("field %q not found", name)
 }
 

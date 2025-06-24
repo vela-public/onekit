@@ -216,6 +216,31 @@ func (s *Section) withB(offset *int, n int) {
 		return
 	}
 
+	em = s.raw[sep : sep+6] //prefix, suffix
+	switch em {
+	case "prefix":
+		s.method = Prefix
+		*offset = sep + 6
+		return
+	case "suffix":
+		s.method = Suffix
+		*offset = sep + 6
+		return
+	}
+
+	em = s.raw[sep : sep+7] //prefix, suffix
+	switch em {
+	case "iprefix":
+		s.method = Prefix
+		s.iCase = true
+		*offset = sep + 7
+		return
+	case "isuffix":
+		s.method = Suffix
+		s.iCase = true
+		*offset = sep + 7
+		return
+	}
 }
 
 func (s *Section) withC(offset *int, n int) {
@@ -321,6 +346,21 @@ func (s *Section) compare(a string, b string) bool {
 		goto done
 	case Gt:
 		result = cast.ToFloat64(a) > cast.ToFloat64(b)
+		goto done
+	case Prefix:
+		if s.iCase {
+			result = strings.HasPrefix(strings.ToLower(a), strings.ToLower(b))
+			goto done
+		}
+
+		result = strings.HasPrefix(a, b)
+		goto done
+	case Suffix:
+		if s.iCase {
+			result = strings.HasSuffix(strings.ToLower(a), strings.ToLower(b))
+			goto done
+		}
+		result = strings.HasSuffix(a, b)
 		goto done
 	case Unary:
 		switch a {
@@ -652,7 +692,7 @@ func (s *Section) compile() {
 
 func NewSectionText(raw string) (section *Section) {
 	section = &Section{
-		raw:       strings.ToLower(strings.TrimSpace(raw)),
+		raw:       strings.TrimSpace(raw),
 		method:    Oop,
 		partition: -1,
 	}
@@ -671,7 +711,7 @@ func NewSectionText(raw string) (section *Section) {
 
 func NewSectionGoFunc(L *lua.LState, invoke func(interface{}, ...OptionFunc) bool) (section *Section) {
 	section = &Section{
-		raw:       strings.ToLower(strings.TrimSpace(L.String())),
+		raw:       strings.TrimSpace(L.String()),
 		method:    Fn,
 		partition: -1,
 	}
@@ -681,7 +721,7 @@ func NewSectionGoFunc(L *lua.LState, invoke func(interface{}, ...OptionFunc) boo
 
 func NewSectionLFunc(L *lua.LState, fn *lua.LFunction) (section *Section) {
 	section = &Section{
-		raw:       strings.ToLower(fn.String()),
+		raw:       fn.String(),
 		method:    Fn,
 		partition: -1,
 	}

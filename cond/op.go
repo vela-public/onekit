@@ -16,6 +16,8 @@ const (
 	Regex
 	Cidr
 	Fn
+	Prefix
+	Suffix
 )
 
 var (
