@@ -195,14 +195,31 @@ func MustBeNumber[T Number](lv LValue) (vt T, ok bool) {
 	}
 }
 
-func Must[T any](lv LValue) (T, bool) {
-	vt, ok := lv.(T)
+func maybe[T any](v any) (T, bool) {
+
+	t, ok := v.(T)
 	if ok {
-		return vt, true
+		return t, true
 	}
 
-	if ptr, yes := any(lv).(*T); yes {
+	if ptr, yes := v.(*T); yes {
 		return *ptr, true
+	}
+
+	if dat, yes := v.(PackType); yes {
+		return maybe[T](dat.Unpack())
+	}
+
+	return t, false
+}
+
+func Must[T any](lv LValue) (T, bool) {
+	var vt T
+	var ok bool
+
+	vt, ok = maybe[T](lv)
+	if ok {
+		return vt, true
 	}
 
 	switch any(vt).(type) {
@@ -257,12 +274,6 @@ func Must[T any](lv LValue) (T, bool) {
 		}
 		return any(false).(T), true
 	default:
-		if pkt, packed := lv.(PackType); packed {
-			vt, ok = pkt.Unpack().(T)
-			if ok {
-				return vt, true
-			}
-		}
 		return vt, false
 	}
 
