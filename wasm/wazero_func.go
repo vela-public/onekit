@@ -70,7 +70,7 @@ func (fn *Function) Write(buff []byte) (int, error) {
 		return 0, fmt.Errorf("not found data type")
 	}
 
-	ctx := fn.handle.Invoke(data)
+	ctx := fn.handle.InvokeGo(data)
 	if e := ctx.UnwrapErr(); e != nil {
 		return 0, e
 	}
