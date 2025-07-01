@@ -9,7 +9,6 @@ import (
 
 type SwitchHandler interface {
 	Execute(c *Catalog)
-	//Case(idx int, cnd *cond.Cond, v any, more ...func(*Catalog)) *Catalog
 	NewHandler(v any, options ...func(*HandleEnv)) (r todo.Result[*Handler, error])
 }
 
@@ -20,7 +19,7 @@ type Case struct {
 	Debug SwitchHandler
 }
 
-func (c *Case) String() string                         { return fmt.Sprintf("switch.case(%s)", c.Cnd) }
+func (c *Case) String() string                         { return fmt.Sprintf("switch.case(%s)", c.Cnd.String()) }
 func (c *Case) Type() lua.LValueType                   { return lua.LTObject }
 func (c *Case) AssertFloat64() (float64, bool)         { return 0, false }
 func (c *Case) AssertString() (string, bool)           { return c.Cnd.String(), true }

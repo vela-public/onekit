@@ -94,7 +94,7 @@ func (h *Handler) Invoke(a *Catalog) error {
 	return h.invoke(a)
 }
 
-func InvokerFunc(h *Handler, v any) {
+func NewInvokerFunc(h *Handler, v any) {
 	switch vt := v.(type) {
 	case *Handler:
 		h.invoke = func(a *Catalog) error {
@@ -108,6 +108,7 @@ func InvokerFunc(h *Handler, v any) {
 		h.invoke = func(c *Catalog) error {
 			return vt.InvokeGo(c).UnwrapErr()
 		}
+
 	case *Switch:
 		h.invoke = func(c *Catalog) error {
 			vt.Invoke(c, func(cc *Catalog) {
@@ -115,6 +116,7 @@ func InvokerFunc(h *Handler, v any) {
 			})
 			return nil
 		}
+
 	case Invoker:
 		h.invoke = h.SafeCall(func(c *Catalog) error {
 			return h.Call(vt.Invoke, c)
@@ -146,13 +148,13 @@ func InvokerFunc(h *Handler, v any) {
 		}
 
 	case *lua.LUserData:
-		InvokerFunc(h, vt.Value)
+		NewInvokerFunc(h, vt.Value)
 
 	case lua.GenericType:
-		InvokerFunc(h, vt.Unpack())
+		NewInvokerFunc(h, vt.Unpack())
 
 	case lua.PackType:
-		InvokerFunc(h, vt.Unpack())
+		NewInvokerFunc(h, vt.Unpack())
 
 	default:
 		h.info = fmt.Errorf("not compatible %T", v)
@@ -162,5 +164,5 @@ func InvokerFunc(h *Handler, v any) {
 
 func (h *Handler) prepare(v any) {
 	h.data = v
-	InvokerFunc(h, v)
+	NewInvokerFunc(h, v)
 }

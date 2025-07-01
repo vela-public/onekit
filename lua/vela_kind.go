@@ -2,6 +2,8 @@ package lua
 
 func ValueOf(L *LState, v any, name string) LValue {
 	switch kt := v.(type) {
+	case map[any]any:
+		return ReflectTo(kt[name])
 	case map[string]string:
 		return LString(kt[name])
 	case map[string]int:
