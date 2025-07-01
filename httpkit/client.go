@@ -503,7 +503,7 @@ func (c *Client) OnAfterResponse(m ResponseMiddleware) *Client {
 //
 //	client.OnError(func(req *resty.session, err error) {
 //		if v, ok := err.(*resty.ResponseError); ok {
-//			// Do something with v.Response
+//			// use something with v.Response
 //		}
 //		// Log the error, increment a metric, etc...
 //	})

@@ -3,7 +3,6 @@ package treekit
 import (
 	"context"
 	"fmt"
-	"github.com/vela-public/onekit/datalog"
 	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/luakit"
@@ -260,7 +259,6 @@ func (t *Task) do() error {
 			if err == nil {
 				return
 			}
-			datalog.Err(t.Key())(err.Error())
 		}
 	})
 

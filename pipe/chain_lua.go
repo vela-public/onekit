@@ -16,16 +16,7 @@ func (c *Chain) InvokeL(L *lua.LState) int {
 		args[i-1] = L.Get(i)
 	}
 
-	v := c.Invoke(args...)
-	L.Push(v)
-	return 1
-}
-
-func (c *Chain) ErrorL(L *lua.LState) int {
-	sub := Lua(L, LState(L), Seek(1))
-	if sz := len(c.private.ErrHandle); sz > 0 {
-		c.private.ErrHandle = append(c.private.ErrHandle, sub.handle...)
-	}
+	c.Invokes(args)
 	return 0
 }
 
@@ -35,8 +26,6 @@ func (c *Chain) Index(L *lua.LState, key string) lua.LValue {
 		return lua.LInt(c.Len())
 	case "do":
 		return lua.NewFunction(c.InvokeL)
-	case "err":
-		return lua.NewFunction(c.ErrorL)
 	}
 	return lua.LNil
 }

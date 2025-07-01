@@ -10,13 +10,13 @@ func (cnd *Cond) append(s *Section) {
 	cnd.data = append(cnd.data, s)
 }
 
-func (cnd *Cond) Mode(L *lua.LState, idx int) (CndMode, bool) {
+func (cnd *Cond) Mode(L *lua.LState, idx int) (Logic, bool) {
 	v := L.Get(idx)
 	if v.Type() != lua.LTObject {
 		return AND, false
 	}
 
-	cm, ok := v.(CndMode)
+	cm, ok := v.(Logic)
 	if !ok {
 		return AND, false
 	}
@@ -36,7 +36,7 @@ func (cnd *Cond) CheckMany(L *lua.LState, opt ...OptionFunc) {
 
 	cm, ok := cnd.Mode(L, ov.seek+1)
 	if ok {
-		cnd.mode.put(cm)
+		cnd.logic.put(cm)
 		ov.seek++
 		if top-ov.seek <= 0 {
 			return
@@ -52,21 +52,6 @@ func (cnd *Cond) CheckMany(L *lua.LState, opt ...OptionFunc) {
 		case lua.LTGoCond:
 			sec = NewSectionGoFunc(L, func(v any, optionFunc ...OptionFunc) bool {
 				return val.(lua.GoCond[any])(v)
-			})
-		case lua.LTGoFuncErr:
-			sec = NewSectionGoFunc(L, func(v interface{}, optionFunc ...OptionFunc) bool {
-				err := val.(lua.GoFuncErr)(v)
-				return err == nil
-			})
-		case lua.LTGoFuncStr:
-			sec = NewSectionGoFunc(L, func(v any, optionFunc ...OptionFunc) bool {
-				str := val.(lua.GoFuncStr)(v)
-				return str == ""
-			})
-		case lua.LTGoFuncInt:
-			sec = NewSectionGoFunc(L, func(v any, optionFunc ...OptionFunc) bool {
-				num := val.(lua.GoFuncInt)(v)
-				return num == 0
 			})
 		default:
 			sec = NewSectionText(L.IsString(idx))

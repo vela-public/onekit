@@ -5,15 +5,15 @@ import (
 )
 
 type Cond struct {
-	mode *CndMode
-	data []*Section
+	logic *Logic
+	data  []*Section
 }
 
 func New() *Cond {
 	cnd := &Cond{
-		mode: new(CndMode),
+		logic: new(Logic),
 	}
-	cnd.mode.put(AND)
+	cnd.logic.put(AND)
 	return cnd
 }
 

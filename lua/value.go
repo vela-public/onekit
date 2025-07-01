@@ -29,15 +29,12 @@ const (
 	LTSkv
 	LTObject
 	LTGoFunction
-	LTGoFuncErr
-	LTGoFuncStr
-	LTGoFuncInt
 	LTGeneric
 	LTInvoker
 	LTGoCond
 )
 
-var lValueNames = [...]string{"nil", "boolean", "number", "int", "uint", "int64", "uint64", "string", "function", "userdata", "thread", "table", "channel", "slice", "map", "kv", "safe_kv", "object", "GoFunction", "GoFuncErr", "GoFuncStr", "GoFuncInt", "generic", "invoker", "go_cond"}
+var lValueNames = [...]string{"nil", "boolean", "number", "int", "uint", "int64", "uint64", "string", "function", "userdata", "thread", "table", "channel", "slice", "map", "kv", "safe_kv", "object", "GoFunction", "generic", "invoker", "go_cond"}
 
 func (vt LValueType) String() string {
 	return lValueNames[int(vt)]
@@ -251,6 +248,7 @@ type LState struct {
 		Exdata     interface{}
 		Exdata2    interface{}
 		Pool       *sync.Pool
+		Thread     bool
 	}
 }
 

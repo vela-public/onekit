@@ -2,11 +2,6 @@ package pipe
 
 import "fmt"
 
-const (
-	Single HandleType = iota + 1
-	ReuseCo
-)
-
 type HandleType uint8
 
 type Invoker interface {

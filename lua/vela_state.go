@@ -172,6 +172,10 @@ func (ls *LState) pool() *sync.Pool {
 	return ls.private.Pool
 }
 
+func (ls *LState) IsThread() bool {
+	return ls.private.Thread
+}
+
 func (ls *LState) Coroutine() *LState {
 	co := ls.pool().Get().(*LState)
 
@@ -185,6 +189,7 @@ func (ls *LState) Coroutine() *LState {
 	co.private.Exdata = ls.private.Exdata
 	co.private.Exdata2 = ls.private.Exdata2
 	co.private.Pool = ls.private.Pool
+	ls.private.Thread = true
 	co.private.Terminated = make(chan struct{}, 1)
 
 	co.reg.top = 0

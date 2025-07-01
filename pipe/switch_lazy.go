@@ -18,12 +18,8 @@ func (s *LazySwitch[T]) AssertFunction() (*lua.LFunction, bool) {
 	return lua.NewFunction(s.ref.InvokeL), true
 }
 
-func (s *LazySwitch[T]) Invoke(v T) {
-	s.ref.Invoke(v)
-}
-
-func (s *LazySwitch[T]) NewErrorHandler(v any, options ...func(*HandleEnv)) {
-	s.ref.Error.NewHandler(v, options...)
+func (s *LazySwitch[T]) Invoke(v T, more ...func(*Catalog)) {
+	s.ref.Invoke(v, more...)
 }
 
 func (s *LazySwitch[T]) Case(options ...func(*Case)) *Case {
@@ -85,12 +81,6 @@ func (s *LazySwitch[T]) BeforeL(L *lua.LState) int {
 	return s.push(L)
 }
 
-func (s *LazySwitch[T]) ErrorL(L *lua.LState) int {
-	sub := Lua(L, LState(L), Seek(1))
-	s.ref.Error.Merge(sub)
-	return 0
-}
-
 func (s *LazySwitch[T]) AfterL(L *lua.LState) int {
 	s.ref.After = Lua(L, LState(L))
 	return s.push(L)
@@ -110,8 +100,6 @@ func (s *LazySwitch[T]) Index(L *lua.LState, key string) lua.LValue {
 		return lua.NewFunction(s.AfterL)
 	case "default":
 		return lua.NewFunction(s.DefaultL)
-	case "error":
-		return lua.NewFunction(s.ErrorL)
 	default:
 		return nil
 	}

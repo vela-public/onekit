@@ -32,11 +32,12 @@ func (zc *LazyChain[T]) NewHandler(v any, option ...func(env *HandleEnv)) (r tod
 
 	case func(T):
 		fn := func(v any) error {
-			if data, ok := v.(T); ok {
-				dat(data)
-				return nil
+			t, ok := v.(T)
+			if !ok {
+				return fmt.Errorf("data type is not %T", t)
 			}
-			return fmt.Errorf("data type is not %T", *new(T))
+			dat(t)
+			return nil
 		}
 		return zc.Chain.NewHandler(fn, option...)
 
@@ -54,38 +55,46 @@ func (zc *LazyChain[T]) NewHandler(v any, option ...func(env *HandleEnv)) (r tod
 	}
 }
 
-func (zc *LazyChain[T]) NewErrorHandler(v any, option ...func(env *HandleEnv)) error {
-	return zc.Chain.NewErrorHandler(v, option...)
-}
-
 func (zc *LazyChain[T]) Merge(v any) {
 	switch sub := v.(type) {
 	case *LazyChain[T]:
 		zc.Chain.Merge(sub.Chain)
 	case *Chain:
 		zc.Chain.Merge(sub)
+	default:
+		panic("not support type")
 	}
 }
 
-func (zc *LazyChain[T]) Do(ctx *Context, v any) {
-	zc.Chain.Do(ctx, v)
+func (zc *LazyChain[T]) Invokes(v ...any) {
+	zc.Chain.Invokes(v)
 }
 
-func (zc *LazyChain[T]) Invoke(v ...any) {
-	zc.Chain.Invoke(v...)
+func (zc *LazyChain[T]) Invoke(v any) {
+	zc.Chain.Invoke(v)
 }
 
-func (zc *LazyChain[T]) Case(idx int, cnd *cond.Cond, v any) *Context {
-	ctx := &Context{
+func (zc *LazyChain[T]) Execute(ctx *Catalog) {
+	zc.Chain.Execute(ctx)
+}
+
+func (zc *LazyChain[T]) Case(idx int, cnd *cond.Cond, v any, more ...func(*Catalog)) *Catalog {
+	ctx := &Catalog{
 		errs: errkit.Errors(),
 		meta: Metadata{
 			Switch: true,
 			Cnd:    cnd,
 			CaseID: idx,
 		},
+		size: 1,
+		data: []any{v},
 	}
 
-	zc.Chain.Do(ctx, v)
+	for _, fn := range more {
+		fn(ctx)
+	}
+
+	zc.Chain.Execute(ctx)
 	return ctx
 }
 

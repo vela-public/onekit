@@ -13,7 +13,7 @@ type OptionFunc func(*option)
 type option struct {
 	seek      int
 	value     interface{}
-	logic     CndMode
+	logic     Logic
 	field     Lookup
 	errs      *errkit.JoinError
 	compare   func(string, string, Method) bool
@@ -28,7 +28,7 @@ func Seek(seek int) OptionFunc {
 	}
 }
 
-func Mode(v CndMode) OptionFunc {
+func Mode(v Logic) OptionFunc {
 	return func(o *option) {
 		o.logic = v
 	}

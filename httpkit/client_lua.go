@@ -26,23 +26,23 @@ func (c *Client) H(L *lua.LState) int {
 }
 
 func (c *Client) afterL(L *lua.LState) int {
-	pip := pipe.Lua(L, pipe.LState(L))
-	if pip.Len() == 0 {
+	chain := pipe.Lua(L, pipe.LState(L))
+	if chain.Len() == 0 {
 		return 0
 	}
 	c.OnAfterResponse(func(_ *Client, response *Response) error {
-		return pip.Invoke(response).UnwrapErr()
+		return chain.InvokeGo(response).UnwrapErr()
 	})
 	return 0
 }
 
 func (c *Client) beforeL(L *lua.LState) int {
-	pip := pipe.Lua(L, pipe.LState(L), pipe.Protect(true))
-	if pip.Len() == 0 {
+	chain := pipe.Lua(L, pipe.LState(L), pipe.Protect(true))
+	if chain.Len() == 0 {
 		return 0
 	}
 	c.OnBeforeRequest(func(_ *Client, request *Request) error {
-		return pip.Invoke(request).UnwrapErr()
+		return chain.InvokeGo(request).UnwrapErr()
 	})
 	return 0
 }

@@ -2,18 +2,12 @@ package pipe
 
 import (
 	"fmt"
-	"github.com/vela-public/onekit/cond"
 	"github.com/vela-public/onekit/errkit"
-	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/todo"
 )
 
 type Chain struct {
 	handle []*Handler
-
-	private struct {
-		ErrHandle []*Handler
-	}
 }
 
 func (c *Chain) append(v *Handler) {
@@ -30,35 +24,37 @@ func (c *Chain) Merge(sub *Chain) {
 	}
 }
 
-func (c *Chain) error(err error) {
+func (c *Chain) TryCatch(ca *Catalog, idx int, err error) (stop bool) {
 	if err == nil {
 		return
 	}
 
-	sz := len(c.private.ErrHandle)
-	if sz == 0 {
-		return
+	if ca.hijack.Break {
+		stop = true
 	}
 
-	ctx := &Context{
-		size: 1,
-		data: []any{any(err)},
+	key := fmt.Sprintf("handle.%d:%T", idx, c.handle[idx].data)
+	ca.errs.Try(key, err)
+
+	if ca.meta.Switch {
+		ca.errorf("switch[%d][%s] invoke fail %v", ca.meta.CaseID, ca.meta.Cnd, err)
+	} else {
+		ca.errorf("handle[%d] invoke fail %v", idx, err)
 	}
 
-	for i := 0; i < sz; i++ {
-		h := c.private.ErrHandle[i]
-		_ = h.invoke(ctx)
+	exception := ca.hijack.Exception
+	if exception != nil {
+		exception(ca, err)
 	}
+
+	return
 }
 
-func (c *Chain) Do(ctx *Context, v ...any) {
+func (c *Chain) Execute(ctx *Catalog) {
 	sz := len(c.handle)
 	if sz == 0 {
 		return
 	}
-
-	ctx.size = sz
-	ctx.data = v
 
 	if fn := ctx.hijack.Before; fn != nil {
 		if fn(ctx); ctx.hijack.Break {
@@ -69,18 +65,7 @@ func (c *Chain) Do(ctx *Context, v ...any) {
 	for i := 0; i < sz; i++ {
 		h := c.handle[i]
 		err := h.Invoke(ctx)
-		if err == nil {
-			continue
-		}
-
-		if fn := ctx.hijack.Error; fn != nil {
-			if fn(ctx, err); ctx.hijack.Break {
-				return
-			}
-		}
-
-		key := fmt.Sprintf("handle.%d:%T", i, h.data)
-		ctx.errs.Try(key, err)
+		c.TryCatch(ctx, i, err)
 	}
 
 	if fn := ctx.hijack.After; fn != nil {
@@ -88,67 +73,57 @@ func (c *Chain) Do(ctx *Context, v ...any) {
 	}
 }
 
-func (c *Chain) Case(idx int, cnd *cond.Cond, v any) *Context {
-	ctx := &Context{
-		errs: errkit.Errors(),
-		meta: Metadata{
-			Switch: true,
-			Cnd:    cnd,
-			CaseID: idx,
-		},
-	}
-
-	c.Do(ctx, v)
-	return ctx
-}
-
-func (c *Chain) Invoke(v ...any) *Context {
-	ctx := &Context{
-		size: len(v),
-		data: v,
-		errs: errkit.Errors(),
-	}
-	defer func() {
-		if e := recover(); e != nil {
-			fmt.Printf("pipe invoke panic %v\n%s", e, libkit.StackTrace[string](4096, true))
-		}
-	}()
-
-	sz := len(c.handle)
+func (c *Chain) Do(options ...func(*Catalog)) *Catalog {
+	ctx := &Catalog{}
+	sz := len(options)
 	if sz == 0 {
 		return ctx
 	}
+
 	for i := 0; i < sz; i++ {
-		h := c.handle[i]
-		if err := h.Invoke(ctx); err != nil {
-			key := fmt.Sprintf("handle.%d:%T", i, h.data)
-			ctx.errs.Try(key, err)
-			c.error(err)
-		}
+		option := options[i]
+		option(ctx)
 	}
+	ctx.errs = errkit.Errors()
+	c.Execute(ctx)
 	return ctx
+}
+
+func (c *Chain) Invokes(v []any, more ...func(ctx *Catalog)) {
+	sz := len(c.handle)
+	if sz == 0 {
+		return
+	}
+
+	ctx := NewCatalog(v...)(more...)
+	c.Execute(ctx)
+}
+
+func (c *Chain) InvokeGo(v ...any) *Catalog {
+	ca := NewCatalog(v...)()
+
+	sz := len(c.handle)
+	if sz == 0 {
+		return ca
+	}
+
+	c.Execute(ca)
+	return ca
+}
+
+func (c *Chain) Invoke(v any, more ...func(ctx *Catalog)) {
+	sz := len(c.handle)
+	if sz == 0 {
+		return
+	}
+
+	ca := NewCatalog(v)(more...)
+	c.Execute(ca)
 }
 
 func (c *Chain) NewHandler(v any, options ...func(*HandleEnv)) (r todo.Result[*Handler, error]) {
 	env := NewEnv(options...)
 	return c.handler(v, env)
-}
-
-func (c *Chain) NewErrorHandler(v any, options ...func(*HandleEnv)) error {
-	env := NewEnv(options...)
-	h, ok := v.(*Handler)
-	if ok {
-		c.private.ErrHandle = append(c.private.ErrHandle, h)
-		return nil
-	}
-
-	hd := &Handler{env: env}
-	hd.prepare(v)
-	if hd.info == nil {
-		c.private.ErrHandle = append(c.private.ErrHandle, h)
-		return nil
-	}
-	return hd.info
 }
 
 func (c *Chain) handler(v any, env *HandleEnv) (r todo.Result[*Handler, error]) {

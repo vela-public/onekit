@@ -1,6 +1,7 @@
 package pipe
 
 import (
+	"github.com/vela-public/onekit/cond"
 	"github.com/vela-public/onekit/lua"
 )
 
@@ -21,7 +22,7 @@ func (s *Switch) AssertString() (string, bool)           { return s.String(), tr
 func (s *Switch) AssertFunction() (*lua.LFunction, bool) { return lua.NewFunction(s.InvokeL), true }
 func (s *Switch) Hijack(fsm *lua.CallFrameFSM) bool      { return false }
 
-func More(ctx *Context, more ...func(*Context)) {
+func More(ctx *Catalog, more ...func(*Catalog)) {
 	sz := len(more)
 	if sz == 0 {
 		return
@@ -30,10 +31,6 @@ func More(ctx *Context, more ...func(*Context)) {
 	for i := 0; i < sz; i++ {
 		more[i](ctx)
 	}
-}
-
-func (s *Switch) NewErrorHandler(v any, options ...func(*HandleEnv)) {
-	s.Error.NewHandler(v, options...)
 }
 
 func (s *Switch) OnBefore(v any, options ...func(*HandleEnv)) {
@@ -48,15 +45,13 @@ func (s *Switch) NotFound(v any, options ...func(*HandleEnv)) {
 	s.Default.NewHandler(v, options...)
 }
 
-func (s *Switch) Invoke(v any, more ...func(*Context)) {
-
+func (s *Switch) Invoke(v any, more ...func(*Catalog)) {
 	t := &Temporary{
 		Data: v,
 	}
 
 	var dat any
-	s.Before.Invoke(t)
-
+	s.Before.Execute(NewCatalog(t)(more...))
 	if t.Value != nil {
 		dat = t.Value
 	} else {
@@ -64,38 +59,38 @@ func (s *Switch) Invoke(v any, more ...func(*Context)) {
 	}
 
 	sz := len(s.Cases)
-	if sz == 0 {
-		return
-	}
-
-	errFn := func(ctx *Context, err error) {
-		if s.Error != nil {
-			s.Error.Invoke(err)
-		}
-	}
-
 	hit := false
-	for i := 0; i < sz; i++ {
-		c := s.Cases[i]
-		ctx, ok := c.Match(i, dat)
-		if !ok {
-			continue
-		}
+	cat := NewCatalog(dat)(more...)
 
-		hit = true
-		ctx.hijack.Error = errFn
-		More(ctx, more...)
-		if s.Break || c.Break {
-			break
-		}
+	if sz > 0 {
+		for i := 0; i < sz; i++ {
+			c := s.Cases[i]
+			if c.Cnd == nil || !c.Cnd.Match(dat) {
+				continue
+			}
 
+			cat.meta.CaseID = i + 1
+			cat.meta.Switch = true
+			cat.meta.Cnd = c.Cnd
+			c.Happy.Execute(cat)
+			hit = true
+			if s.Break || c.Break {
+				break
+			}
+		}
 	}
 
 	if !hit {
-		s.Default.Case(-1, nil, dat)
+		cat.meta.CaseID = 0
+		cat.meta.Switch = true
+		cat.meta.Cnd = cond.NewText("default")
+		s.Default.Execute(cat)
 	}
 
-	s.After.Invoke(dat)
+	cat.meta.CaseID = sz + 2
+	cat.meta.Switch = true
+	cat.meta.Cnd = cond.NewText("after")
+	s.After.Execute(cat)
 }
 
 func (s *Switch) Case(options ...func(*Case)) *Case {
@@ -116,7 +111,6 @@ func NewSwitch() *Switch {
 		Default: NewChain(),
 		Before:  NewChain(),
 		After:   NewChain(),
-		Error:   NewChain(),
 	}
 }
 

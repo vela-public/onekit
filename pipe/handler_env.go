@@ -7,11 +7,11 @@ import (
 type HandleEnv struct {
 	Protect bool
 	Seek    int
-	Error   func(*Context, error)
+	Error   func(*Catalog, error)
 	Parent  *lua.LState
 }
 
-func (he *HandleEnv) PCall(fn *lua.LFunction, ctx *Context) error {
+func (he *HandleEnv) PCall(fn *lua.LFunction, ctx *Catalog) error {
 	cp := lua.P{
 		Protect: he.Protect,
 		NRet:    0,
@@ -20,17 +20,28 @@ func (he *HandleEnv) PCall(fn *lua.LFunction, ctx *Context) error {
 
 	sz := len(ctx.data)
 	co := he.Parent.Coroutine()
-	defer func() {
-		he.Parent.Keepalive(co)
-	}()
 
-	param := make([]lua.LValue, sz)
-	for i := 0; i < sz; i++ {
-		item := ctx.data[i]
-		param[i] = lua.ReflectTo(item)
+	var err error
+	switch sz {
+	case 0:
+		err = co.CallByParam(cp)
+	case 1:
+		err = co.CallByParam(cp, lua.ReflectTo(ctx.data[0]))
+	case 2:
+		err = co.CallByParam(cp, lua.ReflectTo(ctx.data[0]), lua.ReflectTo(ctx.data[1]))
+	default:
+		param := make([]lua.LValue, sz)
+		for i := 0; i < sz; i++ {
+			item := ctx.data[i]
+			param[i] = lua.ReflectTo(item)
+		}
+		err = co.CallByParam(cp, param...)
 	}
 
-	err := co.CallByParam(cp, param...)
+	if err == nil {
+		he.Parent.Keepalive(co)
+	}
+
 	return err
 }
 
@@ -62,7 +73,9 @@ func Seek(n int) func(*HandleEnv) {
 }
 
 func NewEnv(opts ...func(*HandleEnv)) *HandleEnv {
-	env := &HandleEnv{}
+	env := &HandleEnv{
+		Protect: true,
+	}
 
 	for _, opt := range opts {
 		opt(env)

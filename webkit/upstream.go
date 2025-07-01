@@ -161,7 +161,7 @@ func (p *ReverseProxy) ServeHTTP(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-// doWithTimeout calls fasthttp.HostClient Do or DoTimeout, this is depends on p.opt.timeout
+// doWithTimeout calls fasthttp.HostClient use or DoTimeout, this is depends on p.opt.timeout
 func (p *ReverseProxy) doWithTimeout(pc *fasthttp.HostClient, req *fasthttp.Request, res *fasthttp.Response) error {
 	if p.opt.timeout <= 0 {
 		return pc.Do(req, res)

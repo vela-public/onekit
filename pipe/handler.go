@@ -13,14 +13,14 @@ type Handler struct {
 	env    *HandleEnv
 	data   any
 	info   error
-	invoke func(*Context) error
+	invoke func(*Catalog) error
 }
 
 func (h *Handler) Data() any {
 	return h.data
 }
 
-func (h *Handler) Writer(w io.Writer, c *Context) error {
+func (h *Handler) Writer(w io.Writer, c *Catalog) error {
 	if c.size == 0 {
 		return nil
 	}
@@ -28,11 +28,8 @@ func (h *Handler) Writer(w io.Writer, c *Context) error {
 	errs := &errkit.JoinError{}
 	handle := func(idx int, v []byte) {
 		_, err := w.Write(v)
-		if err != nil {
-			errs.Try(strconv.Itoa(idx), err)
-		}
+		c.errorf("handle[%d] write fail %v", idx, err)
 	}
-
 	for i := 0; i < c.size; i++ {
 		item := c.data[i]
 		if item == nil {
@@ -49,7 +46,7 @@ func (h *Handler) Writer(w io.Writer, c *Context) error {
 	return errs.Wrap()
 }
 
-func (h *Handler) SafeCall(fn func(v any) error, ctx *Context) error {
+func (h *Handler) Call(fn func(v any) error, ctx *Catalog) error {
 	if ctx.size == 0 {
 		return nil
 	}
@@ -60,27 +57,29 @@ func (h *Handler) SafeCall(fn func(v any) error, ctx *Context) error {
 		if item == nil {
 			continue
 		}
-		errs.Try(strconv.Itoa(i), fn(item))
+		err := fn(item)
+		errs.Try(strconv.Itoa(i), err)
 	}
 	return errs.Wrap()
 }
 
-func (h *Handler) Protect() {
-	if !h.env.Protect {
-		return
+func (h *Handler) SafeCall(fn func(c *Catalog) error) func(ctx *Catalog) error {
+	if h.env == nil || !h.env.Protect {
+		return fn
 	}
-
-	r := recover()
-	if r != nil {
-		buff := make([]byte, 4096)
-		n := runtime.Stack(buff, false)
-		fmt.Println(string(buff[:n]))
+	return func(ctx *Catalog) error {
+		defer func() {
+			if e := recover(); e != nil {
+				buff := make([]byte, 4096)
+				n := runtime.Stack(buff, false)
+				ctx.errorf("panic:%v\n%s", e, string(buff[:n]))
+			}
+		}()
+		return fn(ctx)
 	}
 }
 
-func (h *Handler) LFunc(fn *lua.LFunction, ctx *Context) error {
-	defer h.Protect()
-
+func (h *Handler) LFunc(fn *lua.LFunction, ctx *Catalog) error {
 	if h.env == nil {
 		return fmt.Errorf("pipe pcall env is nil")
 	}
@@ -88,7 +87,7 @@ func (h *Handler) LFunc(fn *lua.LFunction, ctx *Context) error {
 	return h.env.PCall(fn, ctx)
 }
 
-func (h *Handler) Invoke(a *Context) error {
+func (h *Handler) Invoke(a *Catalog) error {
 	if h.invoke == nil {
 		return h.info
 	}
@@ -96,70 +95,64 @@ func (h *Handler) Invoke(a *Context) error {
 }
 
 func InvokerFunc(h *Handler, v any) {
-	switch elem := v.(type) {
+	switch vt := v.(type) {
+	case *Handler:
+		h.invoke = func(a *Catalog) error {
+			if vt.invoke != nil {
+				return vt.invoke(a)
+			}
+			return fmt.Errorf("not found invoke function %v", v)
+		}
+
 	case *Chain:
-		h.invoke = func(a *Context) error {
-			elem.Do(a, a.data...)
-			return nil
+		h.invoke = func(c *Catalog) error {
+			return vt.InvokeGo(c).UnwrapErr()
 		}
 	case *Switch:
-		h.invoke = func(a *Context) error {
-			elem.Invoke(a)
+		h.invoke = func(c *Catalog) error {
+			vt.Invoke(c, func(cc *Catalog) {
+				cc.hijack = c.hijack
+			})
 			return nil
 		}
-
 	case Invoker:
-		h.invoke = func(a *Context) error {
-			return h.SafeCall(elem.Invoke, a)
-		}
+		h.invoke = h.SafeCall(func(c *Catalog) error {
+			return h.Call(vt.Invoke, c)
+		})
 
 	case *lua.LFunction:
-		h.invoke = func(a *Context) error {
-			return h.LFunc(elem, a)
+		h.invoke = func(c *Catalog) error {
+			return h.LFunc(vt, c)
 		}
 
-	case lua.GoFuncErr:
-		h.invoke = func(a *Context) error {
-			defer h.Protect()
-			return elem(a.data...)
-		}
-
-	case lua.GoFuncStr:
-		h.invoke = func(a *Context) error {
-			defer h.Protect()
-			_ = elem(a.data...)
-			return nil
-		}
-	case lua.GoFuncInt:
-		h.invoke = func(a *Context) error {
-			defer h.Protect()
-			_ = elem(a.data...)
-			return nil
-		}
 	case func(any):
-		h.invoke = func(a *Context) error {
-			return h.SafeCall(func(v any) error { elem(v); return nil }, a)
-		}
-	case func(any) error:
-		h.invoke = func(a *Context) error {
-			return h.SafeCall(func(v any) error { return elem(v) }, a)
-		}
-	case *lua.LUserData:
-		InvokerFunc(h, elem.Value)
+		h.invoke = h.SafeCall(func(c *Catalog) error {
+			return h.Call(func(v any) error { vt(v); return nil }, c)
+		})
 
-	case lua.GenericType:
-		InvokerFunc(h, elem.Unpack())
-	case lua.Invoker:
-		h.invoke = func(a *Context) error {
-			return h.SafeCall(func(v any) error { return elem(v) }, a)
-		}
-	case lua.PackType:
-		InvokerFunc(h, elem.Unpack())
+	case func(any) error:
+		h.invoke = h.SafeCall(func(c *Catalog) error {
+			return h.Call(func(v any) error { return vt(v) }, c)
+		})
 
 	case io.Writer:
-		h.invoke = func(a *Context) error {
-			return h.Writer(elem, a)
+		h.invoke = h.SafeCall(func(c *Catalog) error {
+			return h.Writer(vt, c)
+		})
+
+	case lua.Invoker:
+		h.invoke = func(c *Catalog) error {
+			return h.Call(func(v any) error { return vt(v) }, c)
 		}
+
+	case *lua.LUserData:
+		InvokerFunc(h, vt.Value)
+
+	case lua.GenericType:
+		InvokerFunc(h, vt.Unpack())
+
+	case lua.PackType:
+		InvokerFunc(h, vt.Unpack())
 
 	default:
 		h.info = fmt.Errorf("not compatible %T", v)
