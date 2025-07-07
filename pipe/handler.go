@@ -28,7 +28,9 @@ func (h *Handler) Writer(w io.Writer, c *Catalog) error {
 	errs := &errkit.JoinError{}
 	handle := func(idx int, v []byte) {
 		_, err := w.Write(v)
-		c.errorf("handle[%d] write fail %v", idx, err)
+		if err != nil {
+			c.errorf("handle[%d] write fail %v", idx, err)
+		}
 	}
 	for i := 0; i < c.size; i++ {
 		item := c.data[i]

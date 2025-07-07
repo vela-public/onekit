@@ -21,3 +21,14 @@ type TypeOf interface {
 	Decoder
 	Encoder
 }
+
+func testing() {
+	TypeFor[struct{}]()
+
+	/*
+
+		register := NewRegistry(&struct{}
+
+
+	*/
+}

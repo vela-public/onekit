@@ -19,7 +19,7 @@ func (he *HandleEnv) PCall(fn *lua.LFunction, ctx *Catalog) error {
 	}
 
 	sz := len(ctx.data)
-	co := he.Parent.Coroutine()
+	co := he.Parent.Coroutine() //pipe.Lua(L , pipe.LState(L) , pipe.Seek(1))
 
 	var err error
 	switch sz {
