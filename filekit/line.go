@@ -2,7 +2,9 @@ package filekit
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/vela-public/onekit/cast"
+	"github.com/vela-public/onekit/errkit"
 	"github.com/vela-public/onekit/jsonkit"
 	"github.com/vela-public/onekit/lua"
 )
@@ -39,25 +41,27 @@ func (line *Line) FastJSON() *jsonkit.FastJSON {
 	return t
 }
 
-func (line *Line) Settle(key string, v any) error {
+func (line *Line) Settle(v ...LineKV) error {
 	obj := line.FastJSON()
-	err := obj.Settle(key, v)
-	if err != nil {
-		return err
+	errs := errkit.New()
+	for i, kv := range v {
+		err := obj.Settle(kv.Key, kv.Val)
+		errs.Try(fmt.Sprintf("#%d", i), err)
 	}
 
 	text := obj.String()
 	line.Text = cast.S2B(text)
 	line.Size = len(line.Text)
-	return nil
+	return errs.Wrap()
 }
 
-func (line *Line) Delete(key string) {
+func (line *Line) Delete(key ...string) {
 	obj := line.FastJSON()
-	obj.Delete(key)
-	text := obj.String()
-	line.Text = cast.S2B(text)
-	line.Size = len(line.Text)
+	if obj.Delete(key...) {
+		text := obj.String()
+		line.Text = cast.S2B(text)
+		line.Size = len(line.Text)
+	}
 }
 
 func (line *Line) Set(data ...LineKV) error {

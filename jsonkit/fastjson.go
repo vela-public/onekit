@@ -8,6 +8,7 @@ import (
 	"github.com/vela-public/onekit/libkit"
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/todo"
+	"sort"
 )
 
 var Empty = &fastjson.Value{}
@@ -39,7 +40,12 @@ func (f *FastJSON) Get(key string) *fastjson.Value {
 	return value
 }
 
-func (f *FastJSON) SetText(key string, v string) error {
+func (f *FastJSON) Object() (*fastjson.Object, error) {
+	obj, err := f.value.Object()
+	return obj, err
+}
+
+func (f *FastJSON) setText(key string, v string) error {
 	sz := len(v)
 
 	var text string
@@ -60,34 +66,57 @@ func (f *FastJSON) SetText(key string, v string) error {
 }
 
 func (f *FastJSON) Settle(key string, v any) error {
+	obj, err := f.Object()
+	if err != nil {
+		return err
+	}
+
 	switch dat := v.(type) {
 	case string:
-		return f.SetText(key, dat)
+		return f.setText(key, dat)
 	case []byte:
-		return f.SetText(key, cast.B2S(dat))
+		return f.setText(key, cast.B2S(dat))
 	case *fastjson.Value:
-		f.value.Set(key, dat)
+		obj.Set(key, dat)
 		f.cache.Set(key, dat)
 		return nil
 	case bool:
 		val := fastjson.MustParse(todo.IF(dat, "true", "false"))
-		f.value.Set(key, val)
+		obj.Set(key, val)
 		f.cache.Set(key, val)
 		return nil
 	case int, int32, int64, uint, uint32, uint64, float32, float64:
 		val := fastjson.MustParse(cast.ToString(dat))
-		f.value.Set(key, val)
+		obj.Set(key, val)
 		f.cache.Set(key, val)
 		return nil
-
+	case nil:
+		obj.Set(key, Empty)
+		f.cache.Set(key, Empty)
+		return nil
 	default:
 		return fmt.Errorf("invalid type")
 	}
 }
 
-func (f *FastJSON) Delete(key string) {
-	f.value.Set(key, Empty)
-	f.cache.Set(key, Empty)
+func (f *FastJSON) Delete(dat ...string) (chanaged bool) {
+	obj, err := f.Object()
+	if err != nil {
+		return
+	}
+
+	sort.Strings(dat)
+	sz := len(dat)
+
+	obj.Visit(func(key []byte, v *fastjson.Value) {
+		k := cast.B2S(key)
+		if i := sort.SearchStrings(dat, k); i < sz && dat[i] == k {
+			*v = fastjson.Value{}
+			f.cache.Set(k, Empty)
+			chanaged = true
+		}
+	})
+	return
 }
 
 func (f *FastJSON) Int(key string) int {
