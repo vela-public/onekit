@@ -39,6 +39,27 @@ func (line *Line) FastJSON() *jsonkit.FastJSON {
 	return t
 }
 
+func (line *Line) Settle(key string, v any) error {
+	obj := line.FastJSON()
+	err := obj.Settle(key, v)
+	if err != nil {
+		return err
+	}
+
+	text := obj.String()
+	line.Text = cast.S2B(text)
+	line.Size = len(line.Text)
+	return nil
+}
+
+func (line *Line) Delete(key string) {
+	obj := line.FastJSON()
+	obj.Delete(key)
+	text := obj.String()
+	line.Text = cast.S2B(text)
+	line.Size = len(line.Text)
+}
+
 func (line *Line) Set(data ...LineKV) error {
 	obj := make(map[string]any)
 	err := json.Unmarshal(line.Text, &obj)

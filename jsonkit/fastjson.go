@@ -39,6 +39,57 @@ func (f *FastJSON) Get(key string) *fastjson.Value {
 	return value
 }
 
+func (f *FastJSON) SetText(key string, v string) error {
+	sz := len(v)
+
+	var text string
+	if sz >= 2 && v[0] == '"' && v[sz-1] == '"' {
+		text = v
+		return nil
+	} else {
+		text = fmt.Sprintf(`"%s"`, v)
+	}
+
+	dat, err := fastjson.Parse(text)
+	if err != nil {
+		return err
+	}
+	f.value.Set(key, dat)
+	f.cache.Set(key, dat)
+	return nil
+}
+
+func (f *FastJSON) Settle(key string, v any) error {
+	switch dat := v.(type) {
+	case string:
+		return f.SetText(key, dat)
+	case []byte:
+		return f.SetText(key, cast.B2S(dat))
+	case *fastjson.Value:
+		f.value.Set(key, dat)
+		f.cache.Set(key, dat)
+		return nil
+	case bool:
+		val := fastjson.MustParse(todo.IF(dat, "true", "false"))
+		f.value.Set(key, val)
+		f.cache.Set(key, val)
+		return nil
+	case int, int32, int64, uint, uint32, uint64, float32, float64:
+		val := fastjson.MustParse(cast.ToString(dat))
+		f.value.Set(key, val)
+		f.cache.Set(key, val)
+		return nil
+
+	default:
+		return fmt.Errorf("invalid type")
+	}
+}
+
+func (f *FastJSON) Delete(key string) {
+	f.value.Set(key, Empty)
+	f.cache.Set(key, Empty)
+}
+
 func (f *FastJSON) Int(key string) int {
 	n, err := f.Get(key).Int()
 	if err != nil {
