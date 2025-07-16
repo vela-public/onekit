@@ -1,10 +1,16 @@
 package filekit
 
 import (
+	"encoding/json"
 	"github.com/vela-public/onekit/cast"
 	"github.com/vela-public/onekit/jsonkit"
 	"github.com/vela-public/onekit/lua"
 )
+
+type LineKV struct {
+	Key string
+	Val any
+}
 
 type Line struct {
 	File string // file
@@ -31,6 +37,32 @@ func (line *Line) FastJSON() *jsonkit.FastJSON {
 	t.ParseText(cast.B2S(line.Text))
 	line.Json = t
 	return t
+}
+
+func (line *Line) Set(data ...LineKV) error {
+	obj := make(map[string]any)
+	err := json.Unmarshal(line.Text, &obj)
+	if err != nil {
+		return err
+	}
+	for _, kv := range data {
+		if kv.Val == nil {
+			delete(obj, kv.Key)
+		} else {
+			obj[kv.Key] = kv.Val
+		}
+	}
+
+	text, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+
+	line.Text = text
+	t := &jsonkit.FastJSON{}
+	t.ParseText(cast.B2S(text))
+	line.Json = t
+	return nil
 }
 
 func (line *Line) Int(path string) int {
