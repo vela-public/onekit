@@ -99,7 +99,28 @@ func (f *FastJSON) Settle(key string, v any) error {
 	}
 }
 
-func (f *FastJSON) Delete(dat ...string) (chanaged bool) {
+func (f *FastJSON) Clean(keys ...string) (changed bool) {
+	if len(keys) == 0 {
+		return
+	}
+
+	obj, err := f.Object()
+	if err != nil {
+		return
+	}
+
+	sz := obj.Len()
+	for _, key := range keys {
+		obj.Del(key)
+	}
+
+	if obj.Len() == sz {
+		return false
+	}
+	return true
+}
+
+func (f *FastJSON) Delete(dat ...string) (changed bool) {
 	obj, err := f.Object()
 	if err != nil {
 		return
@@ -113,7 +134,7 @@ func (f *FastJSON) Delete(dat ...string) (chanaged bool) {
 		if i := sort.SearchStrings(dat, k); i < sz && dat[i] == k {
 			*v = fastjson.Value{}
 			f.cache.Set(k, Empty)
-			chanaged = true
+			changed = true
 		}
 	})
 	return

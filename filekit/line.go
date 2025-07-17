@@ -41,6 +41,15 @@ func (line *Line) FastJSON() *jsonkit.FastJSON {
 	return t
 }
 
+func (line *Line) Clean(keys ...string) {
+	obj := line.FastJSON()
+	if obj.Clean(keys...) {
+		text := obj.String()
+		line.Text = cast.S2B(text)
+		line.Size = len(line.Text)
+	}
+}
+
 func (line *Line) Settle(v ...LineKV) error {
 	obj := line.FastJSON()
 	errs := errkit.New()
