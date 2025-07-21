@@ -9,6 +9,7 @@ import (
 	"github.com/vela-public/onekit/lua"
 	"github.com/vela-public/onekit/todo"
 	"sort"
+	"strconv"
 )
 
 var Empty = &fastjson.Value{}
@@ -53,7 +54,7 @@ func (f *FastJSON) setText(key string, v string) error {
 		text = v
 		return nil
 	} else {
-		text = fmt.Sprintf(`"%s"`, v)
+		text = strconv.Quote(v)
 	}
 
 	dat, err := fastjson.Parse(text)
@@ -189,23 +190,16 @@ func (f *FastJSON) Bool(key string) bool {
 }
 
 func (f *FastJSON) Chunk(key string) []byte {
-	data := f.Get(key)
-	text := data.MarshalTo(nil)
-
-	if data.Type() == fastjson.TypeString && len(text) >= 2 && text[0] == '"' {
-		return text[1 : len(text)-1]
-	}
-	return text
+	return cast.S2B(f.Text(key))
 }
 
 func (f *FastJSON) Text(key string) string {
-	data := f.Get(key)
-	text := data.MarshalTo(nil)
-
-	if data.Type() == fastjson.TypeString && len(text) >= 2 && text[0] == '"' {
-		return cast.B2S(text[1 : len(text)-1])
+	value := f.Get(key)
+	if value.Type() == fastjson.TypeNull {
+		return ""
 	}
-	return cast.B2S(text)
+
+	return Unquote(value.String())
 }
 
 func (f *FastJSON) To(key string) any {
@@ -215,8 +209,7 @@ func (f *FastJSON) To(key string) any {
 		return nil
 
 	case fastjson.TypeString:
-		item := v.String()
-		return item[1 : len(item)-1]
+		return Unquote(v.String())
 
 	case fastjson.TypeNumber:
 		n, err := fastfloat.Parse(v.String())
@@ -238,7 +231,7 @@ func (f *FastJSON) To(key string) any {
 		return false
 
 	default:
-		return v.String()
+		return Unquote(v.String())
 	}
 
 }
@@ -279,7 +272,7 @@ func (f *FastJSON) visit(key string) lua.LValue {
 
 	case fastjson.TypeString:
 		item := v.String()
-		return lua.S2L(item[1 : len(item)-1])
+		return lua.S2L(Unquote(item))
 
 	case fastjson.TypeNumber:
 		n, err := fastfloat.Parse(v.String())
@@ -301,7 +294,7 @@ func (f *FastJSON) visit(key string) lua.LValue {
 		return lua.LFalse
 
 	default:
-		return lua.S2L(v.String()) //typeRawString 7
+		return lua.S2L(Unquote(v.String())) //typeRawString 7
 	}
 
 }
@@ -341,9 +334,9 @@ func (f *FastJSON) NewIndex(L *lua.LState, key string, val lua.LValue) {
 
 		f.value.Set(key, fv)
 	case lua.LTString:
-		f.value.Set(key, fastjson.MustParse("\""+val.String()+"\""))
+		f.value.Set(key, fastjson.MustParse(Quote(val.String())))
 	default:
-		f.value.Set(key, fastjson.MustParse("\""+val.String()+"\""))
+		f.value.Set(key, fastjson.MustParse(Quote(val.String())))
 	}
 }
 
@@ -376,8 +369,8 @@ func (f *FastJSON) NewMeta(L *lua.LState, k lua.LValue, val lua.LValue) {
 
 		f.value.Set(key, fv)
 	case lua.LTString:
-		f.value.Set(key, fastjson.MustParse("\""+val.String()+"\""))
+		f.value.Set(key, fastjson.MustParse(Quote(val.String())))
 	default:
-		f.value.Set(key, fastjson.MustParse("\""+val.String()+"\""))
+		f.value.Set(key, fastjson.MustParse(Quote(val.String())))
 	}
 }
