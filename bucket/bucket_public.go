@@ -16,6 +16,70 @@ const (
 
 type ForEachFSM uint8
 
+func (b *Bucket[T]) SetText(key string, text []byte) error {
+	if key == "" || len(text) == 0 {
+		return nil
+	}
+
+	err := b.db.Update(func(tx *Tx) error {
+		bbt, err := b.unpack(tx, false)
+		if err != nil {
+			return err
+		}
+
+		return bbt.Put(cast.S2B(key), text)
+	})
+	return err
+}
+
+func (b *Bucket[T]) GetText(key string, e ...func(error)) []byte {
+	if key == "" {
+		return nil
+	}
+
+	err := b.create()
+	if err != nil {
+		if sz := len(e); sz > 0 {
+			for i := 0; i < sz; i++ {
+				e[i](err)
+			}
+		}
+		return nil
+	}
+
+	var data []byte
+	err = b.db.View(func(tx *Tx) error {
+		bbt, err := b.unpack(tx, true)
+		if err != nil {
+			return err
+		}
+		data = bbt.Get(cast.S2B(key))
+		return nil
+	})
+
+	if sz := len(e); err != nil && sz > 0 {
+		for i := 0; i < sz; i++ {
+			e[i](err)
+		}
+	}
+	return data
+}
+
+func (b *Bucket[T]) create() error {
+	var err error
+	b.once.Do(func() {
+		err = b.db.Update(func(tx *bbolt.Tx) error {
+			_, e := b.unpack(tx, false)
+			if e != nil {
+				return e
+			}
+			return nil
+		})
+	})
+	return err
+
+}
+
 func (b *Bucket[T]) unpack(tx *Tx, readonly bool) (*bbolt.Bucket, error) {
 	var bbt *bbolt.Bucket
 	var err error

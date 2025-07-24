@@ -6,6 +6,7 @@ import (
 	"github.com/vela-public/onekit/mime"
 	"go.etcd.io/bbolt"
 	"os"
+	"sync"
 )
 
 var Default = bbolt.DefaultOptions
@@ -13,6 +14,7 @@ var Default = bbolt.DefaultOptions
 type Tx = bbolt.Tx
 
 type Bucket[T any] struct {
+	once   sync.Once
 	db     *bbolt.DB
 	chains [][]byte
 }
