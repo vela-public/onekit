@@ -3,6 +3,7 @@ package bucket
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/vela-public/onekit/cast"
 	"go.etcd.io/bbolt"
 )
@@ -16,7 +17,33 @@ const (
 
 type ForEachFSM uint8
 
-func (b *Bucket[T]) SetText(key string, text []byte) error {
+func (b *Bucket[T]) WithText(key string, fn func() string) (string, error) {
+	if key == "" {
+		return "", fmt.Errorf("key is empty")
+	}
+
+	var ret string
+	err := b.db.Batch(func(tx *bbolt.Tx) error {
+		bbt, err := b.unpack(tx, false)
+		if err != nil {
+			return err
+		}
+
+		k := []byte(key)
+		data := bbt.Get(k)
+		if data != nil {
+			ret = string(data)
+			return nil
+		}
+
+		ret = fn()
+		return bbt.Put(k, []byte(ret))
+	})
+
+	return ret, err
+}
+
+func (b *Bucket[T]) SetText(key string, text string) error {
 	if key == "" || len(text) == 0 {
 		return nil
 	}
@@ -27,24 +54,28 @@ func (b *Bucket[T]) SetText(key string, text []byte) error {
 			return err
 		}
 
-		return bbt.Put(cast.S2B(key), text)
+		return bbt.Put(cast.S2B(key), cast.S2B(text))
 	})
 	return err
 }
 
-func (b *Bucket[T]) GetText(key string, e ...func(error)) []byte {
+func (b *Bucket[T]) GetText(key string, e ...func(error)) string {
 	if key == "" {
-		return nil
+		return ""
 	}
 
-	err := b.create()
-	if err != nil {
+	err := b.CreateBucketIfNotExists()
+	bad := func() {
 		if sz := len(e); sz > 0 {
 			for i := 0; i < sz; i++ {
 				e[i](err)
 			}
 		}
-		return nil
+	}
+
+	if err != nil {
+		bad()
+		return ""
 	}
 
 	var data []byte
@@ -57,15 +88,15 @@ func (b *Bucket[T]) GetText(key string, e ...func(error)) []byte {
 		return nil
 	})
 
-	if sz := len(e); err != nil && sz > 0 {
-		for i := 0; i < sz; i++ {
-			e[i](err)
-		}
+	if err != nil {
+		bad()
+		return ""
 	}
-	return data
+
+	return string(data)
 }
 
-func (b *Bucket[T]) create() error {
+func (b *Bucket[T]) CreateBucketIfNotExists() error {
 	var err error
 	b.once.Do(func() {
 		err = b.db.Update(func(tx *bbolt.Tx) error {
