@@ -168,11 +168,13 @@ func (elem *Element[T]) Text() []byte {
 }
 
 func (elem *Element[T]) Value() T {
-	if elem.flag != 0 {
+	switch elem.flag {
+	case OK, MimeDecodeError, TypeError:
 		return elem.data
+	default:
+		t, _ := elem.Unwrap()
+		return t
 	}
-	t, _ := elem.Unwrap()
-	return t
 }
 
 func (elem *Element[T]) UnwrapErr() error {

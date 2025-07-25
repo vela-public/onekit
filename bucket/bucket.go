@@ -72,6 +72,18 @@ type Setting struct {
 	Options *bbolt.Options
 }
 
+func CacheKV(names ...string) func(setting *Setting) {
+	return func(setting *Setting) {
+		setting.Names = names
+		setting.Options = &bbolt.Options{
+			NoGrowSync:   true,
+			Timeout:      Default.Timeout,
+			FreelistType: Default.FreelistType,
+		}
+	}
+
+}
+
 func OpenBkt[T any](path string, options ...func(*Setting)) (*Bucket[T], error) {
 	var setting Setting
 	for _, opt := range options {

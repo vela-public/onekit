@@ -22,7 +22,16 @@ func (b *Bucket[T]) WithText(key string, fn func() string) (string, error) {
 		return "", fmt.Errorf("key is empty")
 	}
 
-	var ret string
+	var ret []byte
+	cp := func(dat []byte) {
+		sz := len(dat)
+		if sz == 0 {
+			return
+		}
+		ret = make([]byte, sz)
+		copy(ret, dat)
+	}
+
 	err := b.db.Batch(func(tx *bbolt.Tx) error {
 		bbt, err := b.unpack(tx, false)
 		if err != nil {
@@ -31,16 +40,19 @@ func (b *Bucket[T]) WithText(key string, fn func() string) (string, error) {
 
 		k := []byte(key)
 		data := bbt.Get(k)
-		if data != nil {
-			ret = string(data)
+		if len(data) > 0 {
+			cp(data)
 			return nil
 		}
 
-		ret = fn()
-		return bbt.Put(k, []byte(ret))
+		ret = cast.S2B(fn())
+		if len(ret) == 0 {
+			return nil
+		}
+		return bbt.Put(k, ret)
 	})
 
-	return ret, err
+	return cast.B2S(ret), err
 }
 
 func (b *Bucket[T]) SetText(key string, text string) error {
@@ -80,11 +92,16 @@ func (b *Bucket[T]) GetText(key string, e ...func(error)) string {
 
 	var data []byte
 	err = b.db.View(func(tx *Tx) error {
-		bbt, err := b.unpack(tx, true)
-		if err != nil {
-			return err
+		bbt, ei := b.unpack(tx, true)
+		if ei != nil {
+			return ei
 		}
-		data = bbt.Get(cast.S2B(key))
+
+		dat := bbt.Get(cast.S2B(key))
+		if sz := len(dat); sz > 0 {
+			data = make([]byte, sz)
+			copy(data, dat)
+		}
 		return nil
 	})
 
@@ -93,7 +110,7 @@ func (b *Bucket[T]) GetText(key string, e ...func(error)) string {
 		return ""
 	}
 
-	return string(data)
+	return cast.B2S(data)
 }
 
 func (b *Bucket[T]) CreateBucketIfNotExists() error {
@@ -203,7 +220,11 @@ func (b *Bucket[T]) Get(key string) *Element[T] {
 			return err
 		}
 
-		data = bbt.Get(cast.S2B(key))
+		dat := bbt.Get(cast.S2B(key))
+		if sz := len(dat); sz > 0 {
+			data = make([]byte, sz)
+			copy(data, dat)
+		}
 		return nil
 	})
 
