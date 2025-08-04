@@ -257,6 +257,19 @@ func (ls *LState) Where(level int) string {
 	return ls.where(level, false)
 }
 
+func (ls *LState) Line(level int) string {
+	text := ls.where(0, false)
+	sz := len(text)
+	if sz == 0 {
+		return text
+	}
+
+	if text[sz-1] == ':' {
+		return text[:sz-1]
+	}
+	return text
+}
+
 /* }}} */
 
 /* table operations {{{ */
