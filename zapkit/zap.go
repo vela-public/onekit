@@ -31,6 +31,20 @@ func (l *Logger) Skip(n int) layer.LoggerType {
 	}
 }
 
+func (l *Logger) Caller(caller bool, n int) layer.LoggerType {
+	if caller {
+		return &Logger{
+			cfg:   l.cfg,
+			sugar: zap.New(l.core, zap.AddCallerSkip(1+n), zap.WithCaller(true)).Sugar(),
+		}
+	}
+
+	return &Logger{
+		cfg:   l.cfg,
+		sugar: zap.New(l.core, zap.WithCaller(false)).Sugar(),
+	}
+}
+
 func (l *Logger) Apply(cfg *Config) {
 	old := &Logger{
 		cfg:   l.cfg,

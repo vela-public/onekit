@@ -60,6 +60,7 @@ type LoggerType interface {
 	Tracef(string, ...interface{})
 	Savef(zapcore.Level, string, ...interface{})
 	Skip(n int) LoggerType
+	Caller(caller bool, n int) LoggerType
 }
 
 type NodeType interface {
