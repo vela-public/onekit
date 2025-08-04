@@ -258,7 +258,7 @@ func (ls *LState) Where(level int) string {
 }
 
 func (ls *LState) Line(level int) string {
-	text := ls.where(0, false)
+	text := ls.where(level, false)
 	sz := len(text)
 	if sz == 0 {
 		return text
