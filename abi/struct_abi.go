@@ -475,19 +475,23 @@ func (s *StructInstance) SetText(name, val string) error {
 	data := cast.S2B(val)
 	sz := len(data)
 	if sz >= attr.Size {
-		sz = attr.Size - 1 // NULL END
+		sz = attr.Size // NULL END
 		data = data[:sz]
+		data[sz-1] = 0
+		attr.Memory.Len = sz
 	}
 
-	copy(s.buffer[attr.Offset:], data)
-
-	s.buffer[attr.Offset+sz] = 0
-
-	for i := attr.Offset + sz + 1; i < attr.Offset+attr.Size; i++ {
-		s.buffer[i] = 0
+	for i := 0; i < sz; i++ {
+		s.buffer[attr.Offset+i] = data[i]
 	}
 
-	attr.Memory.Len = sz + 1
+	if attr.Size > sz {
+		for i := attr.Offset + sz; i < attr.Offset+attr.Size; i++ {
+			s.buffer[i] = 0
+		}
+		attr.Memory.Len = sz + 1
+	}
+
 	return nil
 }
 
