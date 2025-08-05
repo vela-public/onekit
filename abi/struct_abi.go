@@ -471,18 +471,27 @@ func (s *StructInstance) SetText(name, val string) error {
 	if err != nil {
 		return err
 	}
+
 	data := cast.S2B(val)
-	if len(data) > attr.Size {
-		data = data[:attr.Size]
+	sz := len(data)
+	if sz >= attr.Size {
+		sz = attr.Size - 1 // 预留 null terminator
+		data = data[:sz]
 	}
+
+	// 拷贝字符串内容
 	copy(s.buffer[attr.Offset:], data)
-	if len(data) < attr.Size {
-		buff := s.buffer[attr.Offset+len(data) : attr.Offset+attr.Size]
-		for i := range buff {
-			buff[i] = 0
-		}
+
+	// 写入 null terminator
+	s.buffer[attr.Offset+sz] = 0
+
+	// 清理多余区域（可选）
+	for i := attr.Offset + sz + 1; i < attr.Offset+attr.Size; i++ {
+		s.buffer[i] = 0
 	}
-	attr.Memory.Len = len(data)
+
+	// 包括 '\0' 的长度
+	attr.Memory.Len = sz + 1
 	return nil
 }
 

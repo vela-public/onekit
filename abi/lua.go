@@ -1,6 +1,8 @@
 package abi
 
-import "github.com/vela-public/onekit/lua"
+import (
+	"github.com/vela-public/onekit/lua"
+)
 
 /*
 	local dataset = vela.dataset.create(int32(4))

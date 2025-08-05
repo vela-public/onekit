@@ -8,7 +8,7 @@ import (
 
 func BytesToCleanString(b []byte) string {
 	i := bytes.LastIndexFunc(b, func(r rune) bool {
-		return r == 0
+		return r == 0x00
 	})
 
 	if i != -1 {
