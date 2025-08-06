@@ -1,5 +1,46 @@
 package lua
 
+import (
+	"bytes"
+	"strings"
+)
+
+func StringOr(lv LValue, s string) string {
+	if lv == nil {
+		return s
+	}
+	if lv.Type() == LTNil {
+		return s
+	}
+
+	txt := lv.String()
+	if txt == "" {
+		return s
+	}
+
+	return txt
+}
+
+func StringsOr(L *LState, v any, key string, placeholders string) string {
+	keys := strings.Split(key, "-")
+	sz := len(keys)
+	if sz == 1 {
+		return StringOr(ValueOf(L, v, key), placeholders)
+	}
+
+	var buff bytes.Buffer
+
+	for i := 0; i < sz; i++ {
+		k := keys[i]
+		if i != 0 {
+			buff.WriteString("-")
+		}
+		buff.WriteString(StringOr(ValueOf(L, v, k), placeholders))
+	}
+
+	return buff.String()
+}
+
 func ValueOf(L *LState, v any, name string) LValue {
 	if v == nil {
 		return LNil
