@@ -1,6 +1,10 @@
 package lua
 
 func ValueOf(L *LState, v any, name string) LValue {
+	if v == nil {
+		return LNil
+	}
+
 	switch kt := v.(type) {
 	case map[any]any:
 		return ReflectTo(kt[name])
